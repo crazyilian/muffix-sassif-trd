@@ -32,7 +32,7 @@ function walk (_path, depth) {
     } else if (path.extname(f) in extensions) {
       ans += '\n' + section[depth] + file.split('.')[0] + '}\n'
       if (path.extname(f) !== '.tex') {
-        ans += `\\begin{lstlisting}[language=${extensions[path.extname(f)]}]\n` + fs.readFileSync(f, 'utf8').replaceAll('$', '$\\dollar$') + '\\end{lstlisting}\n'
+        ans += `\\begin{lstlisting}[language=${extensions[path.extname(f)]}]\n` + fs.readFileSync(f, 'utf8') + '\\end{lstlisting}\n'
       } else {
         ans += fs.readFileSync(f)
       }

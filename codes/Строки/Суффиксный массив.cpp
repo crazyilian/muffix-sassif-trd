@@ -1,17 +1,17 @@
 vector<int> build_suff_arr(string s) {
-    s.push_back('$');
+    s.push_back('#');
     int n = s.size();
     vector<int> suf(n), c(n);
     vector<int> cnt(MAX);
     for (int i = 0; i < n; i++) {
-        cnt[s[i] - '$']++;
+        cnt[s[i] - '#']++;
     }
     vector<int> pos(MAX);
     for (int i = 1; i < MAX; i++) {
         pos[i] = pos[i - 1] + cnt[i - 1];
     }
     for (int i = 0; i < n; i++) {
-        suf[pos[s[i] - '$']++] = i;
+        suf[pos[s[i] - '#']++] = i;
     }
     int cls = -1;
     for (int i = 0; i < n; i++) {
