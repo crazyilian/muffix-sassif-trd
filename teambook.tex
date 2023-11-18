@@ -1835,19 +1835,19 @@ void add(char c) {
 \subsection{Суффиксный массив}
 \begin{lstlisting}[language=C++]
 vector<int> build_suff_arr(string s) {
-    s.push_back('$\dollar$');
+    s.push_back('#');
     int n = s.size();
     vector<int> suf(n), c(n);
     vector<int> cnt(MAX);
     for (int i = 0; i < n; i++) {
-        cnt[s[i] - '$\dollar$']++;
+        cnt[s[i] - '#']++;
     }
     vector<int> pos(MAX);
     for (int i = 1; i < MAX; i++) {
         pos[i] = pos[i - 1] + cnt[i - 1];
     }
     for (int i = 0; i < n; i++) {
-        suf[pos[s[i] - '$\dollar$']++] = i;
+        suf[pos[s[i] - '#']++] = i;
     }
     int cls = -1;
     for (int i = 0; i < n; i++) {
@@ -1943,6 +1943,11 @@ int sol(int k, string s) {
 \end{lstlisting}
 
 \section{Структуры данных}
+
+\subsection{Disjoint Sparse Table}
+\begin{lstlisting}[language=C++]
+// TODO
+\end{lstlisting}
 
 \subsection{Segment Tree Beats}
 \begin{lstlisting}[language=C++]
