@@ -1,0 +1,184 @@
+\documentclass[${fontSize},${paper},landscape,twosided]{extarticle}
+
+\usepackage[T2A]{fontenc}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[english, russian]{babel}
+\usepackage{listings}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{amsmath}
+\usepackage{verbatim}
+\usepackage{hyperref}
+\usepackage{color}
+\usepackage{geometry}
+\usepackage{multicol}
+\usepackage{graphicx}
+
+\geometry{verbose,landscape,${paper},tmargin=0.7cm,bmargin=0.7cm,lmargin=0.7cm,rmargin=0.7cm}
+
+\usepackage{listings}
+\usepackage{color}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+%% Golang definition for listings
+%% http://github.io/julienc91/lstlistings-golang
+%%
+\lstdefinelanguage{Golang}%
+  {morekeywords=[1]{package,import,func,type,struct,return,defer,panic,%
+     recover,select,var,const,iota,},%
+   morekeywords=[2]{string,uint,uint8,uint16,uint32,uint64,int,int8,int16,%
+     int32,int64,bool,float32,float64,complex64,complex128,byte,rune,uintptr,%
+     error,interface},%
+   morekeywords=[3]{map,slice,make,new,nil,len,cap,copy,close,true,false,%
+     delete,append,real,imag,complex,chan,},%
+   morekeywords=[4]{for,break,continue,range,go,goto,switch,case,fallthrough,if,%
+     else,default,},%
+   morekeywords=[5]{Println,Printf,Error,Print,},%
+   sensitive=true,%
+   morecomment=[l]{//},%
+   morecomment=[s]{/*}{*/},%
+   morestring=[b]',%
+   morestring=[b]",%
+   morestring=[s]{`}{`},%
+   }
+
+
+\lstset{frame=tb,
+    language=C++,
+    aboveskip=1mm,
+    belowskip=1mm,
+    showstringspaces=true,
+    columns=flexible,
+    keepspaces=true,
+    basicstyle={\small\ttfamily},
+    numbers=none,
+    numberstyle=\tiny\color{gray},
+    keywordstyle=\color{blue},
+    commentstyle=\color{dkgreen},
+    stringstyle=\color{mauve},
+    breaklines=true,
+    breakatwhitespace=false,
+    tabsize=2,
+    inputencoding = utf8,  % Input encoding
+    extendedchars = true,  % Extended ASCII
+    mathescape    = true   % Mathematical expressions between $
+    captionpos    = b,     % Caption position
+    literate      =        % Support additional characters
+        {á}{{\'a}}1  {é}{{\'e}}1  {í}{{\'i}}1 {ó}{{\'o}}1  {ú}{{\'u}}1
+        {Á}{{\'A}}1  {É}{{\'E}}1  {Í}{{\'I}}1 {Ó}{{\'O}}1  {Ú}{{\'U}}1
+        {à}{{\`a}}1  {è}{{\`e}}1  {ì}{{\`i}}1 {ò}{{\`o}}1  {ù}{{\`u}}1
+        {À}{{\`A}}1  {È}{{\'E}}1  {Ì}{{\`I}}1 {Ò}{{\`O}}1  {Ù}{{\`U}}1
+        {ä}{{\"a}}1  {ë}{{\"e}}1  {ï}{{\"i}}1 {ö}{{\"o}}1  {ü}{{\"u}}1
+        {Ä}{{\"A}}1  {Ë}{{\"E}}1  {Ï}{{\"I}}1 {Ö}{{\"O}}1  {Ü}{{\"U}}1
+        {â}{{\^a}}1  {ê}{{\^e}}1  {î}{{\^i}}1 {ô}{{\^o}}1  {û}{{\^u}}1
+        {Â}{{\^A}}1  {Ê}{{\^E}}1  {Î}{{\^I}}1 {Ô}{{\^O}}1  {Û}{{\^U}}1
+        {œ}{{\oe}}1  {Œ}{{\OE}}1  {æ}{{\ae}}1 {Æ}{{\AE}}1  {ß}{{\ss}}1
+        {ç}{{\c c}}1 {Ç}{{\c C}}1 {ø}{{\o}}1  {å}{{\r a}}1 {Å}{{\r A}}1
+        {ñ}{{\~n}}1  {Ñ}{{\~N}}1  {¿}{{?`}}1  {¡}{{!`}}1
+        {а}{{\selectfont\char224}}1
+        {б}{{\selectfont\char225}}1
+        {в}{{\selectfont\char226}}1
+        {г}{{\selectfont\char227}}1
+        {д}{{\selectfont\char228}}1
+        {е}{{\selectfont\char229}}1
+        {ё}{{\"e}}1
+        {ж}{{\selectfont\char230}}1
+        {з}{{\selectfont\char231}}1
+        {и}{{\selectfont\char232}}1
+        {й}{{\selectfont\char233}}1
+        {к}{{\selectfont\char234}}1
+        {л}{{\selectfont\char235}}1
+        {м}{{\selectfont\char236}}1
+        {н}{{\selectfont\char237}}1
+        {о}{{\selectfont\char238}}1
+        {п}{{\selectfont\char239}}1
+        {р}{{\selectfont\char240}}1
+        {с}{{\selectfont\char241}}1
+        {т}{{\selectfont\char242}}1
+        {у}{{\selectfont\char243}}1
+        {ф}{{\selectfont\char244}}1
+        {х}{{\selectfont\char245}}1
+        {ц}{{\selectfont\char246}}1
+        {ч}{{\selectfont\char247}}1
+        {ш}{{\selectfont\char248}}1
+        {щ}{{\selectfont\char249}}1
+        {ъ}{{\selectfont\char250}}1
+        {ы}{{\selectfont\char251}}1
+        {ь}{{\selectfont\char252}}1
+        {э}{{\selectfont\char253}}1
+        {ю}{{\selectfont\char254}}1
+        {я}{{\selectfont\char255}}1
+        {А}{{\selectfont\char192}}1
+        {Б}{{\selectfont\char193}}1
+        {В}{{\selectfont\char194}}1
+        {Г}{{\selectfont\char195}}1
+        {Д}{{\selectfont\char196}}1
+        {Е}{{\selectfont\char197}}1
+        {Ё}{{\"E}}1
+        {Ж}{{\selectfont\char198}}1
+        {З}{{\selectfont\char199}}1
+        {И}{{\selectfont\char200}}1
+        {Й}{{\selectfont\char201}}1
+        {К}{{\selectfont\char202}}1
+        {Л}{{\selectfont\char203}}1
+        {М}{{\selectfont\char204}}1
+        {Н}{{\selectfont\char205}}1
+        {О}{{\selectfont\char206}}1
+        {П}{{\selectfont\char207}}1
+        {Р}{{\selectfont\char208}}1
+        {С}{{\selectfont\char209}}1
+        {Т}{{\selectfont\char210}}1
+        {У}{{\selectfont\char211}}1
+        {Ф}{{\selectfont\char212}}1
+        {Х}{{\selectfont\char213}}1
+        {Ц}{{\selectfont\char214}}1
+        {Ч}{{\selectfont\char215}}1
+        {Ш}{{\selectfont\char216}}1
+        {Щ}{{\selectfont\char217}}1
+        {Ъ}{{\selectfont\char218}}1
+        {Ы}{{\selectfont\char219}}1
+        {Ь}{{\selectfont\char220}}1
+        {Э}{{\selectfont\char221}}1
+        {Ю}{{\selectfont\char222}}1
+        {Я}{{\selectfont\char223}}1
+        {і}{{\selectfont\char105}}1
+        {ї}{{\selectfont\char168}}1
+        {є}{{\selectfont\char185}}1
+        {ґ}{{\selectfont\char160}}1
+        {І}{{\selectfont\char73}}1
+        {Ї}{{\selectfont\char136}}1
+        {Є}{{\selectfont\char153}}1
+        {Ґ}{{\selectfont\char128}}1 
+}
+
+\newcommand{\dollar}{\mbox{\textdollar}}
+
+\setlength{\columnsep}{0.1in}
+\setlength{\columnseprule}{1px}
+
+\usepackage{fancyhdr}
+\pagestyle{fancyplain}
+\fancyhf{}
+\fancyhead[R]{\fontsize{12}{12}\selectfont\bf{\thepage}\hspace{-0.4cm}}
+\fancyhead[L]{\hspace{-0.4cm}\fontsize{8}{8}\selectfont\bf{${initials}}}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand\headrule{\vspace{-0.2cm}\hspace{-0.7cm}\rule{\paperwidth}{0.4pt}\vspace{-0.8cm}}
+
+\begin{document}
+
+\title{${title}}
+\author{${author}}
+\date{}
+\maketitle
+\begin{multicols}{${columns}}
+${image}
+\tableofcontents
+\end{multicols}
+\pagebreak
+\begin{multicols}{${columns}}
+\lstloadlanguages{C++,Java}
+
+
