@@ -173,12 +173,17 @@
 \author{${author}}
 \date{}
 \maketitle
-\begin{multicols}{${columns}}
+\begin{multicols*}{${columns}}
 ${image}
 \tableofcontents
-\end{multicols}
+\end{multicols*}
 \pagebreak
-\begin{multicols}{${columns}}
+\begin{multicols*}{${columns}}
 \lstloadlanguages{C++,Java}
+
+${codes}
+
+\end{multicols*}
+\end{document}
 
 

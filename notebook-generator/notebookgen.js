@@ -130,10 +130,7 @@ module.exports = function (_path, options) {
     .replaceAll(templateParameter('paper'), options.paper)
     .replaceAll(templateParameter('image'), options.image)
     .replaceAll(templateParameter('title'), options.title)
-
-  template += walk(_path, 0)
-  template += '\\end{multicols}\n'
-  template += '\\end{document}'
+    .replaceAll(templateParameter('codes'), walk(_path, 0))
   
   let pos = options.output.lastIndexOf(".");
   tex_output = options.output.substr(0, pos < 0 ? options.output.length : pos) + ".tex";
