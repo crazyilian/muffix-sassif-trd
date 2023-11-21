@@ -2069,121 +2069,123 @@ struct ST {
 
 \subsection{ДД по неявному}
 \begin{lstlisting}[language=C++]
-pair<Node *, Node *> split(Node *now, int k) {
-    if (!now) {
-        return {nullptr, nullptr};
-    }
-    if (size(now->l) + 1 <= k) {
-        auto ans = split(now->r, k - 1 - size(now->l));
-        now->r = ans.first;
-        update_size(now);
-        return {now, ans.second};
-    }
-    auto ans = split(now->l, k);
-    now->l = ans.second;
-    update_size(now);
-    return {ans.first, now};
+pair<Node *, Node *> split(Node *t, int k) {
+  if (!now)
+    return {nullptr, nullptr};
+  int szl = size(t->l);
+  if (k <= szl) {
+    auto [l, r] = split(t->l, k);
+    t->l = r;
+    pull(t);
+    return {l, t};
+  } else {
+    auto [l, r] = split(t->r, k - szl - 1);
+    t->r = l;
+    pull(t);
+    return {t, r};
+  }
 }
 
 Node *merge(Node *l, Node *r) {
-    if (!l) {
-        return r;
-    }
-    if (!r) {
-        return l;
-    }
-    if (l->y <= r->y) {
-        auto ans = merge(l->r, r);
-        l->r = ans;
-        update_size(l);
-        return l;
-    }
-    auto ans = merge(l, r->l);
-    r->l = ans;
-    update_size(r);
+  if (!l)
     return r;
+  if (!r)
+    return l;
+  if (l->y < r->y) {
+    l->r = merge(l->r, r);
+    pull(l);
+    return l;
+  } else {
+    r->l = merge(l, r->l);
+    pull(r);
+    return r;
+  }
 }
 
-Node *insert(Node *root, int pos) {
-    auto r = split(root, pos);
-    Node *nn = new Node(pos);
-    root = merge(r.first, nn);
-    root = merge(root, r.second);
-    return root;
+void insert(Node *&root, int pos, int val) {
+  Node *new_v = new Node(val);
+  auto [l, r] = split(root, pos);
+  root = merge(merge(l, new_v), r);
 }
 
-Node *to_begin(Node *root, int l, int r) {
-    auto a = split(root, l);
-    auto b = split(a.second, r - l);
-    return merge(b.first, merge(a.first, b.second));
+void erase(Node *&root, int pos) {
+  auto [l, mr] = split(root, pos);
+  auto [m, r] = split(mr, 1);
+  root = merge(l, r);
 }
 
+int sum(Node *root) {
+  return root ? root->sm : 0;
+}
+
+// query [l, r)
+int query(Node *&root, int ql, int qr) {
+  auto [l, mr] = split(root, ql);
+  auto [m, r] = split(mr, qr - ql);
+  int res = sum(m);
+  root = merge(merge(l, m), r);
+  return res;
+}
 \end{lstlisting}
 
 \subsection{ДД}
 \begin{lstlisting}[language=C++]
-pair<Node *, Node *> split(Node *now, ll x) {
-    if (!now) {
-        return {nullptr, nullptr};
-    }
-    if (now->x <= x) {
-        auto ans = split(now->r, x);
-        now->r = ans.first;
-        update_sum(now);
-        return {now, ans.second};
-    }
-    auto ans = split(now->l, x);
-    now->l = ans.second;
-    update_sum(now);
-    return {ans.first, now};
+pair<Node *, Node *> split(Node *t, int x) {
+  if (!t)
+    return {nullptr, nullptr};
+  if (x <= t->x) {
+    auto [l, r] = split(t->l, x);
+    t->l = r;
+    pull(t);
+    return {l, t};
+  } else {
+    auto [l, r] = split(t->r, x);
+    t->r = l;
+    pull(t);
+    return {t, r};
+  }
 }
 
 Node *merge(Node *l, Node *r) {
-    if (!l) {
-        return r;
-    }
-    if (!r) {
-        return l;
-    }
-    if (l->y <= r->y) {
-        auto ans = merge(l->r, r);
-        l->r = ans;
-        update_sum(l);
-        return l;
-    }
-    auto ans = merge(l, r->l);
-    r->l = ans;
-    update_sum(r);
+  if (!l)
     return r;
+  if (!r)
+    return l;
+  if (l->y < r->y) {
+    l->r = merge(l->r, r);
+    pull(l);
+    return l;
+  } else {
+    r->l = merge(l, r->l);
+    pull(r);
+    return r;
+  }
 }
 
-Node *insert(Node *root, ll val) {
-    Node *new_v = new Node(val);
-    auto ans = split(root, val);
-    return merge(merge(ans.first, new_v), ans.second);
+void insert(Node *&root, int val) {
+  Node *new_v = new Node(val);
+  auto [l, r] = split(root, val);
+  root = merge(merge(l, new_v), r);
 }
 
-Node *del(Node *root, ll val) {
-    auto ans = split(root, val);
-    auto ans1 = split(ans.first, val - 1);
-    return merge(ans1.first, ans.second);
+void erase(Node *&root, int val) {
+  auto [l, mr] = split(root, val);
+  auto [m, r] = split(mr, val + 1);
+  root = merge(l, r);
 }
 
-ll get_sum(Node *root, ll l, ll r) {
-    if (!root) {
-        return 0;
-    }
-    auto ans = split(root, l - 1);
-    auto ans2 = split(ans.second, r);
-    if (!ans2.first) {
-        merge(merge(ans.first, ans2.first), ans2.second);
-        return 0;
-    }
-    ll res = ans2.first->sum_;
-    merge(merge(ans.first, ans2.first), ans2.second);
-    return res;
+int sum(Node *root) {
+  return root ? root->sm : 0;
 }
 
+// query [l, r)
+int query(Node *&root, int ql, int qr) {
+  auto [l, mr] = split(root, ql);
+  auto [m, r] = split(mr, qr);
+  int res = sum(m);
+  root = merge(merge(l, m), r);
+  return res;
+}
 \end{lstlisting}
 
 \subsection{Персистентное ДД}
@@ -2227,36 +2229,36 @@ struct ST {
 
 \subsection{Спарсы}
 \begin{lstlisting}[language=C++]
-struct Sparse_Table {
-    vector<vector<int>> st;
-    vector<int> max2;
+struct SparseTable {
+  vector<vector<int>> st;
+  vector<int> max2;
 
-    Sparse_Table(vector<int> &a) {
-        int n = a.size();
-        st.emplace_back();
-        for (int i = 0; i < n; i++) {
-            st[0].push_back(a[i]);
-        }
-        for (int i = 1; (1 << i) <= n; i++) {
-            st.emplace_back();
-            for (int p = 0; p + (1 << i) <= n; p++) {
-                st[i].push_back(min(st[i - 1][p], st[i - 1][p + (1 << (i - 1))]));
-            }
-        }
-        max2.resize(n + 1);
-        max2[1] = 0;
-        for (int i = 2; i <= n; i++) {
-            max2[i] = max2[i / 2] + 1;
-        }
+  SparseTable(vector<int> &a) {
+    int n = a.size();
+    st.push_back(a);
+    for (int i = 1; (1 << i) <= n; i++) {
+      st.emplace_back(n - (1 << i) + 1);
+      for (int p = 0; p < st[i].size(); p++) {
+        st[i][p] = min(st[i - 1][p], st[i - 1][p + (1 << (i - 1))]);
+      }
+      st.push_back(st[i - 1]);
+      for (int p = 0; p + (1 << (i - 1)) <= n; ++p) {
+        st[i][p] = min(st[i - 1][p], st[i - 1][p + (1 << (i - 1))]);
+      }
     }
+    max2.resize(n + 1);
+    max2[0] = -1;
+    max2[1] = 0;
+    for (int i = 2; i <= n; i++)
+      max2[i] = max2[i / 2] + 1;
+  }
 
-    int rmq(int l, int r) {
-        r++;
-        int i = max2[r - l];
-        return min(st[i][l], st[i][r - (1 << i)]);
-    }
+  // min a[l..r)
+  int rmq(int l, int r) {
+    int i = max2[r - l];
+    return min(st[i][l], st[i][r - (1 << i)]);
+  }
 };
-
 \end{lstlisting}
 
 \subsection{Фенвик (pref += x)}
@@ -2276,45 +2278,50 @@ struct Sparse_Table {
 
 \subsection{Фенвик}
 \begin{lstlisting}[language=C++]
-// Нумерация с 1
+// Нумерация с 0
 
-struct Fenwick_tree {
-    vector<vector<vector<int>>> ft;
+struct FenwickTree {
+  int n;
+  vector<vector<vector<int>>> ft;
 
-    Fenwick_tree(int n) {
-        ft.resize(n + 1, vector<vector<int>>(n + 1, vector<int>(n + 1)));
-    }
+  FenwickTree(int n) : n(n) {
+    ft.resize(n + 1, vector<vector<int>>(n + 1, vector<int>(n + 1)));
+  }
 
-    void upd(int x, int y, int z, int d) {
-        for (int x1 = x; x1 < ft.size(); x1 += x1 & -x1) {
-            for (int y1 = y; y1 < ft[x1].size(); y1 += y1 & -y1) {
-                for (int z1 = z; z1 < ft[x1][y1].size(); z1 += z1 & -z1) {
-                    ft[x1][y1][z1] += d;
-                }
-            }
+  // a[x][y][z] += d
+  void upd(int x, int y, int z, int d) {
+    x++, y++, z++;
+    for (int x1 = x; x1 <= n; x1 += x1 & -x1) {
+      for (int y1 = y; y1 <= n; y1 += y1 & -y1) {
+        for (int z1 = z; z1 <= n; z1 += z1 & -z1) {
+          ft[x1][y1][z1] += d;
         }
+      }
     }
+  }
 
-    int rsq(int x, int y, int z) {
-        int ans = 0;
-        for (int x1 = x; x1 > 0; x1 -= x1 & -x1) {
-            for (int y1 = y; y1 > 0; y1 -= y1 & -y1) {
-                for (int z1 = z; z1 > 0; z1 -= z1 & -z1) {
-                    ans += ft[x1][y1][z1];
-                }
-            }
+  // sum a[0..x)[0..y)[0..z)
+  int rsq(int x, int y, int z) {
+    int ans = 0;
+    for (int x1 = x; x1 > 0; x1 -= x1 & -x1) {
+      for (int y1 = y; y1 > 0; y1 -= y1 & -y1) {
+        for (int z1 = z; z1 > 0; z1 -= z1 & -z1) {
+          ans += ft[x1][y1][z1];
         }
-        return ans;
+      }
     }
+    return ans;
+  }
 
-    int sum_3d(int x1, int x2, int y1, int y2, int z1, int z2) {
-        int ans = rsq(x2, y2, z1 - 1) + rsq(x1 - 1, y2, z2) - rsq(x1 - 1, y2, z1 - 1);
-        ans += rsq(x2, y1 - 1, z2);
-        ans -= rsq(x2, y1 - 1, z1 - 1) + rsq(x1 - 1, y1 - 1, z2) - rsq(x1 - 1, y1 - 1, z1 - 1);
-        return rsq(x2, y2, z2) - ans;
-    }
+  // sum a[x1..x2)[y1..y2)[z1..x2)
+  int sum_3d(int x1, int x2, int y1, int y2, int z1, int z2) {
+    int ans = rsq(x2, y2, z2);
+    ans -= rsq(x1, y2, z2) + rsq(x2, y1, z2) + rsq(x2, y2, z1);
+    ans += rsq(x1, y1, z2) + rsq(x1, y2, z1) + rsq(x2, y1, z1);
+    ans -= rsq(x1, y1, z1);
+    return ans;
+  }
 };
-
 \end{lstlisting}
 
 

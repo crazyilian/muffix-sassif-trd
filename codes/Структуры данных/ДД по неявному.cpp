@@ -1,49 +1,57 @@
-pair<Node *, Node *> split(Node *now, int k) {
-    if (!now) {
-        return {nullptr, nullptr};
-    }
-    if (size(now->l) + 1 <= k) {
-        auto ans = split(now->r, k - 1 - size(now->l));
-        now->r = ans.first;
-        update_size(now);
-        return {now, ans.second};
-    }
-    auto ans = split(now->l, k);
-    now->l = ans.second;
-    update_size(now);
-    return {ans.first, now};
+pair<Node *, Node *> split(Node *t, int k) {
+  if (!now)
+    return {nullptr, nullptr};
+  int szl = size(t->l);
+  if (k <= szl) {
+    auto [l, r] = split(t->l, k);
+    t->l = r;
+    pull(t);
+    return {l, t};
+  } else {
+    auto [l, r] = split(t->r, k - szl - 1);
+    t->r = l;
+    pull(t);
+    return {t, r};
+  }
 }
 
 Node *merge(Node *l, Node *r) {
-    if (!l) {
-        return r;
-    }
-    if (!r) {
-        return l;
-    }
-    if (l->y <= r->y) {
-        auto ans = merge(l->r, r);
-        l->r = ans;
-        update_size(l);
-        return l;
-    }
-    auto ans = merge(l, r->l);
-    r->l = ans;
-    update_size(r);
+  if (!l)
     return r;
+  if (!r)
+    return l;
+  if (l->y < r->y) {
+    l->r = merge(l->r, r);
+    pull(l);
+    return l;
+  } else {
+    r->l = merge(l, r->l);
+    pull(r);
+    return r;
+  }
 }
 
-Node *insert(Node *root, int pos) {
-    auto r = split(root, pos);
-    Node *nn = new Node(pos);
-    root = merge(r.first, nn);
-    root = merge(root, r.second);
-    return root;
+void insert(Node *&root, int pos, int val) {
+  Node *new_v = new Node(val);
+  auto [l, r] = split(root, pos);
+  root = merge(merge(l, new_v), r);
 }
 
-Node *to_begin(Node *root, int l, int r) {
-    auto a = split(root, l);
-    auto b = split(a.second, r - l);
-    return merge(b.first, merge(a.first, b.second));
+void erase(Node *&root, int pos) {
+  auto [l, mr] = split(root, pos);
+  auto [m, r] = split(mr, 1);
+  root = merge(l, r);
 }
 
+int sum(Node *root) {
+  return root ? root->sm : 0;
+}
+
+// query [l, r)
+int query(Node *&root, int ql, int qr) {
+  auto [l, mr] = split(root, ql);
+  auto [m, r] = split(mr, qr - ql);
+  int res = sum(m);
+  root = merge(merge(l, m), r);
+  return res;
+}

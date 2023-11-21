@@ -1,62 +1,56 @@
-pair<Node *, Node *> split(Node *now, ll x) {
-    if (!now) {
-        return {nullptr, nullptr};
-    }
-    if (now->x <= x) {
-        auto ans = split(now->r, x);
-        now->r = ans.first;
-        update_sum(now);
-        return {now, ans.second};
-    }
-    auto ans = split(now->l, x);
-    now->l = ans.second;
-    update_sum(now);
-    return {ans.first, now};
+pair<Node *, Node *> split(Node *t, int x) {
+  if (!t)
+    return {nullptr, nullptr};
+  if (x <= t->x) {
+    auto [l, r] = split(t->l, x);
+    t->l = r;
+    pull(t);
+    return {l, t};
+  } else {
+    auto [l, r] = split(t->r, x);
+    t->r = l;
+    pull(t);
+    return {t, r};
+  }
 }
 
 Node *merge(Node *l, Node *r) {
-    if (!l) {
-        return r;
-    }
-    if (!r) {
-        return l;
-    }
-    if (l->y <= r->y) {
-        auto ans = merge(l->r, r);
-        l->r = ans;
-        update_sum(l);
-        return l;
-    }
-    auto ans = merge(l, r->l);
-    r->l = ans;
-    update_sum(r);
+  if (!l)
     return r;
+  if (!r)
+    return l;
+  if (l->y < r->y) {
+    l->r = merge(l->r, r);
+    pull(l);
+    return l;
+  } else {
+    r->l = merge(l, r->l);
+    pull(r);
+    return r;
+  }
 }
 
-Node *insert(Node *root, ll val) {
-    Node *new_v = new Node(val);
-    auto ans = split(root, val);
-    return merge(merge(ans.first, new_v), ans.second);
+void insert(Node *&root, int val) {
+  Node *new_v = new Node(val);
+  auto [l, r] = split(root, val);
+  root = merge(merge(l, new_v), r);
 }
 
-Node *del(Node *root, ll val) {
-    auto ans = split(root, val);
-    auto ans1 = split(ans.first, val - 1);
-    return merge(ans1.first, ans.second);
+void erase(Node *&root, int val) {
+  auto [l, mr] = split(root, val);
+  auto [m, r] = split(mr, val + 1);
+  root = merge(l, r);
 }
 
-ll get_sum(Node *root, ll l, ll r) {
-    if (!root) {
-        return 0;
-    }
-    auto ans = split(root, l - 1);
-    auto ans2 = split(ans.second, r);
-    if (!ans2.first) {
-        merge(merge(ans.first, ans2.first), ans2.second);
-        return 0;
-    }
-    ll res = ans2.first->sum_;
-    merge(merge(ans.first, ans2.first), ans2.second);
-    return res;
+int sum(Node *root) {
+  return root ? root->sm : 0;
 }
 
+// query [l, r)
+int query(Node *&root, int ql, int qr) {
+  auto [l, mr] = split(root, ql);
+  auto [m, r] = split(mr, qr);
+  int res = sum(m);
+  root = merge(merge(l, m), r);
+  return res;
+}
