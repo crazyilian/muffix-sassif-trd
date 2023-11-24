@@ -1,4 +1,5 @@
-vector<int> LCIS(vector<int> a, vector<int> b) { // 1-indexation ({0, a_1, ..., a_n}, {0, b_1, ..., b_m})
+// 1-indexation ({$0, a_1, ..., a_n$}, {$0, b_1, ..., b_m$})
+vector<int> lcis(vector<int> a, vector<int> b) {
   int n = (int) a.size() - 1, m = (int) b.size() - 1;
   vector<int> dp(m + 1), dp2(m + 1), par(m + 1);
   for (int i = 1; i <= n; i++) {

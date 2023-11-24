@@ -1,4 +1,5 @@
-vector<int> lis(vector<int> a) { // 0-indexation ({a_0, ..., a_{n-1}})
+// 0-indexation ({$a_0, ..., a_{n-1}$})
+vector<int> lis(vector<int> a) {
   int n = (int) a.size();
   vector<int> dp(n + 1, INF), ind(n + 1), par(n + 1); // INF > all a[i] required
   ind[0] = -INF;

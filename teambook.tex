@@ -950,7 +950,8 @@ for (int i = 0; i < N; i++) {
 
 \subsection{НВП}
 \begin{lstlisting}[language=C++]
-vector<int> lis(vector<int> a) { // 0-indexation ({a_0, ..., a_{n-1}})
+// 0-indexation ({$a_0, ..., a_{n-1}$})
+vector<int> lis(vector<int> a) {
   int n = (int) a.size();
   vector<int> dp(n + 1, INF), ind(n + 1), par(n + 1); // INF > all a[i] required
   ind[0] = -INF;
@@ -982,7 +983,8 @@ vector<int> lis(vector<int> a) { // 0-indexation ({a_0, ..., a_{n-1}})
 
 \subsection{НОВП}
 \begin{lstlisting}[language=C++]
-vector<int> LCIS(vector<int> a, vector<int> b) { // 1-indexation ({0, a_1, ..., a_n}, {0, b_1, ..., b_m})
+// 1-indexation ({$0, a_1, ..., a_n$}, {$0, b_1, ..., b_m$})
+vector<int> lcis(vector<int> a, vector<int> b) {
   int n = (int) a.size() - 1, m = (int) b.size() - 1;
   vector<int> dp(m + 1), dp2(m + 1), par(m + 1);
   for (int i = 1; i <= n; i++) {
