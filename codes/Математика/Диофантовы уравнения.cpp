@@ -20,7 +20,7 @@ bool cool_ext_gcd(int a, int b, int c, int &x, int &y) {
       return c == 0;
     } else {
       x = c / a;
-      return c % a == 0 && x >= 0;
+      return c % a == 0;
     }
   }
   auto [x0, y0] = ext_gcd(a, b);
