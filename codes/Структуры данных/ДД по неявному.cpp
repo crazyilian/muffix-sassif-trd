@@ -38,19 +38,20 @@ void insert(Node *&root, int pos, int val) {
 }
 
 void erase(Node *&root, int pos) {
-  auto [l, mr] = split(root, pos);
-  auto [m, r] = split(mr, 1);
+  auto [lm, r] = split(root, pos + 1);
+  auto [l, m] = split(lm, pos);
   root = merge(l, r);
 }
 
-int sum(Node *root) {
-  return root ? root->sm : 0;
+
+int sum(Node *v) {
+  return v ? v->sm : 0;
 }
 
 // query [l, r)
 int query(Node *&root, int ql, int qr) {
-  auto [l, mr] = split(root, ql);
-  auto [m, r] = split(mr, qr - ql);
+  auto [lm, r] = split(root, qr);
+  auto [l, m] = split(lm, ql);
   int res = sum(m);
   root = merge(merge(l, m), r);
   return res;

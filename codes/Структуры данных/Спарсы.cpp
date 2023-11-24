@@ -15,6 +15,7 @@ struct SparseTable {
         st[i][p] = min(st[i - 1][p], st[i - 1][p + (1 << (i - 1))]);
       }
     }
+    // max2[i] = i ? (32 - __builtin_clz(i - 1)) : 0
     max2.resize(n + 1);
     max2[0] = -1;
     max2[1] = 0;
