@@ -16,6 +16,6 @@ for (int v = 0; v < n; v++) {
       }
     }
     // ccl[0] = ccl.back()
-    // i.e for graph with edges (1, 2), (1, 3), (2, 3) -> ccl = [1, 2, 3, 1]
+    // i.e for graph with edges $(1, 2), (1, 3), (2, 3)$ \to $ccl = [1, 2, 3, 1]$
   }
 }
