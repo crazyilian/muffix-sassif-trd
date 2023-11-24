@@ -14,7 +14,7 @@
 \usepackage{multicol}
 \usepackage{graphicx}
 
-\geometry{verbose,landscape,a4paper,tmargin=0.7cm,bmargin=0.7cm,lmargin=0.7cm,rmargin=0.7cm}
+\geometry{verbose,landscape,a4paper,tmargin=0.7cm,bmargin=0.7cm,lmargin=0.3cm,rmargin=0.3cm}
 
 \usepackage{listings}
 \usepackage{color}
@@ -163,10 +163,10 @@
 \usepackage{fancyhdr}
 \pagestyle{fancyplain}
 \fancyhf{}
-\fancyhead[R]{\fontsize{12}{12}\selectfont\bf{\thepage}\hspace{-0.4cm}}
-\fancyhead[L]{\hspace{-0.4cm}\fontsize{8}{8}\selectfont\bf{NRU HSE (Andrianov, Lepeshov, Shulyatev)}}
+\fancyhead[R]{\fontsize{12}{12}\selectfont\bf{\thepage}}
+\fancyhead[L]{\fontsize{8}{8}\selectfont\bf{NRU HSE (Andrianov, Lepeshov, Shulyatev)}}
 \renewcommand{\headrulewidth}{0pt}
-\renewcommand\headrule{\vspace{-0.2cm}\hspace{-0.7cm}\rule{\paperwidth}{0.4pt}\vspace{-0.8cm}}
+\renewcommand\headrule{\vspace{-0.2cm}\hspace{-0.4cm}\rule{\paperwidth}{0.4pt}\vspace{-0.8cm}}
 
 \begin{document}
 
@@ -185,180 +185,336 @@
 
 \section{Геометрия}
 
-\subsection{2D}
-\begin{lstlisting}[language=Python]
-
-class Pt:
-    def dot(self, other):
-        return self.x * other.x + self.y * other.y
-
-    def cross(self, other):
-        return self.x * other.y - self.y * other.x
-
-    @staticmethod
-    def get_straight(self, other):
-        a = self.y - other.y
-        b = other.x - self.x
-        c = self.cross(other)
-        return a, b, c
-
-
-class Straight:
-
-    def __eq__(self, other):
-        if self.b != 0 or other.b != 0:
-            return self.a * other.b == other.a * self.b and self.c * other.b == other.c * self.b
-        val1 = math.sqrt(self.a ** 2 + self.b ** 2)
-        val2 = math.sqrt(other.a ** 2 + other.b ** 2)
-        a1, c1 = self.a / val1, self.c / val1
-        a2, c2 = other.a / val2, other.c / val2
-        if (a1 < 0) != (a2 < 0):
-            a1, a2, c1, c2 = a1, -a2, c1, -c2
-        return a1 == a2 and c1 == c2
-
-    def perpendicular(self, point: Pt):
-        return Straight(-self.b, self.a, self.b * point.x - self.a * point.y)
-
-    def get_value(self, point):
-        return self.a * point.x + self.b * point.y + self.c
-
-    def intersection(self, other):
-        d = Pt(self.a, self.b).cross(Pt(other.a, other.b))
-        dx = Pt(self.c, self.b).cross(Pt(other.c, other.b))
-        dy = Pt(self.a, self.c).cross(Pt(other.a, other.c))
-        return Pt(-dx / d, -dy / d)
-
-    def dist_from_point(self, point):
-        val = math.sqrt(self.a ** 2 + self.b ** 2)
-        return abs(Straight(self.a / val, self.b / val, self.c / val).get_value(point))
-
-    def parallel(self, dist):
-        val = math.sqrt(self.a ** 2 + self.b ** 2)
-        return Straight(self.a, self.b, self.c - dist * val)
-
-    def is_parallel(self, other):
-        return self.a * other.b == self.b * other.a
-
-    def is_perpendicular(self, other):
-        per = Straight(-self.b, self.a, 0)
-        return per.a * other.b == per.b * other.a
-
-
-class Triangle:
-    def intersection_medians(self):
-        return (self.A + self.B + self.C) / 3
-
-    def intersection_altitudes(self):
-        st1 = Straight(self.A, self.B).perpendicular(self.C)
-        st2 = Straight(self.A, self.C).perpendicular(self.B)
-        return st1.intersection(st2)
-
-    def intersection_middle_pers(self):
-        st1 = Straight(self.A, self.B).perpendicular((self.A + self.B) / 2)
-        st2 = Straight(self.A, self.C).perpendicular((self.A + self.C) / 2)
-        return st1.intersection(st2)
-
-
-class Circle:
-    def intersect_straight(self, st):
-        pt = st.get_point()
-        A = st.a ** 2 + st.b ** 2
-        B = 2 * (-st.b * (pt.x - self.center.x) + st.a * (pt.y - self.center.y))
-        C = (pt.x - self.center.x) ** 2 + (pt.y - self.center.y) ** 2 - self.radius ** 2
-        D = B ** 2 - 4 * A * C
-        if D < 0:
-            return []
-        D = math.sqrt(D)
-        vector = Pt(-st.b, st.a)
-        if D == 0:
-            t = -B / (2 * A)
-            return [pt + t * vector]
-        t1 = (-B - D) / (2 * A)
-        t2 = (-B + D) / (2 * A)
-        return [pt + t1 * vector, pt + t2 * vector]
-
-    def intersect_circle(self, other):
-        x1, x2 = self.center.x, other.center.x
-        y1, y2 = self.center.y, other.center.y
-        a = -2 * (x1 - x2)
-        b = -2 * (y1 - y2)
-        c = (x1 ** 2 - x2 ** 2) + (y1 ** 2 - y2 ** 2) - (self.radius ** 2 - other.radius ** 2)
-        return self.intersect_straight(Straight(a, b, c))
-
-    def is_own(self, pt):
-        return (pt.x - self.center.x) ** 2 + (pt.y - self.center.y) ** 2 == self.radius ** 2
-
-    def tangent_pts(self, pt):
-        if self.is_own(pt):
-            return [pt]
-        cir = Circle(pt, math.sqrt(abs(pt - self.center) ** 2 - self.radius ** 2))
-        return self.intersect_circle(cir)
-
-    def dist_by_circle(self, pt1, pt2):
-        pt1 -= self.center
-        pt2 -= self.center
-        ang = (pt1.polar_angle() - pt2.polar_angle()) % (2 * math.pi)
-        ang = min(ang, 2 * math.pi - ang)
-        return self.radius * ang
-
-
-\end{lstlisting}
-
 \subsection{3D}
 \begin{lstlisting}[language=C++]
-// TODO
+struct Pt {
+  double x, y, z;
+
+  Pt cross(const Pt& p2) const {
+    double nx = y * p2.z - z * p2.y;
+    double ny = z * p2.x - x * p2.z;
+    double nz = x * p2.y - y * p2.x;
+    return {nx, ny, nz};
+  }
+};
+
+struct Plane {
+  double a, b, c, d;
+  
+  double get_val(Pt p) {
+    return a * p.x + b * p.y + c * p.z + d;
+  }
+};
+
+Plane get_plane(Pt p1, Pt p2, Pt p3) {
+  Pt norm = (p2 - p1).cross(p3 - p1);
+  Plane pl(norm.x, norm.y, norm.z, 0);
+  pl.d = -pl.get_val(p1);
+  return pl;
+}
+\end{lstlisting}
+
+\subsection{Вектор, прямая, окружность}
+\begin{lstlisting}[language=C++]
+//// Вектор ////
+
+struct vctr {
+  dbl x, y;
+  vctr() {}
+  vctr(dbl x, dbl y) : x(x), y(y) {}
+
+  dbl operator%(const vctr &o) const { return x * o.x + y * o.y; }
+  dbl operator*(const vctr &o) const { return x * o.y - y * o.x; }
+  vctr operator+(const vctr &o) const { return {x + o.x, y + o.y}; }
+  vctr operator-(const vctr &o) const { return {x - o.x, y - o.y}; }
+  vctr operator-() const { return {-x, -y}; }
+  vctr operator*(const dbl d) const { return {x * d, y * d}; }
+  vctr operator/(const dbl d) const { return {x / d, y / d}; }
+  void operator+=(const vctr &o) { x += o.x, y += o.y; }
+  void operator-=(const vctr &o) { x -= o.x, y -= o.y; }
+  dbl dist2() const { return x * x + y * y; }
+  dbl dist() const { return sqrtl(dist2()); }
+  vctr norm() const { return *this / dist(); }
+};
+
+dbl angle_between(const vctr &a, const vctr &b) {
+  return atan2(b * a, b % a);
+}
+
+// y > 0 ? 0 : 1
+bool is2plane(const vctr &a) {
+  return sign(a.y) < 0 || (sign(a.y) == 0 && sign(a.x) < 0);
+}
+
+bool cmp_angle(const vctr &a, const vctr &b) {
+  bool pla = is2plane(a);
+  bool plb = is2plane(b);
+  if (pla != plb)
+    return pla < plb;
+  return sign(a * b) > 0;
+}
+
+//// Прямая ////
+
+struct line {
+  dbl a, b, c;
+
+  line() {}
+  line(dbl a, dbl b, dbl c) : a(a), b(b), c(c) {}
+  line(const vctr A, const vctr B) {
+    a = A.y - B.y;
+    b = B.x - A.x;
+    c = A * B;
+    assert(a != 0 || b != 0);
+  }
+
+  void operator*=(dbl x) { a *= x, b *= x, c *= x; }
+  void operator/=(dbl x) { a /= x, b /= x, c /= x; }
+  dbl get(const vctr P) const { return a * P.x + b * P.y + c; }
+  vctr anyPoint() const {
+    dbl x = -a * c / (a * a + b * b);
+    dbl y = -b * c / (a * a + b * b);
+    return vctr(x, y);
+  }
+  vctr getNorm() const {
+    return vctr(a, b) / sqrtl(a * a + b * b);
+  }
+  void normalize() {
+    dbl d = sqrtl(a * a + b * b);
+    a /= d;
+    b /= d;
+    c /= d;
+  }
+};
+
+bool isparallel(line l1, line l2) {
+  return vctr(l1.a, l1.b) * vctr(l2.a, l2.b) == 0;
+}
+
+vctr intersection(const line &l1, const line &l2) {
+  dbl x = (l1.c * l2.b - l2.c * l1.b) / (l2.a * l1.b - l2.b * l1.a);
+  dbl y = -(l1.c * l2.a - l2.c * l1.a) / (l2.a * l1.b - l2.b * l1.a);
+  return vctr(x, y);
+}
+
+// Серединный перпендикуляр (не биссектриса!)
+line bisection(const vctr A, const vctr B) {
+  vctr M = (A + B) / 2;
+  vctr AB = B - A;
+  vctr norm = vctr(AB.y, -AB.x);
+  return line(M, M + norm);
+}
+
+//// Окружность ////
+
+struct circle {
+  dbl x, y, r;
+
+  circle() {}
+  circle(dbl x, dbl y, dbl r) : x(x), y(y), r(r) {}
+  circle(vctr P, dbl r) : x(P.x), y(P.y), r(r) {}
+  circle(const vctr A, const vctr B) {
+    vctr C = (A + B) / 2;
+    x = C.x, y = C.y;
+    r = (A - B).dist() / 2;
+  }
+  circle(const vctr A, const vctr B, const vctr C) {
+    line l1 = bisection(A, B);
+    line l2 = bisection(B, C);
+    vctr P = intersection(l1, l2);
+    x = P.x, y = P.y;
+    r = (P - A).dist();
+  }
+
+  bool isin(const vctr P) const {
+    return (vctr(x, y) - P).dist2() <= r * r;
+  }
+  vctr cent() const { return vctr(x, y); }
+};
+
 
 \end{lstlisting}
 
 \subsection{Выпуклая оболочка}
 \begin{lstlisting}[language=C++]
-Pt start(0, 0);
+vctr minvctr(INF, INF);
 
-bool comp(Pt a, Pt b) {
-    ll ang = (a - start).cross(b - start);
-    if (ang < 0) {
-        return false;
-    } else if (ang > 0) {
-        return true;
-    }
-    return abs(start - a) < abs(start - b);
+bool cmp_convex_hull(const vctr &a, const vctr &b) {
+  vctr A = a - minvctr;
+  vctr B = b - minvctr;
+  auto sign_prod = sign(A * B);
+  if (sign_prod != 0)
+    return sign_prod > 0;
+  return A.dist2() < B.dist2();
 }
 
-vector<Pt> convex_hull(vector<Pt> points) {
-    int n = points.size();
-    start = points[0];
-    for (auto x : points) {
-        start = min(start, x);
-    }
-    sort(points.begin(), points.end(), comp);
-    vector<Pt> s = {points[0], points[1]};
-    for (int i = 2; i < n; i++) {
-        int k = s.size();
-        while (k > 1 && (s[k - 1] - s[k - 2]).cross(points[i] - s[k - 1]) <= 0) {
-            s.pop_back();
-            k = s.size();
-        }
-        s.push_back(points[i]);
-    }
-    return s;
+// minvctr updates here
+vector<vctr> get_convex_hull(vector<vctr> arr) {
+  minvctr = rotate_min_vctr(arr);
+  vector<vctr> hull;
+  sort(arr.begin(), arr.end(), cmp_convex_hull);
+  for (vctr &el : arr) {
+    while (hull.size() > 1 && sign((hull.back() - hull[hull.size() - 2]) * (el - hull.back())) <= 0)
+      hull.pop_back();
+    hull.push_back(el);
+  }
+  return hull;
 }
-
 
 \end{lstlisting}
 
 \subsection{Касательные из точки}
 \begin{lstlisting}[language=C++]
-// TODO
+pair<int, int> tangents_from_point(vector<vctr> &p, vctr &a) {
+  int n = p.size();
+  int logn = 31 - __builtin_clz(n);
+  auto findWithSign = [&](int val) {
+    int i = 0;
+    for (int k = logn; k >= 0; --k) {
+      int i1 = (i - (1 << k) + n) % n;
+      int i2 = (i + (1 << k)) % n;
+      if (sign((p[i1] - a) * (p[i] - a)) == val)
+        i = i1;
+      if (sign((p[i2] - a) * (p[i] - a)) == val)
+        i = i2;
+    }
+    return i;
+  };
+  return {findWithSign(1), findWithSign(-1)};
+}
 
 \end{lstlisting}
 
 \subsection{Касательные параллельные прямой}
 \begin{lstlisting}[language=C++]
-// TODO
+// find point with max signed distance to line
+int tangent_parallel_line(const vector<vctr> &p, line l) {
+  int n = p.size();
+  int i = 0;
+  int logn = 31 - __builtin_clz(n);
+  for (int k = logn; k >= 0; --k) {
+    int i1 = (i - (1 << k) + n) % n;
+    int i2 = (i + (1 << k)) % n;
+    if (l.get(p[i1]) > l.get(p[i]))
+      i = i1;
+    if (l.get(p[i2]) > l.get(p[i]))
+      i = i2;
+  }
+  return i;
+}
+
+\end{lstlisting}
+
+\subsection{Лежит ли точка в многоугольнике}
+\begin{lstlisting}[language=C++]
+// P starts with minvctr
+bool is_point_in_poly(vctr A, vector<vctr> &P) {
+  int n = P.size();
+  if (sign(A * P[1]) > 0)
+    return false;
+  int ind = lower_bound(P.begin(), P.end(), A, cmp_convex_hull) - P.begin();
+  if (ind == n || ind == 0)
+    return false;
+  if (ind == 0)
+    ind++;
+  vctr B = A - P[ind - 1];
+  vctr C = P[ind] - P[ind - 1];
+  return sign(C * B) >= 0;
+}
+
+\end{lstlisting}
+
+\subsection{Многоугольники}
+\begin{lstlisting}[language=C++]
+// Сдвиг многоугольника, чтобы начинался с минимального вектора
+vctr rotate_min_vctr(vector<vctr> &pts) {
+  int ind = 0;
+  for (int i = 1; i < pts.size(); ++i) {
+    if (is2plane(pts[i] - pts[ind]))
+      ind = i;
+  }
+  rotate(pts.begin(), pts.begin() + ind, pts.end());
+  return pts[0];
+}
+
+// Список вершин -> список рёбер
+vector<vctr> poly_to_edges(const vector<vctr> &A) {
+  vector<vctr> edg(A.size());
+  for (int i = 0; i < A.size(); ++i)
+    edg[i] = A[(i + 1) % A.size()] - A[i];
+  return edg;
+}
+
+\end{lstlisting}
+
+\subsection{Проверка на пересечение отрезков}
+\begin{lstlisting}[language=C++]
+bool is_intersection_seg(vctr A, vctr B, vctr C, vctr D) {
+  for (int i = 0; i < 2; ++i) {
+    auto l1 = A.x, r1 = B.x, l2 = C.x, r2 = D.x;
+    if (l1 > r1) swap(l1, r1);
+    if (l2 > r2) swap(l2, r2);
+    if (max(l1, l2) > min(r1, r2))
+      return false;
+    swap(A.x, A.y);
+    swap(B.x, B.y);
+    swap(C.x, C.y);
+    swap(D.x, D.y);
+  }
+  for (int _ = 0; _ < 2; ++_) {
+    auto v1 = (B - A) * (C - A);
+    auto v2 = (B - A) * (D - A);
+    if (sign(v1) * sign(v2) == 1)
+      return false;
+    swap(A, C);
+    swap(B, D);
+  }
+  return true;
+}
+
+\end{lstlisting}
+
+\subsection{Сумма Минковского}
+\begin{lstlisting}[language=C++]
+vector<vctr> minkowski_sum(const vector<vctr> &A, const vector<vctr> &B) {
+  auto edgA = poly_to_edges(A);
+  auto edgB = poly_to_edges(B);
+  vector<vctr> edgC(A.size() + B.size());
+  merge(edgA.begin(), edgA.end(), edgB.begin(), edgB.end(), edgC.begin(), cmp_angle);
+  vector<vctr> C(edgC.size());
+  C[0] = A[0] + B[0];
+  for (int i = 0; i + 1 < C.size(); ++i)
+    C[i + 1] = C[i] + edgC[i];
+  return C;
+}
 
 \end{lstlisting}
 
 \section{Графы}
+
+\subsection{2-SAT}
+\begin{lstlisting}[language=C++]
+for (int i = 1; i <= n; ++i) {
+  not_v[i] = i + n;
+  not_v[i + n] = i;
+}
+for (int i = 0; i < m; ++i) {
+  cin >> u >> v;
+  g[not_v[v]].push_back(u);
+  g[not_v[u]].push_back(v);
+  rg[u].push_back(not_v[v]);
+  rg[v].push_back(not_v[u]);
+}
+// делаем КСС, получаем comp
+for (int v = 1; v <= n; ++v) {
+  if (comp[v] == comp[not_v[v]]) {
+    cout << "UNSATISFIABLE\n";
+    return 0;
+  }
+}
+for (int v = 1; v <= n; ++v)
+  cout << (comp[v] > comp[not_v[v]] ? v : not_v[v]);
+\end{lstlisting}
 
 \subsection{Венгерский алгоритм}
 \begin{lstlisting}[language=C++]
@@ -409,8 +565,30 @@ vector<int> venger(vector<vector<int>> arr) {
 
 \subsection{Дейкстра за квадрат}
 \begin{lstlisting}[language=C++]
-// TODO
-
+// 0-based
+pair<vector<int>, vector<int>> dijkstra(int start, int n) {
+  vector<int> dist(n, INF);
+  vector<int> pred(n, -1);
+  vector<int> used(n);
+  dist[start] = 0;
+  for (int _ = 0; _ < n; ++_) {
+    int v = -1;
+    for (int i = 0; i < n; ++i) {
+      if (!used[i])
+        if (v == -1 || dist[v] > dist[i])
+          v = i;
+    }
+    if (v == -1) break;
+    for (auto [u, w] : g[v]) {
+      if (dist[u] > w + dist[v]) {
+        dist[u] = w + dist[v];
+        pred[u] = v;
+      }
+    }
+    used[v] = 1;
+  }
+  return {dist, pred};
+}
 \end{lstlisting}
 
 \subsection{Диниц}
@@ -512,39 +690,35 @@ signed main() {
 
 \subsection{КСС}
 \begin{lstlisting}[language=C++]
-void dfs1(int v) {
-    vis[v] = 1;
-    for (auto u : g[v]) {
-        if (!vis[u]) {
-            dfs1(u);
-        }
+void dfs1(int v, vector<int> &topsort) {
+  used[v] = 1;
+  for (auto u : g[v]) {
+    if (!used[u]) {
+      dfs1(u, topsort);
     }
-    topsort.push_back(v);
+  }
+  topsort.push_back(v);
 }
 
-void dfs2(int v) {
-    vis[v] = 1;
-    for (auto u : rg[v]) {
-        if (!vis[u]) {
-            dfs2(u);
-        }
+void dfs2(int v, int col) {
+  comp[v] = col;
+  for (auto u : rg[v]) {
+    if (!comp[u]) {
+      dfs2(u, col);
     }
-    comp.push_back(v);
+  }
 }
 
 signed main() {
-    for (int i = 1; i <= n; i++)
-        if (!vis[i])
-            dfs1(i);
-    reverse(topsort.begin(), topsort.end());
-    for (int j = 1; j <= n; j++) {
-        int vert = topsort[j - 1];
-        if (!vis[vert])
-            dfs2(vert);
-    }
+  vector<int> topsort;
+  for (int v = 1; v <= n; ++v)
+    if (!used[v])
+      dfs1(v, topsort);
+  reverse(all(topsort));
+  for (int j = 1; j <= n; ++j)
+    if (!comp[topsort[j - 1]])
+      dfs2(topsort[j - 1], j);
 }
-
-
 \end{lstlisting}
 
 \subsection{Минкост (Джонсон)}
@@ -812,8 +986,27 @@ signed main() {
 
 \subsection{Эйлеров цикл}
 \begin{lstlisting}[language=C++]
-// TODO
-
+// unconnected graph, deleting edges, set<int> g[N];
+for (int v = 0; v < n; v++) {
+  if (!g[v].empty()) {
+    vector<int> ccl;
+    vector<int> s = {v};
+    while (!s.empty()) {
+      int u = s.back();
+      if (g[u].empty()) {
+        ccl.pb(u);
+        s.pop_back();
+      } else {
+        int u2 = *g[u].begin();
+        g[u].erase(u2);
+        g[u2].erase(u);
+        s.pb(u2);
+      }
+    }
+    // ccl[0] = ccl.back()
+    // i.e for graph with edges $(1, 2), (1, 3), (2, 3) \to ccl = [1, 2, 3, 1]$
+  }
+}
 \end{lstlisting}
 
 \section{ДП}
@@ -1236,7 +1429,7 @@ struct Node {
   bool rev;
   int sz;
 
-  Node () {
+  Node() {
     ch[0] = nullptr;
     ch[1] = nullptr;
     p = nullptr;
@@ -1353,16 +1546,13 @@ const int MAXN = 100010;
 Node *nodes[MAXN];
 
 int main() {
-  ios_base::sync_with_stdio(false);
-  cin.tie(nullptr);
-  cout.tie(nullptr);
   int n, q;
   cin >> n >> q;
   for (int i = 0; i < n; ++i)
     nodes[i] = new Node();
   while (q--) {
     string s;
-    Int a, b;
+    int a, b;
     cin >> s >> a >> b;
     a--, b--;
     if (s[0] == 'g')
@@ -1403,8 +1593,13 @@ void solve() {
 
 \subsection{attribute\_packed}
 \begin{lstlisting}[language=C++]
-// TODO
-
+struct Kek {
+  int a;
+  char b;
+  // char[3]
+  int c;
+} __attribute__((packed));
+// sizeof = 9 (instead of 12)
 \end{lstlisting}
 
 \subsection{ordered\_set}
@@ -1430,32 +1625,32 @@ typedef tree<int, null_type, less<>, rb_tree_tag, tree_order_statistics_node_upd
 
 \subsection{Аллокатор Копелиовича}
 \begin{lstlisting}[language=C++]
-// TODO
+// Код вставить до инклюдов
 
+#include <cassert>
+
+const int MAX_MEM = 1e8; // ~100mb
+int mpos = 0;
+char mem[MAX_MEM];
+
+inline void *operator new(std::size_t n) {
+  assert((mpos += n) <= MAX_MEM);
+  return (void *)(mem + mpos - n);
+}
+
+inline void operator delete(void *) noexcept {} // must have!
+inline void operator delete(void *, std::size_t) noexcept {} // fix!!
 \end{lstlisting}
 
 \section{Математика}
 
-\subsection{2-SAT}
-\begin{lstlisting}[language=C++]
-// TODO
-
-\end{lstlisting}
-
 \subsection{FFT mod}
 \begin{lstlisting}[language=C++]
-#include <bits/stdc++.h>
-
-using namespace std;
-
-typedef long long ll;
-#define int long long
-
-const int MOD = 998244353; // 7*17 * 2^23 + 1
+const int MOD = 998244353; // $7 \cdot 17 \cdot 2^{23} + 1$
 const int GEN = 3;
-//const int MOD = 7340033; // 7 * 2^20 + 1
+//const int MOD = 7340033; // $7 \cdot 2^{20} + 1$
 //const int GEN = 5;
-//const int MOD = 469762049; // 7 * 2^26 + 1
+//const int MOD = 469762049; // $7 \cdot  2^{26} + 1$
 //const int GEN = 30;
 
 const int LOG = 20;
@@ -1464,46 +1659,46 @@ int tail[MAXN + 1];
 int OMEGA[MAXN + 1];
 
 int binpow(int x, int p) {
-    int res = 1;
-    while (p > 0) {
-        if (p & 1)
-            res = res * 1ll * x % MOD;
-        x = x * 1ll * x % MOD;
-        p >>= 1;
-    }
-    return res;
+  int res = 1;
+  while (p > 0) {
+    if (p & 1)
+      res = res * 1ll * x % MOD;
+    x = x * 1ll * x % MOD;
+    p >>= 1;
+  }
+  return res;
 }
 
 int omega(int n, int k) {
-    return OMEGA[MAXN / n * k];
+  return OMEGA[MAXN / n * k];
 }
 
 int gettail(int x, int lg) {
-    return tail[x] >> (LOG - lg);
+  return tail[x] >> (LOG - lg);
 }
 
 void calcomega() {
-    ll one = binpow(GEN, (MOD - 1) / MAXN);
-    OMEGA[0] = 1;
-    for (int i = 1; i < MAXN; ++i) {
-        OMEGA[i] = OMEGA[i - 1] * one % MOD;
-    }
+  long long one = binpow(GEN, (MOD - 1) / MAXN);
+  OMEGA[0] = 1;
+  for (int i = 1; i < MAXN; ++i) {
+    OMEGA[i] = OMEGA[i - 1] * one % MOD;
+  }
 }
 
 void calctail() {
-    int n = MAXN;
-    for (int x = 0; x < n; ++x) {
-        int res = 0;
-        for (int i = 0; i < LOG; ++i) {
-            res += ((x >> i) & 1) << (LOG - i - 1);
-        }
-        tail[x] = res;
+  int n = MAXN;
+  for (int x = 0; x < n; ++x) {
+    int res = 0;
+    for (int i = 0; i < LOG; ++i) {
+      res += ((x >> i) & 1) << (LOG - i - 1);
     }
+    tail[x] = res;
+  }
 }
 
 // Without precalc, tail[], OMEGA[]
 //
-//ll omega(int n, int k) {
+//long long omega(int n, int k) {
 //    return binpow(GEN, (MOD - 1) / n * k);
 //}
 //
@@ -1515,64 +1710,62 @@ void calctail() {
 //}
 
 void fft(vector<int> &A, int lg) {
-    int n = 1 << lg;
-    for (int i = 0; i < n; ++i) {
-        int j = gettail(i, lg);
-        if (i < j)
-            swap(A[i], A[j]);
+  int n = 1 << lg;
+  for (int i = 0; i < n; ++i) {
+    int j = gettail(i, lg);
+    if (i < j)
+      swap(A[i], A[j]);
+  }
+  for (int len = 2; len <= n; len *= 2) {
+    for (int i = 0; i < n; i += len) {
+      for (int j = 0; j < len / 2; ++j) {
+        auto v = A[i + j];
+        auto u = A[i + j + len / 2] * 1ll * omega(len, j) % MOD;
+        A[i + j] = (v + u) % MOD;
+        A[i + j + len / 2] = (v - u + MOD) % MOD;
+      }
     }
-    for (int len = 2; len <= n; len *= 2) {
-        for (int i = 0; i < n; i += len) {
-            for (int j = 0; j < len / 2; ++j) {
-                auto v = A[i + j];
-                auto u = A[i + j + len / 2] * 1ll * omega(len, j) % MOD;
-                A[i + j] = (v + u) % MOD;
-                A[i + j + len / 2] = (v - u + MOD) % MOD;
-            }
-        }
-    }
+  }
 }
 
 int inverse(int x) {
-    return binpow(x, MOD - 2);
+  return binpow(x, MOD - 2);
 }
 
 void invfft(vector<int> &A, int lg) {
-    int n = 1 << lg;
-    fft(A, lg);
-    for (auto &el : A)
-        el = el * 1ll * inverse(n % MOD) % MOD;
-    reverse(A.begin() + 1, A.end());
+  int n = 1 << lg;
+  fft(A, lg);
+  for (auto &el : A)
+    el = el * 1ll * inverse(n % MOD) % MOD;
+  reverse(A.begin() + 1, A.end());
 }
 
 vector<int> mul(vector<int> A, vector<int> B) {
-    int lg = 32 - __builtin_clz(A.size() + B.size() - 1);
-    int n = 1 << lg;
-    A.resize(n, 0);
-    B.resize(n, 0);
-    fft(A, lg);
-    fft(B, lg);
-    for (int i = 0; i < n; ++i)
-        A[i] = A[i] * 1ll * B[i] % MOD;
-    invfft(A, lg);
-    return A;
+  int lg = 32 - __builtin_clz(A.size() + B.size() - 1);
+  int n = 1 << lg;
+  A.resize(n, 0);
+  B.resize(n, 0);
+  fft(A, lg);
+  fft(B, lg);
+  for (int i = 0; i < n; ++i)
+    A[i] = A[i] * 1ll * B[i] % MOD;
+  invfft(A, lg);
+  return A;
 }
 
 signed main() {
-    ios_base::sync_with_stdio(false);
-    cin.tie(nullptr);
-    calctail();
-    calcomega();
-    int n, m;
-    cin >> n >> m;
-    vector<int> A(n), B(m);
-    for (int &el : A)
-        cin >> el;
-    for (int &el : B)
-        cin >> el;
-    auto C = mul(A, B);
-    for (auto el : C)
-        cout << el << ' ';
+  calctail(); // НЕ ЗАБЫТЬ
+  calcomega(); // НЕ ЗАБЫТЬ
+  int n, m;
+  cin >> n >> m;
+  vector<int> A(n), B(m);
+  for (int &el : A)
+    cin >> el;
+  for (int &el : B)
+    cin >> el;
+  auto C = mul(A, B);
+  for (auto el : C)
+    cout << el << ' ';
 }
 
 \end{lstlisting}
@@ -1580,217 +1773,381 @@ signed main() {
 \subsection{FFT}
 \begin{lstlisting}[language=C++]
 const double PI = acos(-1);
-const int LOG = 19;
+const int LOG = 20;
 const int MAXN = 1 << LOG;
 
 struct comp {
-    double x, y;
-    comp() : x(0), y(0) {}
-    comp(double x, double y) : x(x), y(y) {}
-    comp(int x) : x(x), y(0) {}
-    comp operator+(const comp &o) const {
-        return comp(x + o.x, y + o.y);
-    }
-    comp operator-(const comp &o) const {
-        return comp(x - o.x, y - o.y);
-    }
-    comp operator*(const comp &o) const {
-        return comp(x * o.x - y * o.y, x * o.y + y * o.x);
-    }
-    comp operator/(const int k) const {
-        return comp(x / k, y / k);
-    }
-    comp conj() const {
-        return comp(x, -y);
-    }
+  double x, y;
+  comp() : x(0), y(0) {}
+  comp(double x, double y) : x(x), y(y) {}
+  comp(int x) : x(x), y(0) {}
+  comp operator+(const comp &o) const {
+    return {x + o.x, y + o.y};
+  }
+  comp operator-(const comp &o) const {
+    return {x - o.x, y - o.y};
+  }
+  comp operator*(const comp &o) const {
+    return {x * o.x - y * o.y, x * o.y + y * o.x};
+  }
+  comp operator/(const int k) const {
+    return {x / k, y / k};
+  }
+  comp conj() const {
+    return {x, -y};
+  }
 };
 
 comp OMEGA[MAXN + 10];
 int tail[MAXN + 10];
 
 comp omega(int n, int k) {
-    return OMEGA[MAXN / n * k];
+  return OMEGA[MAXN / n * k];
 }
 
 void calcomega() {
-    for (int i = 0; i < MAXN; ++i) {
-        double x = 2 * PI * i / MAXN;
-        OMEGA[i] = {cos(x), sin(x)};
-    }
+  for (int i = 0; i < MAXN; ++i) {
+    double x = 2 * PI * i / MAXN;
+    OMEGA[i] = {cos(x), sin(x)};
+  }
 }
 
 void calctail() {
-    tail[0] = 0;
-    for (int i = 1; i < MAXN; ++i) {
-        tail[i] = (tail[i >> 1] >> 1) | ((i & 1) << (LOG - 1));
-    }
+  tail[0] = 0;
+  for (int i = 1; i < MAXN; ++i) {
+    tail[i] = (tail[i >> 1] >> 1) | ((i & 1) << (LOG - 1));
+  }
 }
 
 void fft(vector<comp> &A) {
-    int n = A.size();
-    for (int i = 0; i < n; ++i) {
-        if (i < tail[i])
-            swap(A[i], A[tail[i]]);
+  int n = A.size();
+  for (int i = 0; i < n; ++i) {
+    if (i < tail[i])
+      swap(A[i], A[tail[i]]);
+  }
+  for (int len = 2; len <= n; len *= 2) {
+    for (int i = 0; i < n; i += len) {
+      for (int j = 0; j < len / 2; ++j) {
+        auto v = A[i + j];
+        auto u = A[i + j + len / 2] * omega(len, j);
+        A[i + j] = v + u;
+        A[i + j + len / 2] = v - u;
+      }
     }
-    for (int len = 2; len <= n; len *= 2) {
-        for (int i = 0; i < n; i += len) {
-            for (int j = 0; j < len / 2; ++j) {
-                auto v = A[i + j];
-                auto u = A[i + j + len / 2] * omega(len, j);
-                A[i + j] = v + u;
-                A[i + j + len / 2] = v - u;
-            }
-        }
-    }
+  }
 }
 
 void fft2(vector<comp> &A, vector<comp> &B) {
-    int n = A.size();
-    vector<comp> C(n);
-    for (int i = 0; i < n; ++i) {
-        C[i].x = A[i].x;
-        C[i].y = B[i].x;
-    }
-    fft(C);
-    C.push_back(C[0]);
-    for (int i = 0; i < n; ++i) {
-        A[i] = (C[i] + C[n - i].conj()) / 2;
-        B[i] = (C[i] - C[n - i].conj()) / 2 * comp(0, -1);
-    }
+  int n = A.size();
+  vector<comp> C(n);
+  for (int i = 0; i < n; ++i) {
+    C[i].x = A[i].x;
+    C[i].y = B[i].x;
+  }
+  fft(C);
+  C.push_back(C[0]);
+  for (int i = 0; i < n; ++i) {
+    A[i] = (C[i] + C[n - i].conj()) / 2;
+    B[i] = (C[i] - C[n - i].conj()) / 2 * comp(0, -1);
+  }
 }
 void invfft(vector<comp> &A) {
-    fft(A);
-    for (auto &el : A)
-        el = el / MAXN;
-    reverse(A.begin() + 1, A.end());
+  fft(A);
+  for (auto &el : A)
+    el = el / MAXN;
+  reverse(A.begin() + 1, A.end());
 }
 
 vector<int> mul(vector<int> &a, vector<int> &b) {
-    vector<comp> A(MAXN, 0), B(MAXN, 0);
-    for (int i = 0; i < (int)a.size(); ++i)
-        A[i] = a[i];
-    for (int i = 0; i < (int)b.size(); ++i)
-        B[i] = b[i];
-    fft2(A, B);
-    for (int i = 0; i < MAXN; ++i)
-        A[i] = A[i] * B[i];
-    invfft(A);
-    vector<int> c(MAXN);
-    for (int i = 0; i < MAXN; ++i) {
-        int x = round(A[i].x);
-        c[i] = x;
-    }
-    while (!c.empty() && c.back() == 0)
-        c.pop_back();
-    return c;
+  vector<comp> A(MAXN, 0), B(MAXN, 0);
+  for (int i = 0; i < (int)a.size(); ++i)
+    A[i] = a[i];
+  for (int i = 0; i < (int)b.size(); ++i)
+    B[i] = b[i];
+  fft2(A, B);
+  for (int i = 0; i < MAXN; ++i)
+    A[i] = A[i] * B[i];
+  invfft(A);
+  vector<int> c(MAXN);
+  for (int i = 0; i < MAXN; ++i) {
+    int x = round(A[i].x);
+    c[i] = x;
+  }
+  while (!c.empty() && c.back() == 0)
+    c.pop_back();
+  return c;
 }
 
 signed main() {
-    ios_base::sync_with_stdio(false);
-    cin.tie(nullptr);
-    calcomega();
-    calctail();
-    string sa, sb;
-    cin >> sa >> sb;
-    reverse(sa.begin(), sa.end());
-    reverse(sb.begin(), sb.end());
-    vector<int> a(sa.size()), b(sb.size());
-    bool minus = false;
-    if (sa.back() == '-') {
-        minus ^= true;
-        sa.pop_back();
-    }
-    if (sb.back() == '-') {
-        minus ^= true;
-        sb.pop_back();
-    }
-    for (int i = 0; i < (int)sa.size(); ++i)
-        a[i] = sa[i] - '0';
-    for (int i = 0; i < (int)sb.size(); ++i)
-        b[i] = sb[i] - '0';
-    auto c = mul(a, b);
-    int shift = 0;
-    for (int i = 0; i < (int)c.size(); ++i) {
-        int x = c[i] + shift;
-        c[i] = x % 10;
-        shift = x / 10;
-    }
-    while (shift > 0) {
-        c.push_back(shift % 10);
-        shift /= 10;
-    }
-    while (!c.empty() && c.back() == 0)
-        c.pop_back();
-    if (c.empty()) {
-        cout << 0;
-        return 0;
-    }
-    if (minus)
-        cout << '-';
-    for (int i = c.size() - 1; i >= 0; --i)
-        cout << c[i];
+  calcomega(); // НЕ ЗАБЫТЬ
+  calctail(); // НЕ ЗАБЫТЬ
+  // your code here
 }
 
 \end{lstlisting}
 
 \subsection{Гаусс}
 \begin{lstlisting}[language=C++]
-// TODO битовый
-// TODO дабловый
-// TODO по модулю
+vector<vector<int>> gauss(vector<vector<int>> &a) {
+  int n = a.size();
+  int m = a[0].size();
+//  int det = 1;
+  for (int col = 0, row = 0; col < m && row < n; ++col) {
+    for (int i = row; i < n; ++i) {
+      if (a[i][col]) {
+        swap(a[i], a[row]);
+        if (i != row) {
+//          det *= -1;
+        }
+        break;
+      }
+    }
+    if (!a[row][col])
+      continue;
+    for (int i = 0; i < n; ++i) {
+      if (i != row && a[i][col]) {
+        int val = a[i][col] * inv(a[row][col]) % mod;
+        for (int j = col; j < m; ++j) {
+          a[i][j] -= val * a[row][j];
+          a[i][j] %= mod;
+        }
+      }
+    }
+    ++row;
+  }
+//  for (int i = 0; i < n; ++i) det = (det * a[i][i]) % mod;
+//  det = (det % mod + mod) % mod;
+// result in (-mod, mod)
+  return a;
+}
 
+pair<int, vector<int>> sle(vector<vector<int>> a, vector<int> b) {
+  int n = a.size();
+  int m = a[0].size();
+  assert(n == b.size());
+  for (int i = 0; i < n; ++i) {
+    a[i].push_back(b[i]);
+  }
+  a = gauss(a);
+  vector<int> x(m, 0);
+  for (int i = n - 1; i >= 0; --i) {
+    int leftmost = m;
+    for (int j = 0; j < m; ++j) {
+      if (a[i][j] != 0) {
+        leftmost = j;
+        break;
+      }
+    }
+    if (leftmost == m && a[i].back() != 0) return {-1, {}};
+    if (leftmost == m) continue;
+    int val = a[i].back();
+    for (int j = m - 1; j > leftmost; --j) {
+      val -= a[i][j] * x[j];
+      val %= mod;
+    }
+    x[leftmost] = (val * inv(a[i][leftmost]) % mod + mod) % mod;
+  }
+  return {1, x};
+}
 
+vector<bitset<N>> gauss_bit(vector<bitset<N>> a, int m) {
+  int n = a.size();
+  for (int col = 0, row = 0; col < m && row < n; ++col) {
+    for (int i = row; i < n; ++i) {
+      if (a[i][col]) {
+        swap(a[i], a[row]);
+        break;
+      }
+    }
+    if (!a[row][col])
+      continue;
+    for (int i = 0; i < n; ++i)
+      if (i != row && a[i][col])
+        a[i] ^= a[row];
+    ++row;
+  }
+  return a;
+}
 \end{lstlisting}
 
 \subsection{Диофантовы уравнения}
-\begin{lstlisting}[language=Python]
-def bezout(a, b):
-    x, xx, y, yy = 1, 0, 0, 1
-    while b:
-        q = a // b
-        a, b = b, a % b
-        x, xx = xx, x - xx*q
-        y, yy = yy, y - yy*q
-    return (a, x, y)
+\begin{lstlisting}[language=C++]
+pair<int, int> ext_gcd(int a, int b) {
+  int x1 = 1, y1 = 0, x2 = 0, y2 = 1;
+  while (b) {
+    int k = a / b;
+    x1 = x1 - x2 * k;
+    y1 = y1 - y2 * k;
+    swap(x1, x2);
+    swap(y1, y2);
+    a %= b;
+    swap(a, b);
+  }
+  return {x1, y1};
+}
 
-a, b, c = map(int, input().split())
-d, k, l = bezout(a, b)
-q = c // d
-x, y = q*k, q*l
-if c % d == 0:
-    x -= x // (b//d) * (b//d)
-    y = (c-a*x) // b
-
+bool cool_ext_gcd(int a, int b, int c, int &x, int &y) {
+  if (b == 0) {
+    y = 0;
+    if (a == 0) {
+      x = 0;
+      return c == 0;
+    } else {
+      x = c / a;
+      return c % a == 0;
+    }
+  }
+  auto [x0, y0] = ext_gcd(a, b);
+  int g = x0 * a + y0 * b;
+  if (c % g != 0)
+    return false;
+  x0 *= c / g;
+  y0 *= c / g;
+  int t = b / g;
+  int k = (-x0) / t;
+  if (x0 + t * k < 0)
+    k += t / abs(t);
+  x = x0 + t * k;
+  y = y0 - (a / g) * k;
+  return true;
+}
 \end{lstlisting}
 
 \subsection{КТО}
 \begin{lstlisting}[language=C++]
-// TODO
-
+// x = a_i % p_i
+vector<vector<int>> r(k, vector<int>(k));
+for (int i = 0; i < k; ++i)
+  for (int j = 0; j < k; ++j)
+    if (i != j)
+      r[i][j] = binpow(p[i] % p[j], p[j] - 2, p[j]);
+vector<int> x(k);
+for (int i = 0; i < k; ++i) {
+  x[i] = a[i];
+  for (int j = 0; j < i; ++j) {
+    x[i] = r[j][i] * (x[i] - x[j]);
+    x[i] = x[i] % p[i];
+    if (x[i] < 0) x[i] += p[i];
+  }
+}
+int ans = 0;
+for (int i = 0; i < k; ++i) {
+  int val = x[i];
+  for (int j = 0; j < i; ++j) val *= p[j];
+  ans += val;
+}
 \end{lstlisting}
 
 \subsection{Код Грея}
 \begin{lstlisting}[language=C++]
-// TODO
-
+for (int i = 0; i < (1 << n); i++) {
+  gray[i] = i ^ (i >> 1);
+}
 \end{lstlisting}
 
 \subsection{Линейное решето}
 \begin{lstlisting}[language=C++]
-// TODO
+const int N = 10000000;
+int lp[N + 1];
+vector<int> pr;
+for (int i = 2; i <= N; ++i) {
+  if (lp[i] == 0) {
+    lp[i] = i;
+    pr.push_back(i);
+  }
+  for (int j = 0; j < (int) pr.size() && pr[j] <= lp[i] && i * pr[j] <= N; ++j)
+    lp[i * pr[j]] = pr[j];
+}
+\end{lstlisting}
 
+\subsection{Миллер Рабин}
+\begin{lstlisting}[language=C++]
+// assuming '#define int long long' is ON (replace 'int' with 'long long' if not)
+// works for all n < 2^64
+const int MAGIC[7] = {2, 325, 9375, 28178, 450775, 9780504, 1795265022};
+
+int bpow(__int128 a, int x, int mod) {
+  a %= mod;
+  __int128 ans = 1;
+  while (x) {
+    if (x % 2) {
+      ans *= a;
+      ans %= mod;
+    }
+    a *= a;
+    a %= mod;
+    x /= 2;
+  }
+  return (int) ans;
+}
+
+bool is_prime(int n) {
+  if (n == 1) return false;
+  if (n <= 3) return true;
+  if (n % 2 == 0 || n % 3 == 0) return false;
+  int s = __builtin_ctzll(n - 1), d = n >> s; // $n-1 = 2^s \cdot d$
+  for (auto a : MAGIC) {
+    if (a % n == 0) {
+      continue;
+    }
+    int x = bpow(a, d, n);
+    for (int _ = 0; _ < s; _++) {
+      int y = bpow(x, 2, n);
+      if (y == 1 && x != 1 && x != n - 1) {
+        return false;
+      }
+      x = y;
+    }
+    if (x != 1) {
+      return false;
+    }
+  }
+  return true;
+}
 \end{lstlisting}
 
 \subsection{Ро-Поллард}
 \begin{lstlisting}[language=C++]
-// TODO
+long long mult(long long a, long long b, long long mod) {
+  return (__int128)a * b % mod;
+}
 
-\end{lstlisting}
+long long f(long long x, long long c, long long mod) {
+  return (mult(x, x, mod) + c) % mod;
+}
 
-\subsection{Символ Якоби, Лежандра}
-\begin{lstlisting}[language=C++]
-// TODO
+long long rho(long long n, long long x0=2, long long c=1) {
+  long long x = x0;
+  long long y = x0;
+  long long g = 1;
+  while (g == 1) {
+    x = f(x, c, n);
+    y = f(y, c, n);
+    y = f(y, c, n);
+    g = gcd(abs(x - y), n);
+  }
+  return g;
+}
 
+mt19937_64 rnd(time(nullptr));
+
+void factor(int n, vector<int> &pr) {
+  if (n == 4) {
+    factor(2, pr);
+    factor(2, pr);
+    return;
+  }
+  if (n == 1) {
+    return;
+  }
+  if (is_prime(n)) {
+    pr.push_back(n);
+    return;
+  }
+  int d = rho(n, abs((int) rnd()) % (n - 2) + 2, abs((int) rnd()) % 3 + 1);
+  factor(n / d, pr);
+  factor(d, pr);
+}
 \end{lstlisting}
 
 \section{Строки}
@@ -1881,59 +2238,64 @@ int main() {
 
 \subsection{Суффиксный автомат}
 \begin{lstlisting}[language=C++]
-struct Node {
-    int go[26];
-    int suf;
-    int len;
-};
-Node verts[MAXN];
-int cnt_v = 1;
-int max_v = 0;
+// Суфавтомат с подсчётом кол-ва различных подстрок
 
-void add(char c) {
-    c -= 'a';
-    int nv = cnt_v++;
-    verts[max_v].go[c] = nv;
-    verts[nv].len = verts[max_v].len + 1;
-    int v = max_v;
-    while (v != 0) {
-        if (verts[verts[v].suf].go[c] == 0) {
-            v = verts[v].suf;
-            verts[v].go[c] = nv;
-            verts[nv].len = max(verts[nv].len, verts[v].len + 1);
-            continue;
-        }
-        int vv = verts[v].suf, uu = verts[vv].go[c];
-        if (verts[vv].len + 1 == verts[uu].len) {
-            verts[nv].suf = uu;
-            break;
-        }
-        int v2 = cnt_v++;
-        for (int c2 = 0; c2 < 26; c2++) {
-            verts[v2].go[c2] = verts[uu].go[c2];
-        }
-        int to = verts[vv].go[c];
-        do {
-            if (verts[vv].go[c] == to) {
-                verts[vv].go[c] = v2;
-                verts[v2].len = max(verts[v2].len, verts[vv].len + 1);
-            } else {
-                break;
-            }
-            vv = verts[vv].suf;
-        } while (vv != 0);
-        if (verts[vv].go[c] == to) {
-            verts[vv].go[c] = v2;
-            verts[v2].len = max(verts[v2].len, verts[vv].len + 1);
-        }
-        verts[v2].suf = verts[uu].suf;
-        verts[uu].suf = verts[nv].suf = v2;
-        break;
+const int SIGMA = 26;
+int ans = 0;
+
+struct Node {
+  int go[SIGMA];
+  int s, p;
+  int len;
+
+  Node() {
+    fill(go, go + SIGMA, -1);
+    s = -1, p = -1;
+    len = 0;
+  }
+};
+
+int add(int A, int ch, vector<Node> &sa) {
+  int B = sa.size();
+  sa.emplace_back();
+  sa[B].p = A;
+  sa[B].s = 0;
+  sa[B].len = sa[A].len + 1;
+  for (; A != -1; A = sa[A].s) {
+    if (sa[A].go[ch] == -1) {
+      sa[A].go[ch] = B;
+      continue;
     }
-    max_v = nv;
+    int C = sa[A].go[ch];
+    if (sa[C].p == A) {
+      sa[B].s = C;
+      break;
+    }
+    int D = sa.size();
+    sa.emplace_back();
+    sa[D].s = sa[C].s;
+    sa[D].p = A;
+    sa[D].len = sa[A].len + 1;
+    sa[C].s = D;
+    sa[B].s = D;
+    copy(sa[C].go, sa[C].go + SIGMA, sa[D].go);
+    for (; A != -1 && sa[A].go[ch] == C; A = sa[A].s)
+      sa[A].go[ch] = D;
+    break;
+  }
+  ans += sa[B].len - sa[sa[B].s].len;
+  return B;
 }
 
-
+signed main() {
+  string s;
+  cin >> s;
+  vector<Node> sa(1);
+  int A = 0;
+  for (char c : s)
+    A = add(A, c - 'a', sa);
+  cout << ans;
+}
 \end{lstlisting}
 
 \subsection{Суффиксный массив}
@@ -2424,18 +2786,25 @@ struct SparseTable {
 };
 \end{lstlisting}
 
-\subsection{Фенвик (pref += x)}
+\subsection{Фенвик (+ на отрезке)}
 \begin{lstlisting}[language=C++]
-// a[left..right] += delta;  get_sum a[1..pos]
-//
-//void update(left, right, delta)
-//  T1.add(left, delta)
-//  T1.add(right + 1, -delta);
-//  T2.add(left, delta * (left - 1))
-//  T2.add(right + 1, -delta * right);
-//
-//int getSum(pos)
-//  return T1.sum(pos) * pos - T2.sum(pos)
+// a[l..r) += x
+void update(int l, int r, int x) {
+  T1.add(l, x);
+  T1.add(r, -x);
+  T2.add(l, -x * l);
+  T2.add(r, x * r);
+}
+
+// sum a[0..pos)
+int rsq(int pos) {
+  return T1.rsq(pos) * pos + T2.rsq(pos);
+}
+
+// sum a[l..r)
+int sum(int l, int r) {
+  return rsq(r) - rsq(l);
+}
 
 \end{lstlisting}
 
