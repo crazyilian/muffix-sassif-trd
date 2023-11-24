@@ -1,37 +1,39 @@
-tuple<int, int, int> ext_gcd(int a, int b) {
-  int x = 1, xx = 0, y = 0, yy = 1;
+pair<int, int> ext_gcd(int a, int b) {
+  int x1 = 1, y1 = 0, x2 = 0, y2 = 1;
   while (b) {
-    int q = a / b;
-    int a_copy = a;
-    a = b;
-    b = a_copy % b;
-    int x_copy = x, y_copy = y;
-    x = xx;
-    xx = x_copy - xx * q;
-    y = yy;
-    yy = y_copy - yy * q;
+    int k = a / b;
+    x1 = x1 - x2 * k;
+    y1 = y1 - y2 * k;
+    swap(x1, x2);
+    swap(y1, y2);
+    a %= b;
+    swap(a, b);
   }
-  return {a, x, y};
+  return {x1, y1};
 }
 
-int math_div(int a, int b) {
-  int res = a / b;
-  if (a % b < 0) --res;
-  return res;
-}
-
-signed main() {
-  int a, b, c;
-  // a, b, c in NN !!!
-  cin >> a >> b >> c;
-  auto [d, k, l] = ext_gcd(a, b);
-  int q = c / d;
-  int x = q * k, y = q * l;
-  if (c % d == 0) {
-    if (b != 0) {
-      x -= math_div(x, (b / d)) * (b / d);
-      y = (c - a * x) / b;
+bool cool_ext_gcd(int a, int b, int c, int &x, int &y) {
+  if (b == 0) {
+    y = 0;
+    if (a == 0) {
+      x = 0;
+      return c == 0;
+    } else {
+      x = c / a;
+      return c % a == 0 && x >= 0;
     }
-    cout << x << ' ' << y << '\n';
   }
+  auto [x0, y0] = ext_gcd(a, b);
+  int g = x0 * a + y0 * b;
+  if (c % g != 0)
+    return false;
+  x0 *= c / g;
+  y0 *= c / g;
+  int t = b / g;
+  int k = (-x0) / t;
+  if (x0 + t * k < 0)
+    k += t / abs(t);
+  x = x0 + t * k;
+  y = y0 - (a / g) * k;
+  return true;
 }
