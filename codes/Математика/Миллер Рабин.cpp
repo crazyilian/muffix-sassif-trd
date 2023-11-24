@@ -21,7 +21,7 @@ bool is_prime(int n) {
   if (n == 1) return false;
   if (n <= 3) return true;
   if (n % 2 == 0 || n % 3 == 0) return false;
-  int s = __builtin_ctzll(n - 1), d = n >> s;
+  int s = __builtin_ctzll(n - 1), d = n >> s; // $n-1 = 2^s \cdot d$
   for (auto a : MAGIC) {
     if (a % n == 0) {
       continue;
