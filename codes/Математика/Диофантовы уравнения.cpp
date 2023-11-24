@@ -28,8 +28,10 @@ signed main() {
   int q = c / d;
   int x = q * k, y = q * l;
   if (c % d == 0) {
-    x -= math_div(x, (b / d)) * (b / d);
-    y = (c - a * x) / b;
+    if (b != 0) {
+      x -= math_div(x, (b / d)) * (b / d);
+      y = (c - a * x) / b;
+    }
     cout << x << ' ' << y << '\n';
   }
 }
