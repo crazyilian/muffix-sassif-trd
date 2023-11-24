@@ -921,20 +921,99 @@ struct ST {
 
 \subsection{SOS-dp}
 \begin{lstlisting}[language=C++]
-// TODO
+// dp initial fill, a[] is given array, mb extra zeros
+for (int i = 0; i < (1 << N); i++) {
+  dp[i] = a[i];
+}
 
+// Classic SOS-dp, goal: dp[mask] = \sum a[submasks of mask]
+for (int i = 0; i < N; i++) {
+  for (int mask = 0; mask < (1 << N); mask++) {
+    if ((mask >> i) & 1) {
+      dp[mask] += dp[mask ^ (1 << i)];
+    }
+  }
+}
+
+// Overmasks SOS-dp, goal: dp[mask] = \sum a[overmasks of mask]
+for (int i = 0; i < N; i++) {
+  for (int mask = (1 << N) - 1; mask >= 0; mask--) {
+    if (((mask >> i) & 1) == 0) {
+      dp[mask] += dp[mask ^ (1 << i)];
+    }
+  }
+}
+
+// to inverse SOS-dp (restore original array by SOS-dp array):
+// use same code, but -= instead of += in dp transitions
 \end{lstlisting}
 
 \subsection{НВП}
 \begin{lstlisting}[language=C++]
-// TODO
-
+vector<int> lis(vector<int> a) { // 0-indexation ({a_0, ..., a_{n-1}})
+  int n = (int) a.size();
+  vector<int> dp(n + 1, INF), ind(n + 1), par(n + 1); // INF > all a[i] required
+  ind[0] = -INF;
+  dp[0] = -INF;
+  for (int i = 0; i < n; i++) {
+    int l = upper_bound(dp.begin(), dp.end(), a[i]) - dp.begin();
+    if (dp[l - 1] < a[i] && a[i] < dp[l]) {
+      dp[l] = a[i];
+      ind[l] = i;
+      par[i] = ind[l - 1];
+    }
+  }
+  vector<int> ans; // exact values
+  for (int l = n; l >= 0; l--) {
+    if (dp[l] < INF) {
+      int pi = ind[l];
+      ans.resize(l);
+      for (int i = 0; i < l; i++) {
+        ans[i] = a[pi]; // =pi if need indices
+        pi = par[pi];
+      }
+      reverse(ans.begin(), ans.end());
+      return ans;
+    }
+  }
+  return {};
+}
 \end{lstlisting}
 
 \subsection{НОВП}
 \begin{lstlisting}[language=C++]
-// TODO
-
+vector<int> LCIS(vector<int> a, vector<int> b) { // 1-indexation ({0, a_1, ..., a_n}, {0, b_1, ..., b_m})
+  int n = (int) a.size() - 1, m = (int) b.size() - 1;
+  vector<int> dp(m + 1), dp2(m + 1), par(m + 1);
+  for (int i = 1; i <= n; i++) {
+    int best = 0, best_idx = 0;
+    for (int j = 1; j <= m; j++) {
+      dp2[j] = dp[j];
+      if (a[i] == b[j]) {
+        dp2[j] = max(dp2[j], best + 1);
+        par[j] = best_idx;
+      }
+      if (a[i] > b[j] && best < dp[j]) {
+        best = dp[j];
+        best_idx = j;
+      }
+    }
+    swap(dp, dp2);
+  }
+  int pj = 0;
+  for (int j = 1; j <= m; j++) {
+    if (dp[pj] < dp[j]) {
+      pj = j;
+    }
+  }
+  vector<int> ans; // exact values
+  while (pj > 0) {
+    ans.push_back(b[pj]);
+    pj = par[pj];
+  }
+  reverse(ans.begin(), ans.end());
+  return ans;
+}
 \end{lstlisting}
 
 \section{Деревья}
@@ -2109,19 +2188,20 @@ void insert(Node *&root, int pos, int val) {
 }
 
 void erase(Node *&root, int pos) {
-  auto [l, mr] = split(root, pos);
-  auto [m, r] = split(mr, 1);
+  auto [lm, r] = split(root, pos + 1);
+  auto [l, m] = split(lm, pos);
   root = merge(l, r);
 }
 
-int sum(Node *root) {
-  return root ? root->sm : 0;
+
+int sum(Node *v) {
+  return v ? v->sm : 0;
 }
 
 // query [l, r)
 int query(Node *&root, int ql, int qr) {
-  auto [l, mr] = split(root, ql);
-  auto [m, r] = split(mr, qr - ql);
+  auto [lm, r] = split(root, qr);
+  auto [l, m] = split(lm, ql);
   int res = sum(m);
   root = merge(merge(l, m), r);
   return res;
@@ -2169,61 +2249,141 @@ void insert(Node *&root, int val) {
 }
 
 void erase(Node *&root, int val) {
-  auto [l, mr] = split(root, val);
-  auto [m, r] = split(mr, val + 1);
+  auto [lm, r] = split(root, val + 1);
+  auto [l, m] = split(lm, val);
   root = merge(l, r);
 }
 
-int sum(Node *root) {
-  return root ? root->sm : 0;
+int sum(Node *v) {
+  return v ? v->sm : 0;
 }
 
 // query [l, r)
 int query(Node *&root, int ql, int qr) {
-  auto [l, mr] = split(root, ql);
-  auto [m, r] = split(mr, qr);
+  auto [lm, r] = split(root, qr);
+  auto [l, m] = split(lm, ql);
   int res = sum(m);
   root = merge(merge(l, m), r);
   return res;
 }
 \end{lstlisting}
 
-\subsection{Персистентное ДД}
+\subsection{Персистентное ДД по неявному}
 \begin{lstlisting}[language=C++]
-// TODO
+mt19937 rnd(228);
+
+struct Node;
+int size(Node *);
+int sum(Node *);
+
+struct Node {
+  Node *l, *r;
+  int val, sz, sm;
+
+  Node(int val) : val(val), sz(1), sm(val) {
+    l = r = nullptr;
+  }
+  Node(int val, Node *l, Node *r) : val(val), l(l), r(r) {
+    sz = 1 + size(l) + size(r);
+    sm = val + sum(l) + sum(r);
+  }
+};
+
+int size(Node *v) {
+  return v ? v->sz : 0;
+}
+
+int sum(Node *v) {
+  return v ? v->sm : 0;
+}
+
+pair<Node *, Node *> split(Node *t, int x) {
+  if (!t)
+    return {nullptr, nullptr};
+  int lsz = size(t->l);
+  if (lsz >= x) {
+    auto [l, r] = split(t->l, x);
+    auto v = new Node(t->val, r, t->r);
+    return {l, v};
+  } else {
+    auto [l, r] = split(t->r, x - lsz - 1);
+    auto v = new Node(t->val, t->l, l);
+    return {v, r};
+  }
+}
+
+bool chooseleft(int lsz, int rsz) {
+  return rnd() % (lsz + rsz) < lsz;
+}
+
+Node *merge(Node *l, Node *r) {
+  if (!l)
+    return r;
+  if (!r)
+    return l;
+  if (chooseleft(l->sz, r->sz)) {
+    auto rr = merge(l->r, r);
+    auto v = new Node(l->val, l->l, rr);
+    return v;
+  } else {
+    auto ll = merge(l, r->l);
+    auto v = new Node(r->val, ll, r->r);
+    return v;
+  }
+}
+
+Node *insert(Node *root, int pos, int val) {
+  Node *new_v = new Node(val);
+  auto [l, r] = split(root, pos);
+  return merge(merge(l, new_v), r);
+}
+
+Node *erase(Node *root, int pos) {
+  auto [lm, r] = split(root, pos + 1);
+  auto [l, m] = split(lm, pos);
+  return merge(l, r);
+}
+
+// query [l, r)
+pair<int, Node *> query(Node *root, int ql, int qr) {
+  auto [lm, r] = split(root, qr);
+  auto [l, m] = split(lm, ql);
+  int res = sum(m);
+  auto new_root = merge(merge(l, m), r);
+  return {res, new_root};
+}
 
 \end{lstlisting}
 
 \subsection{Персистентное ДО}
 \begin{lstlisting}[language=C++]
-struct ST {
-    vector<Node *> roots;
-    int n;
+// left: v ? v->l : nullptr (same for right)
+// sum: v ? v->sm : 0
 
-    ST(vector<int> &a) {
-        start = a;
-        n = a.size();
-        roots.push_back(nullptr);
-        build(roots[0], 0, n);
-    }
+// v can be nullptr. returns new root of subtree
+Node *update(Node *v, int l, int r, int qi, int qx) {
+  if (qi < l || r <= qi)
+    return v;
+  if (l + 1 == r)
+    return new Node(qx);
+  int m = (l + r) / 2;
+  Node *u = new Node();
+  u->l = update(left(v), l, m, qi, qx);
+  u->r = update(right(v), m, r, qi, qx);
+  u->sm = sum(u->l) + sum(u->r);
+  return u;
+}
 
-    void update(Node *&now, Node *old, int l, int r, int pos, int qd) {
-        if (l + 1 == r) {
-            now = new_node(qd);
-            return;
-        }
-        now = new_node();
-        int m = (l + r) / 2;
-        if (pos < m) {
-            now->r = old->r;
-            update(now->l, old->l, l, m, pos, qd);
-        } else {
-            now->l = old->l;
-            update(now->r, old->r, m, r, pos, qd);
-        }
-        now->sm = now->l->sm + now->r->sm;
-    }
-};
+int get(Node *v, int l, int r, int ql, int qr) {
+  if (!v || qr <= l || r <= ql)
+    return 0;
+  if (ql <= l && r <= qr)
+    return v->sm;
+  int m = (l + r) / 2;
+  auto a = get(v->l, l, m, ql, qr);
+  auto b = get(v->r, m, r, ql, qr);
+  return a + b;
+}
 
 \end{lstlisting}
 
@@ -2246,6 +2406,7 @@ struct SparseTable {
         st[i][p] = min(st[i - 1][p], st[i - 1][p + (1 << (i - 1))]);
       }
     }
+    // max2[i] = i ? (32 - __builtin_clz(i - 1)) : 0
     max2.resize(n + 1);
     max2[0] = -1;
     max2[1] = 0;
