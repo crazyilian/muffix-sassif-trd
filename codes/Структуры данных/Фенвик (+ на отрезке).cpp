@@ -8,7 +8,7 @@ void update(int l, int r, int x) {
 
 // sum a[0..pos)
 int rsq(int pos) {
-  return T1.sum(pos) * pos + T2.sum(pos);
+  return T1.rsq(pos) * pos + T2.rsq(pos);
 }
 
 // sum a[l..r)
