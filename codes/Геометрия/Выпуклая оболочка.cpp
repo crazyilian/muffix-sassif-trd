@@ -1,32 +1,24 @@
-Pt start(0, 0);
+vctr minvctr(INF, INF);
 
-bool comp(Pt a, Pt b) {
-    ll ang = (a - start).cross(b - start);
-    if (ang < 0) {
-        return false;
-    } else if (ang > 0) {
-        return true;
-    }
-    return abs(start - a) < abs(start - b);
+bool cmp_convex_hull(const vctr &a, const vctr &b) {
+  vctr A = a - minvctr;
+  vctr B = b - minvctr;
+  auto sign_prod = sign(A * B);
+  if (sign_prod != 0)
+    return sign_prod > 0;
+  return A.dist2() < B.dist2();
 }
 
-vector<Pt> convex_hull(vector<Pt> points) {
-    int n = points.size();
-    start = points[0];
-    for (auto x : points) {
-        start = min(start, x);
-    }
-    sort(points.begin(), points.end(), comp);
-    vector<Pt> s = {points[0], points[1]};
-    for (int i = 2; i < n; i++) {
-        int k = s.size();
-        while (k > 1 && (s[k - 1] - s[k - 2]).cross(points[i] - s[k - 1]) <= 0) {
-            s.pop_back();
-            k = s.size();
-        }
-        s.push_back(points[i]);
-    }
-    return s;
+// minvctr updates here
+vector<vctr> get_convex_hull(vector<vctr> arr) {
+  minvctr = rotate_min_vctr(arr);
+  vector<vctr> hull;
+  sort(arr.begin(), arr.end(), cmp_convex_hull);
+  for (vctr &el : arr) {
+    while (hull.size() > 1 && sign((hull.back() - hull[hull.size() - 2]) * (el - hull.back())) <= 0)
+      hull.pop_back();
+    hull.push_back(el);
+  }
+  return hull;
 }
-
 
