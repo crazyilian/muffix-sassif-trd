@@ -4,7 +4,7 @@ struct Node {
   bool rev;
   int sz;
 
-  Node () {
+  Node() {
     ch[0] = nullptr;
     ch[1] = nullptr;
     p = nullptr;
@@ -121,16 +121,13 @@ const int MAXN = 100010;
 Node *nodes[MAXN];
 
 int main() {
-  ios_base::sync_with_stdio(false);
-  cin.tie(nullptr);
-  cout.tie(nullptr);
   int n, q;
   cin >> n >> q;
   for (int i = 0; i < n; ++i)
     nodes[i] = new Node();
   while (q--) {
     string s;
-    Int a, b;
+    int a, b;
     cin >> s >> a >> b;
     a--, b--;
     if (s[0] == 'g')
