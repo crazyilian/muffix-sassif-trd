@@ -1,10 +1,3 @@
-#include <bits/stdc++.h>
-
-using namespace std;
-
-typedef long long ll;
-#define int long long
-
 const int MOD = 998244353; // 7*17 * 2^23 + 1
 const int GEN = 3;
 //const int MOD = 7340033; // 7 * 2^20 + 1
@@ -113,10 +106,8 @@ vector<int> mul(vector<int> A, vector<int> B) {
 }
 
 signed main() {
-    ios_base::sync_with_stdio(false);
-    cin.tie(nullptr);
-    calctail();
-    calcomega();
+    calctail(); // НЕ ЗАБЫТЬ
+    calcomega(); // НЕ ЗАБЫТЬ
     int n, m;
     cin >> n >> m;
     vector<int> A(n), B(m);
@@ -128,4 +119,5 @@ signed main() {
     for (auto el : C)
         cout << el << ' ';
 }
+
 

@@ -1,5 +1,5 @@
 const double PI = acos(-1);
-const int LOG = 19;
+const int LOG = 20;
 const int MAXN = 1 << LOG;
 
 struct comp {
@@ -105,48 +105,8 @@ vector<int> mul(vector<int> &a, vector<int> &b) {
 }
 
 signed main() {
-    ios_base::sync_with_stdio(false);
-    cin.tie(nullptr);
-    calcomega();
-    calctail();
-    string sa, sb;
-    cin >> sa >> sb;
-    reverse(sa.begin(), sa.end());
-    reverse(sb.begin(), sb.end());
-    vector<int> a(sa.size()), b(sb.size());
-    bool minus = false;
-    if (sa.back() == '-') {
-        minus ^= true;
-        sa.pop_back();
-    }
-    if (sb.back() == '-') {
-        minus ^= true;
-        sb.pop_back();
-    }
-    for (int i = 0; i < (int)sa.size(); ++i)
-        a[i] = sa[i] - '0';
-    for (int i = 0; i < (int)sb.size(); ++i)
-        b[i] = sb[i] - '0';
-    auto c = mul(a, b);
-    int shift = 0;
-    for (int i = 0; i < (int)c.size(); ++i) {
-        int x = c[i] + shift;
-        c[i] = x % 10;
-        shift = x / 10;
-    }
-    while (shift > 0) {
-        c.push_back(shift % 10);
-        shift /= 10;
-    }
-    while (!c.empty() && c.back() == 0)
-        c.pop_back();
-    if (c.empty()) {
-        cout << 0;
-        return 0;
-    }
-    if (minus)
-        cout << '-';
-    for (int i = c.size() - 1; i >= 0; --i)
-        cout << c[i];
+    calcomega(); // НЕ ЗАБЫТЬ
+    calctail(); // НЕ ЗАБЫТЬ
+    // your code here
 }
 
