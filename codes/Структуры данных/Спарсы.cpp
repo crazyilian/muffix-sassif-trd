@@ -1,31 +1,21 @@
-struct SparseTable {
-  vector<vector<int>> st;
-  vector<int> max2;
+int tree[LOG][MAXN];
+int floorlog2[MAXN]; // i ? (31 - __builtin_clz(i)) : 0
 
-  SparseTable(vector<int> &a) {
-    int n = a.size();
-    st.push_back(a);
-    for (int i = 1; (1 << i) <= n; i++) {
-      st.emplace_back(n - (1 << i) + 1);
-      for (int p = 0; p < st[i].size(); p++) {
-        st[i][p] = min(st[i - 1][p], st[i - 1][p + (1 << (i - 1))]);
-      }
-      st.push_back(st[i - 1]);
-      for (int p = 0; p + (1 << (i - 1)) <= n; ++p) {
-        st[i][p] = min(st[i - 1][p], st[i - 1][p + (1 << (i - 1))]);
-      }
-    }
-    // max2[i] = i ? (32 - __builtin_clz(i - 1)) : 0
-    max2.resize(n + 1);
-    max2[0] = -1;
-    max2[1] = 0;
-    for (int i = 2; i <= n; i++)
-      max2[i] = max2[i / 2] + 1;
+void build(vector<int> &a) {
+  int n = a.size();
+  copy(a.begin(), a.end(), tree[0]);
+  for (int i = 1; i < LOG; ++i) {
+    int len = 1 << (i - 1);
+    for (int j = 0; j + len < n; ++j)
+      tree[i][j] = min(tree[i - 1][j], tree[i - 1][j + len]);
   }
+  for (int i = 2; i <= n; ++i)
+    floorlog2[i] = floorlog2[i / 2] + 1;
+}
 
-  // min a[l..r)
-  int rmq(int l, int r) {
-    int i = max2[r - l];
-    return min(st[i][l], st[i][r - (1 << i)]);
-  }
-};
+// min a[l..r)
+int get(int l, int r) {
+  int i = floorlog2[r - l];
+  return min(tree[i][l], tree[i][r - (1 << i)]);
+}
+
