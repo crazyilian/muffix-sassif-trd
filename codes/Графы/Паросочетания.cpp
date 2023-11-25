@@ -17,7 +17,8 @@ int dfs(int v, int c) {
 }
 
 signed main() {
-  fill(res, res + n, -1);
+  // n - в левой доле, m - в правой
+  fill(res, res + m, -1);
   for (int i = 0; i < n; ++i) {
     ans += dfs(i, i + 1);
   }
