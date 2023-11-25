@@ -58,9 +58,6 @@ struct line {
     dbl y = -b * c / (a * a + b * b);
     return vctr(x, y);
   }
-  vctr getNorm() const {
-    return vctr(a, b) / sqrtl(a * a + b * b);
-  }
   void normalize() {
     dbl d = sqrtl(a * a + b * b);
     a /= d;
