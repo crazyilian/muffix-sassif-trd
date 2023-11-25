@@ -866,49 +866,50 @@ for (int v = 1; v <= n; ++v)
 
 \subsection{Венгерский алгоритм}
 \begin{lstlisting}[language=C++]
-vector<int> venger(vector<vector<int>> arr) {
-    int n = (int) arr.size() - 1;
-    vector<int> u(n + 1), v(n + 1), p(n + 1), way(n + 1);
-    for (int i = 1; i <= n; i++) {
-        p[0] = i;
-        int ind = 0;
-        vector<int> minv(n + 1, INF), used(n + 1);
-        do {
-            used[ind] = 1;
-            int ind2 = p[ind], dlt = INF, ind3 = 0;
-            for (int j = 1; j <= n; j++)
-                if (!used[j]) {
-                    int cur = arr[ind2][j] - u[ind2] - v[j];
-                    if (cur < minv[j]) {
-                        minv[j] = cur;
-                        way[j] = ind;
-                    }
-                    if (minv[j] < dlt) {
-                        dlt = minv[j], ind3 = j;
-                    }
-                }
-            for (int j = 0; j <= n; j++)
-                if (used[j]) {
-                    u[p[j]] += dlt;
-                    v[j] -= dlt;
-                } else {
-                    minv[j] -= dlt;
-                }
-            ind = ind3;
-        } while (p[ind] != 0);
-        do {
-            int ind3 = way[ind];
-            p[ind] = p[ind3];
-            ind = ind3;
-        } while (ind);
-    }
-    vector<int> ans(n + 1);
-    for (int j = 1; j <= n; j++) {
-        ans[p[j]] = j;
-    }
-    return ans;
+pair<int, vector<int>> venger(vector<vector<int>> a) {
+// ищет минимальное по стоимости
+// работает только при n <= m
+// a - массив весов $(n+1) \times (m+1)$
+// a[0][..] = a[..][0] = 0
+// возвращает ans[i] = j если взяли ребро a[i][j]
+  int n = (int) a.size() - 1;
+  int m = (int) a[0].size() - 1;
+  vector<int> u(n + 1), v(m + 1), p(m + 1), way(m + 1);
+  for (int i = 1; i <= n; ++i) {
+    p[0] = i;
+    int j0 = 0;
+    vector<int> minv(m + 1, INF);
+    vector<char> used(m + 1, false);
+    do {
+      used[j0] = true;
+      int i0 = p[j0], delta = INF, j1;
+      for (int j = 1; j <= m; ++j)
+        if (!used[j]) {
+          int cur = a[i0][j] - u[i0] - v[j];
+          if (cur < minv[j])
+            minv[j] = cur, way[j] = j0;
+          if (minv[j] < delta)
+            delta = minv[j], j1 = j;
+        }
+      for (int j = 0; j <= m; ++j)
+        if (used[j])
+          u[p[j]] += delta, v[j] -= delta;
+        else
+          minv[j] -= delta;
+      j0 = j1;
+    } while (p[j0] != 0);
+    do {
+      int j1 = way[j0];
+      p[j0] = p[j1];
+      j0 = j1;
+    } while (j0);
+  }
+  int cost = -v[0];
+  vector<int> ans(n + 1);
+  for (int j = 1; j <= m; ++j)
+    ans[p[j]] = j;
+  return {cost, ans};
 }
-
 \end{lstlisting}
 
 \subsection{Дейкстра за квадрат}
@@ -941,99 +942,107 @@ pair<vector<int>, vector<int>> dijkstra(int start, int n) {
 
 \subsection{Диниц}
 \begin{lstlisting}[language=C++]
+struct edge {
+  int v, f, c, ind;
+};
+
 vector<edge> g[MAXN];
 pair<int, int> pred[MAXN];
 int d[MAXN];
 int inds[MAXN];
 
 bool dfs(int v, int final, int W) {
-    if (v == final) {
+  if (v == final) {
+    return true;
+  }
+  for (int i = inds[v]; i < (int) g[v].size(); i++) {
+    auto e = g[v][i];
+    if (e.f + W <= e.c && d[v] + 1 == d[e.v]) {
+      pred[e.v] = {v, i};
+      bool flag = dfs(e.v, final, W);
+      if (flag) {
         return true;
+      }
+      inds[v]++;
+    } else {
+      inds[v]++;
     }
-    for (int i = inds[v]; i < (int) g[v].size(); i++) {
-        auto e = g[v][i];
-        if (e.f + W <= e.c && d[v] + 1 == d[e.v]) {
-            pred[e.v] = {v, i};
-            bool flag = dfs(e.v, final, W);
-            if (flag) {
-                return true;
-            }
-            inds[v]++;
-        } else {
-            inds[v]++;
-        }
-    }
-    return false;
+  }
+  return false;
 }
 
 bool bfs(int start, int final, int W) {
-    fill(d, d + MAXN, INF);
-    d[start] = 0;
-    deque<int> q = {start};
-    while (!q.empty()) {
-        int v = q.front();
-        q.pop_front();
-        for (auto e : g[v]) {
-            if (e.f + W <= e.c && d[e.v] > d[v] + 1) {
-                d[e.v] = d[v] + 1;
-                q.push_back(e.v);
-            }
-        }
+  fill(d, d + MAXN, INF);
+  d[start] = 0;
+  deque<int> q = {start};
+  while (!q.empty()) {
+    int v = q.front();
+    q.pop_front();
+    for (auto e : g[v]) {
+      if (e.f + W <= e.c && d[e.v] > d[v] + 1) {
+        d[e.v] = d[v] + 1;
+        q.push_back(e.v);
+      }
     }
-    if (d[final] == INF) {
-        return false;
+  }
+  if (d[final] == INF) {
+    return false;
+  }
+  fill(inds, inds + MAXN, 0);
+  while (dfs(start, final, W)) {
+    int v = final;
+    int x = INF;
+    while (v != start) {
+      int ind = pred[v].second;
+      v = pred[v].first;
+      x = min(x, g[v][ind].c - g[v][ind].f);
     }
-    fill(inds, inds + MAXN, 0);
-    while (dfs(start, final, W)) {
-        int v = final;
-        int x = INF;
-        while (v != start) {
-            int ind = pred[v].second;
-            v = pred[v].first;
-            x = min(x, g[v][ind].c - g[v][ind].f);
-        }
-        v = final;
-        while (v != start) {
-            int ind = pred[v].second;
-            v = pred[v].first;
-            g[v][ind].f += x;
-            g[g[v][ind].v][g[v][ind].ind].f -= x;
-        }
+    v = final;
+    while (v != start) {
+      int ind = pred[v].second;
+      v = pred[v].first;
+      g[v][ind].f += x;
+      g[g[v][ind].v][g[v][ind].ind].f -= x;
     }
-    return true;
+  }
+  return true;
 }
 
 void Dinic(int start, int final) {
-    int W = (1LL << 30);
-    do {
-        while (bfs(start, final, W));
-        W /= 2;
-    } while (W >= 1);
+  int W = (1LL << 30);
+  do {
+    while (bfs(start, final, W));
+    W /= 2;
+  } while (W >= 1);
 }
 
 signed main() {
-    vector<pair<int, int>> edges;
-    for (int i = 0; i < m; i++) {
-        int u, v, c;
-        cin >> u >> v >> c;
-        edges.emplace_back(u, v);
-        g[u].push_back({v, 0, c, (int) g[v].size()});
-        g[v].push_back({u, 0, c, (int) g[u].size() - 1});
+  int n, m;
+  vector<pair<int, int>> edges;
+  for (int i = 0; i < m; i++) {
+    int u, v, c;
+    cin >> u >> v >> c;
+    edges.emplace_back(u, v);
+    g[u].push_back({v, 0, c, (int) g[v].size()});
+    // если ребро - ориентированно, 
+    // то обратная capacity = 0
+    g[v].push_back({u, 0, c, (int) g[u].size() - 1});
+  }
+  int start = 1, target = n;
+  Dinic(start, target);
+  int res = 0;
+  for (auto e : g[start]) {
+    res += e.f;
+  }
+  vector<int> cut;
+  for (int i = 0; i < m; i++) {
+    int u = edges[i].first, v = edges[i].second;
+    if ((d[u] != INF && d[v] == INF) ||
+        (d[u] == INF && d[v] != INF)) {
+      cut.push_back(i + 1);
     }
-    Dinic(1, n);
-    int res = 0;
-    for (auto e : g[1]) {
-        res += e.f;
-    }
-    vector<int> ans;
-    for (int i = 0; i < m; i++) {
-        int u = edges[i].first, v = edges[i].second;
-        if ((d[u] != INF && d[v] == INF) || (d[u] == INF && d[v] != INF)) {
-            ans.push_back(i + 1);
-        }
-    }
+  }
 }
-
 \end{lstlisting}
 
 \subsection{КСС}
@@ -1197,72 +1206,73 @@ signed main() {
 \subsection{Мосты}
 \begin{lstlisting}[language=C++]
 void dfs(int v, int par) {
-    vis[v] = 1;
-    up[v] = tin[v] = timer++;
-    for (auto u : g[v]) {
-        if (!vis[u]) {
-            dfs(u, v);
-            up[v] = min(up[v], up[u]);
-        } else if (u != par) {
-            up[v] = min(up[v], tin[u]);
-        }
-        if (up[u] > tin[v]) {
-            bridges.emplace_back(v, u);
-        }
+  vis[v] = 1;
+  up[v] = tin[v] = timer++;
+  for (auto u : g[v]) {
+    if (!vis[u]) {
+      dfs(u, v);
+      up[v] = min(up[v], up[u]);
+    } else if (u != par) {
+      up[v] = min(up[v], tin[u]);
     }
+    if (up[u] > tin[v]) {
+      bridges.emplace_back(v, u);
+    }
+  }
 }
 
 \end{lstlisting}
 
 \subsection{Паросочетания}
 \begin{lstlisting}[language=C++]
-bool dfs(int v, int c) {
-    if (used[v] == c) return false;
-    used[v] = c;
-    for (auto u : g[v]) {
-        if (res[u] == -1) {
-            res[u] = v;
-            return true;
-        }
+int dfs(int v, int c) {
+  if (used[v] == c) return 0;
+  used[v] = c;
+  for (auto u : g[v]) {
+    if (res[u] == -1) {
+      res[u] = v;
+      return 1;
     }
-    for (auto u : g[v]) {
-        if (dfs(res[u], c)) {
-            res[u] = v;
-            return true;
-        }
+  }
+  for (auto u : g[v]) {
+    if (dfs(res[u], c)) {
+      res[u] = v;
+      return 1;
     }
-    return false;
+  }
+  return 0;
 }
 
 signed main() {
-    for (int i = 0; i < s; ++i) {
-        ans += dfs(i, i + 1);
-    }
+  // n - в левой доле, m - в правой
+  fill(res, res + m, -1);
+  for (int i = 0; i < n; ++i) {
+    ans += dfs(i, i + 1);
+  }
 }
-
 \end{lstlisting}
 
 \subsection{Точки сочленения}
 \begin{lstlisting}[language=C++]
 void dfs(int v, int par) {
-    vis[v] = 1;
-    up[v] = tin[v] = timer++;
-    int child = 0;
-    for (auto u : g[v]) {
-        if (!vis[u]) {
-            dfs(u, v);
-            up[v] = min(up[v], up[u]);
-            if (up[u] >= tin[v] && par != -1) {
-                points.insert(v);
-            }
-            child++;
-        } else if (u != par) {
-            up[v] = min(up[v], tin[u]);
-        }
-    }
-    if (par == -1 && child >= 2) {
+  vis[v] = 1;
+  up[v] = tin[v] = timer++;
+  int child = 0;
+  for (auto u : g[v]) {
+    if (!vis[u]) {
+      dfs(u, v);
+      up[v] = min(up[v], up[u]);
+      if (up[u] >= tin[v] && par != -1) {
         points.insert(v);
+      }
+      child++;
+    } else if (u != par) {
+      up[v] = min(up[v], tin[u]);
     }
+  }
+  if (par == -1 && child >= 2) {
+    points.insert(v);
+  }
 }
 
 \end{lstlisting}
@@ -1270,66 +1280,67 @@ void dfs(int v, int par) {
 \subsection{Эдмондс-Карп}
 \begin{lstlisting}[language=C++]
 struct edge {
-    int v, f, c, ind;
+  int v, f, c, ind;
 };
 
 vector<edge> g[MAXN];
 
 bool bfs(int start, int final, int W) {
-    vector<int> d(MAXN, INF);
-    vector<pair<int, int>> pred(MAXN);
-    d[start] = 0;
-    deque<int> q = {start};
-    while (!q.empty()) {
-        int v = q.front();
-        q.pop_front();
-        for (int i = 0; i < (int) g[v].size(); i++) {
-            auto e = g[v][i];
-            if (e.f + W <= e.c && d[e.v] > d[v] + 1) {
-                d[e.v] = d[v] + 1;
-                pred[e.v] = {v, i};
-                q.push_back(e.v);
-            }
-        }
+  vector<int> d(MAXN, INF);
+  vector<pair<int, int>> pred(MAXN);
+  d[start] = 0;
+  deque<int> q = {start};
+  while (!q.empty()) {
+    int v = q.front();
+    q.pop_front();
+    for (int i = 0; i < (int) g[v].size(); i++) {
+      auto e = g[v][i];
+      if (e.f + W <= e.c && d[e.v] > d[v] + 1) {
+        d[e.v] = d[v] + 1;
+        pred[e.v] = {v, i};
+        q.push_back(e.v);
+      }
     }
-    if (d[final] == INF) {
-        return false;
-    }
-    int v = final;
-    int x = INF;
-    while (v != start) {
-        int ind = pred[v].second;
-        v = pred[v].first;
-        x = min(x, g[v][ind].c - g[v][ind].f);
-    }
-    v = final;
-    while (v != start) {
-        int ind = pred[v].second;
-        v = pred[v].first;
-        g[v][ind].f += x;
-        g[g[v][ind].v][g[v][ind].ind].f -= x;
-    }
-    return true;
+  }
+  if (d[final] == INF) {
+    return false;
+  }
+  int v = final;
+  int x = INF;
+  while (v != start) {
+    int ind = pred[v].second;
+    v = pred[v].first;
+    x = min(x, g[v][ind].c - g[v][ind].f);
+  }
+  v = final;
+  while (v != start) {
+    int ind = pred[v].second;
+    v = pred[v].first;
+    g[v][ind].f += x;
+    g[g[v][ind].v][g[v][ind].ind].f -= x;
+  }
+  return true;
 }
 
 signed main() {
-    for (int i = 0; i < m; i++) {
-        int u, v, c;
-        cin >> u >> v >> c;
-        g[u].push_back({v, 0, c, (int) g[v].size()});
-        g[v].push_back({u, 0, 0, (int) g[u].size() - 1});
-    }
-    int W = (1 << 30);
-    do {
-        while (bfs(1, n, W));
-        W /= 2;
-    } while (W >= 1);
-    int res = 0;
-    for (auto e : g[1]) {
-        res += e.f;
-    }
+  int n, m;
+  for (int i = 0; i < m; i++) {
+    int u, v, c;
+    cin >> u >> v >> c;
+    g[u].push_back({v, 0, c, (int) g[v].size()});
+    g[v].push_back({u, 0, 0, (int) g[u].size() - 1});
+  }
+  int start = 1, final = n;
+  int W = (1 << 30);
+  do {
+    while (bfs(start, final, W));
+    W /= 2;
+  } while (W >= 1);
+  int res = 0;
+  for (auto e : g[start]) {
+    res += e.f;
+  }
 }
-
 \end{lstlisting}
 
 \subsection{Эйлеров цикл}
@@ -1361,103 +1372,104 @@ for (int v = 0; v < n; v++) {
 
 \subsection{CHT}
 \begin{lstlisting}[language=C++]
+struct Line {
+  ld k, b;
+};
+
 pair<ld, ld> inter(Line a, Line b) {
-    ld x = (b.b - a.b) / (a.k - b.k);
-    ld y = a.k * x + a.b;
-    return {x, y};
-}
- 
-void add_line(ld k, ld b, vector<Line> &s, vector<pair<ld, ld>> &pts) {
-    while (s.size() >= 2) {
-        pair<ld, ld> x1 = inter(s.back(), s[s.size() - 2]);
-        pair<ld, ld> x2 = inter(s[s.size() - 2], {k, b});
-        if (x1 > x2) {
-            break;
-        }
-        pts.pop_back();
-        s.pop_back();
-    }
-    if (!s.empty()) {
-        pts.push_back(inter(s.back(), {k, b}));
-    }
-    s.push_back({k, b});
-}
- 
-ld bin_search(vector<Line> &s, ld x) {
-    int l = 0, r = s.size();
-    while (l + 1 < r) {
-        int m = (r + l) / 2;
-        auto kek = inter(s[m - 1], s[m]);
-        if (kek.first >= x) {
-            l = m;
-        } else {
-            r = m;
-        }
-    }
-    return s[l].k * x + s[l].b;
+  ld x = (b.b - a.b) / (a.k - b.k);
+  ld y = a.k * x + a.b;
+  return {x, y};
 }
 
+void add_line(ld k, ld b, vector<Line> &s, vector<pair<ld, ld>> &pts) {
+  while (s.size() >= 2) {
+    pair<ld, ld> x1 = inter(s.back(), s[s.size() - 2]);
+    pair<ld, ld> x2 = inter(s[s.size() - 2], {k, b});
+    if (x1 > x2) {
+      break;
+    }
+    pts.pop_back();
+    s.pop_back();
+  }
+  if (!s.empty()) {
+    pts.push_back(inter(s.back(), {k, b}));
+  }
+  s.push_back({k, b});
+}
+
+ld bin_search(vector<Line> &s, ld x) {
+  int l = 0, r = s.size();
+  while (l + 1 < r) {
+    int m = (r + l) / 2;
+    auto kek = inter(s[m - 1], s[m]);
+    if (kek.first >= x) {
+      l = m;
+    } else {
+      r = m;
+    }
+  }
+  return s[l].k * x + s[l].b;
+}
 \end{lstlisting}
 
 \subsection{Li Chao}
 \begin{lstlisting}[language=C++]
-// max
-
+// MAXIMUM
 struct Line {
-    int k, b;
+  int k, b;
 
-    int f(int x) {
-        return k * x + b;
-    }
+  int f(int x) {
+    return k * x + b;
+  }
 };
 
 struct ST {
-    vector<Line> st;
+  vector<Line> st;
 
-    ST(int n) {
-        Line ln = {0LL, -INF};
-        st.resize(4 * n, ln);
-    }
+  ST(int n) {
+    Line ln = {0LL, -INF};
+    st.resize(4 * n, ln);
+  }
 
-    void upd(int i, int l, int r, Line ln) {
-        int child = 1;
-        Line ln1 = ln;
-        int m = (l + r) / 2;
-        if (ln.f(m) > st[i].f(m)) {
-            if (ln.k < st[i].k) {
-                child = 2;
-            }
-            ln1 = st[i];
-            st[i] = ln;
-        } else {
-            if (st[i].k < ln.k) {
-                child = 2;
-            }
-        }
-        if (l + 1 < r) {
-            if (child == 1) {
-                upd(i * 2 + 1, l, m, ln1);
-            } else {
-                upd(i * 2 + 2, m, r, ln1);
-            }
-        }
+  void upd(int i, int l, int r, Line ln) {
+    int child = 1;
+    Line ln1 = ln;
+    int m = (l + r) / 2;
+    if (ln.f(m) > st[i].f(m)) {
+      if (ln.k < st[i].k) {
+        child = 2;
+      }
+      ln1 = st[i];
+      st[i] = ln;
+    } else {
+      if (st[i].k < ln.k) {
+        child = 2;
+      }
     }
+    if (l + 1 < r) {
+      if (child == 1) {
+        upd(i * 2 + 1, l, m, ln1);
+      } else {
+        upd(i * 2 + 2, m, r, ln1);
+      }
+    }
+  }
 
-    int res(int i, int l, int r, int x) {
-        if (l + 1 == r) {
-            return st[i].f(x);
-        }
-        int m = (l + r) / 2;
-        int val = st[i].f(x);
-        if (x < m) {
-            val = max(val, res(i * 2 + 1, l, m, x));
-        } else {
-            val = max(val, res(i * 2 + 2, m, r, x));
-        }
-        return val;
+  int res(int i, int l, int r, int x) {
+    if (l + 1 == r) {
+      return st[i].f(x);
     }
+    int m = (l + r) / 2;
+    int val = st[i].f(x);
+    if (x < m) {
+      val = max(val, res(i * 2 + 1, l, m, x));
+    } else {
+      val = max(val, res(i * 2 + 2, m, r, x));
+    }
+    return val;
+  }
 };
-
 \end{lstlisting}
 
 \subsection{SOS-dp}
@@ -1564,56 +1576,56 @@ vector<int> lcis(vector<int> a, vector<int> b) {
 \subsection{Centroid}
 \begin{lstlisting}[language=C++]
 void sizes(int v, int p) {
-    sz[v] = 1;
-    for (auto u : g[v]) {
-        if (u != p && !used[u]) {
-            sizes(u, v);
-            sz[v] += sz[u];
-        }
+  sz[v] = 1;
+  for (auto u : g[v]) {
+    if (u != p && !used[u]) {
+      sizes(u, v);
+      sz[v] += sz[u];
     }
+  }
 }
+
 int centroid(int v, int p, int n) {
-    for (int u : g[v]) {
-        if (sz[u] > n / 2 && u != p && !used[u]) {
-            return centroid(u, v, n);
-        }
+  for (int u : g[v]) {
+    if (sz[u] > n / 2 && u != p && !used[u]) {
+      return centroid(u, v, n);
     }
-    return v;
+  }
+  return v;
 }
 
 void dfs(int v, int p) {
-    ........
-    for (auto u : g[v]) {
-        if (u != p && !used[u]) {
-            dfs(u, v);
-        }
+  // code
+  for (auto u : g[v]) {
+    if (u != p && !used[u]) {
+      dfs(u, v);
     }
+  }
 }
 
 void solve(int v) {
-    sizes(v, -1);
-    .........
-    for (auto u : g[v]) {
-        if (!used[u]) {
-            ...........
-            dfs(u, v);   
-            ..................     
-        }
+  sizes(v, -1);
+  // code (?)
+  for (auto u : g[v]) {
+    if (!used[u]) {
+      // code (?)
+      dfs(u, v);
+      // сохраняем результаты dfs
     }
-    .....................
-    used[v] = 1;
-    for (int u : g[v]) {
-        if (!used[u]) {
-            solve(centroid(u, v, sz[u]));
-        }
+  }
+  // code (сливаем результаты dfs)
+  used[v] = 1;
+  for (int u : g[v]) {
+    if (!used[u]) {
+      solve(centroid(u, v, sz[u]));
     }
-}
-int main() {
-    sizes(0, -1);
-    solve(centroid(0, -1, n));
+  }
 }
 
-
+signed main() {
+  sizes(0, -1);
+  solve(centroid(0, -1, n));
+}
 \end{lstlisting}
 
 \subsection{HLD}
@@ -1628,52 +1640,52 @@ int depth[MAXN];
 vector<vector<int>> up(MAXN, vector<int>(L + 1));
 
 void dfs(int v, int p) {
-    up[v][0] = p;
-    for (int i = 1; i <= L; i++) {
-        up[v][i] = up[up[v][i - 1]][i - 1];
+  up[v][0] = p;
+  for (int i = 1; i <= L; i++) {
+    up[v][i] = up[up[v][i - 1]][i - 1];
+  }
+  for (int u : g[v]) {
+    if (u != p) {
+      dfs(u, v);
     }
-    for (int u : g[v]) {
-        if (u != p) {
-            dfs(u, v);
-        }
-    }
+  }
 }
 
 int lca(int u, int v) {
-    if (u == v) {
-        return u;
+  if (u == v) {
+    return u;
+  }
+  int du = depth[u], dv = depth[v];
+  if (du < dv) {
+    swap(du, dv);
+    swap(u, v);
+  }
+  for (int i = L; i >= 0; i--) {
+    if (du - (int) pow(2, i) >= dv) {
+      u = up[u][i];
+      du -= (int) pow(2, i);
     }
-    int du = depth[u], dv = depth[v];
-    if (du < dv) {
-        swap(du, dv);
-        swap(u, v);
+  }
+  if (u == v) {
+    return u;
+  }
+  for (int i = L; i >= 0; i--) {
+    if (up[u][i] != up[v][i]) {
+      u = up[u][i];
+      v = up[v][i];
     }
-    for (int i = L; i >= 0; i--) {
-        if (du - (int) pow(2, i) >= dv) {
-            u = up[u][i];
-            du -= (int) pow(2, i);
-        }
-    }
-    if (u == v) {
-        return u;
-    }
-    for (int i = L; i >= 0; i--) {
-        if (up[u][i] != up[v][i]) {
-            u = up[u][i];
-            v = up[v][i];
-        }
-    }
-    return up[u][0];
+  }
+  return up[u][0];
 }
 
 void dfs1(int v, int p) {
-    sz[v] = 1;
-    for (int u : g[v]) {
-        if (u != p) {
-            dfs1(u, v);
-            sz[v] += sz[u];
-        }
+  sz[v] = 1;
+  for (int u : g[v]) {
+    if (u != p) {
+      dfs1(u, v);
+      sz[v] += sz[u];
     }
+  }
 }
 
 int cnt = 0;
@@ -1682,91 +1694,90 @@ int pred[MAXN];
 int rup[MAXN];
 
 void dfs2(int v, int p, int root, int dep = 0) {
-    depth[v] = dep;
-    nn[v] = cnt++;
-    pred[v] = p;
-    rup[v] = root;
-    int mx = 0;
-    int vert = -1;
-    for (int u : g[v]) {
-        if (u != p) {
-            if (mx < sz[u]) {
-                mx = sz[u];
-                vert = u;
-            }
-        }
+  depth[v] = dep;
+  nn[v] = cnt++;
+  pred[v] = p;
+  rup[v] = root;
+  int mx = 0;
+  int vert = -1;
+  for (int u : g[v]) {
+    if (u != p) {
+      if (mx < sz[u]) {
+        mx = sz[u];
+        vert = u;
+      }
     }
-    if (vert != -1) {
-        dfs2(vert, v, root, dep + 1);
+  }
+  if (vert != -1) {
+    dfs2(vert, v, root, dep + 1);
+  }
+  for (int u : g[v]) {
+    if (u != p && u != vert) {
+      dfs2(u, v, u, dep + 1);
     }
-    for (int u : g[v]) {
-        if (u != p && u != vert) {
-            dfs2(u, v, u, dep + 1);
-        }
-    }
+  }
 }
 
 ST st({});
 int n;
 
 int mx_path_up(int u, int v) {
-    if (depth[u] < depth[v]) {
-        swap(u, v);
+  if (depth[u] < depth[v]) {
+    swap(u, v);
+  }
+  int res = -INF;
+  while (true) {
+    int root = rup[u];
+    if (depth[root] <= depth[v]) {
+      res = max(res, st.rmq(0, 0, n, nn[v], nn[u] + 1));
+      break;
     }
-    int res = -INF;
-    while (true) {
-        int root = rup[u];
-        if (depth[root] <= depth[v]) {
-            res = max(res, st.rmq(0, 0, n, nn[v], nn[u] + 1));
-            break;
-        }
-        res = max(res, st.rmq(0, 0, n, nn[root], nn[u] + 1));
-        u = pred[rup[u]];
-    }
-    return res;
+    res = max(res, st.rmq(0, 0, n, nn[root], nn[u] + 1));
+    u = pred[rup[u]];
+  }
+  return res;
 }
 
 int mx_path(int u, int v) {
-    int vert = lca(u, v);
-    return max(mx_path_up(u, vert), mx_path_up(v, vert));
+  int vert = lca(u, v);
+  return max(mx_path_up(u, vert), mx_path_up(v, vert));
 }
 
 void change(int u, int qd) {
-    st.update(0, 0, n, nn[u], qd);
+  st.update(0, 0, n, nn[u], qd);
 }
 
 signed main() {
-    cin >> n;
-    vector<int> hs(n);
-    for (auto &x : hs) {
-        cin >> x;
+  cin >> n;
+  vector<int> hs(n);
+  for (auto &x : hs) {
+    cin >> x;
+  }
+  for (int i = 0; i < n - 1; i++) {
+    cin >> u1 >> v1;
+    g[u1].push_back(v1);
+    g[v1].push_back(u1);
+  }
+  dfs1(1, -1);
+  dfs(1, 1);
+  dfs2(1, -1, 1);
+  vector<int> nhs(n);
+  for (int i = 1; i <= n; i++) {
+    nhs[nn[i]] = hs[i - 1];
+  }
+  st = *new ST(nhs);
+  char op;
+  int q;
+  cin >> q;
+  while (q--) {
+    cin >> op >> v1 >> u1;
+    if (op == '?') {
+      cout << mx_path(u1, v1) << endl;
+    } else {
+      change(v1, u1);
     }
-    for (int i = 0; i < n - 1; i++) {
-        cin >> u1 >> v1;
-        g[u1].push_back(v1);
-        g[v1].push_back(u1);
-    }
-    dfs1(1, -1);
-    dfs(1, 1);
-    dfs2(1, -1, 1);
-    vector<int> nhs(n);
-    for (int i = 1; i <= n; i++) {
-        nhs[nn[i]] = hs[i - 1];
-    }
-    st = *new ST(nhs);
-    char op;
-    int q;
-    cin >> q;
-    while (q--) {
-        cin >> op >> v1 >> u1;
-        if (op == '?') {
-            cout << mx_path(u1, v1) << endl;
-        } else {
-            change(v1, u1);
-        }
-    }
+  }
 }
-
 \end{lstlisting}
 
 \subsection{Link-cut}
@@ -2504,86 +2515,93 @@ void factor(int n, vector<int> &pr) {
 
 \subsection{Z-функция}
 \begin{lstlisting}[language=C++]
-int main() {
-    vector<int> z(n, 0);
-    z[0] = n;
-    int l = 0, r = 0;
-    for (int i = 1; i < n; i++) {
-        if (i < r) {
-            z[i] = min(z[i - l], r - i);
-        }
-        while (i + z[i] < n && s[z[i]] == s[i + z[i]]) {
-            z[i]++;
-        }
-        if (i + z[i] > r) {
-            l = i;
-            r = i + z[i];
-        }
+vector<int> z_func(string s) {
+  int n = s.size();
+  vector<int> z(n, 0);
+  z[0] = n;
+  int l = 0, r = 0;
+  for (int i = 1; i < n; i++) {
+    if (i < r) {
+      z[i] = min(z[i - l], r - i);
     }
+    while (i + z[i] < n && s[z[i]] == s[i + z[i]]) {
+      z[i]++;
+    }
+    if (i + z[i] > r) {
+      l = i;
+      r = i + z[i];
+    }
+  }
+  return z;
 }
-
 \end{lstlisting}
 
 \subsection{Ахо-Корасик}
 \begin{lstlisting}[language=C++]
+int go[MAXN][ALPH];
+vector<int> term[MAXN];
+int par[MAXN], suf[MAXN];
+char par_c[MAXN];
+vector<int> g[MAXN];
+
 int cntv = 1;
 
 void add(string &s) {
-    static int cnt_s = 1;
-    int v = 0;
-    for (char el : s) {
-        if (go[v][el - 'a'] == 0) {
-            go[v][el - 'a'] = cntv;
-            par[cntv] = v;
-            par_c[cntv] = el;
-            cntv++;
-        }
-        v = go[v][el - 'a'];
+  static int cnt_s = 1;
+  int v = 0;
+  for (char el: s) {
+    if (go[v][el - 'a'] == 0) {
+      go[v][el - 'a'] = cntv;
+      par[cntv] = v;
+      par_c[cntv] = el;
+      cntv++;
     }
-    term[v].push_back(cnt_s++);
+    v = go[v][el - 'a'];
+  }
+  term[v].push_back(cnt_s++);
 }
 
 void bfs() {
-    deque<int> q = {0};
-    while (!q.empty()) {
-        int v = q.front();
-        q.pop_front();
-        if (v > 0) {
-            if (par[v] == 0) {
-                suf[v] = 0;
-            } else {
-                suf[v] = go[suf[par[v]]][par_c[v] - 'a'];
-            }
-            g[suf[v]].push_back(v);
-        }
-        for (int c = 0; c < 26; c++) {
-            if (go[v][c] == 0) {
-                go[v][c] = go[suf[v]][c];
-            } else {
-                q.push_back(go[v][c]);
-            }
-        }
+  deque<int> q = {0};
+  while (!q.empty()) {
+    int v = q.front();
+    q.pop_front();
+    if (v > 0) {
+      if (par[v] == 0) {
+        suf[v] = 0;
+      } else {
+        suf[v] = go[suf[par[v]]][par_c[v] - 'a'];
+      }
+      g[suf[v]].push_back(v);
     }
+    for (int c = 0; c < 26; c++) {
+      if (go[v][c] == 0) {
+        go[v][c] = go[suf[v]][c];
+      } else {
+        q.push_back(go[v][c]);
+      }
+    }
+  }
 }
-
 \end{lstlisting}
 
 \subsection{Префикс-функция}
 \begin{lstlisting}[language=C++]
-int main() {
-    vector<int> pref(n, 0);
-    int ans = 0;
-    for (int i = 1; i < n; i++) {
-        while (ans > 0 && s[ans] != s[i]) {
-            ans = pref[ans - 1];
-        }
-        if (s[i] == s[ans]) {
-            ans++;
-        }
-        pref[i] = ans;
+vector<int> prefix_func(string s) {
+  int n = s.size();
+  vector<int> pref(n, 0);
+  int ans = 0;
+  for (int i = 1; i < n; i++) {
+    while (ans > 0 && s[ans] != s[i]) {
+      ans = pref[ans - 1];
     }
+    if (s[i] == s[ans]) {
+      ans++;
+    }
+    pref[i] = ans;
+  }
+  return pref;
 }
-
 \end{lstlisting}
 
 \subsection{Суффиксный автомат}
@@ -2651,111 +2669,85 @@ signed main() {
 \subsection{Суффиксный массив}
 \begin{lstlisting}[language=C++]
 vector<int> build_suff_arr(string s) {
-    s.push_back('#');
-    int n = s.size();
-    vector<int> suf(n), c(n);
-    vector<int> cnt(MAX);
+  s.push_back('#');
+  int n = s.size();
+  vector<int> suf(n), c(n);
+  vector<int> cnt(MAX);
+  for (int i = 0; i < n; i++) {
+    cnt[s[i] - '#']++;
+  }
+  vector<int> pos(MAX);
+  for (int i = 1; i < MAX; i++) {
+    pos[i] = pos[i - 1] + cnt[i - 1];
+  }
+  for (int i = 0; i < n; i++) {
+    suf[pos[s[i] - '#']++] = i;
+  }
+  int cls = -1;
+  for (int i = 0; i < n; i++) {
+    if (i == 0 || s[suf[i]] != s[suf[i - 1]]) {
+      cls++;
+    }
+    c[suf[i]] = cls;
+  }
+  for (int L = 1; L < n; L *= 2) {
+    fill(cnt.begin(), cnt.end(), 0);
     for (int i = 0; i < n; i++) {
-        cnt[s[i] - '#']++;
+      cnt[c[i]]++;
     }
-    vector<int> pos(MAX);
-    for (int i = 1; i < MAX; i++) {
-        pos[i] = pos[i - 1] + cnt[i - 1];
-    }
-    for (int i = 0; i < n; i++) {
-        suf[pos[s[i] - '#']++] = i;
-    }
-    int cls = -1;
-    for (int i = 0; i < n; i++) {
-        if (i == 0 || s[suf[i]] != s[suf[i - 1]]) {
-            cls++;
-        }
-        c[suf[i]] = cls;
-    }
-    for (int L = 1; L < n; L *= 2) {
-        fill(cnt.begin(), cnt.end(), 0);
-        for (int i = 0; i < n; i++) {
-            cnt[c[i]]++;
-        }
-        pos[0] = 0;
-        for (int i = 1; i < n; i++) {
-            pos[i] = pos[i - 1] + cnt[i - 1];
-        }
-        for (int i = 0; i < n; i++) {
-            suf[i] = (suf[i] - L + n) % n;
-        }
-        vector<int> new_suf(n), new_c(n);
-        for (int i = 0; i < n; i++) {
-            int where = pos[c[suf[i]]];
-            new_suf[where] = suf[i];
-            pos[c[suf[i]]]++;
-        }
-        cls = -1;
-        for (int i = 0; i < n; i++) {
-            if (i == 0) {
-                cls++;
-                new_c[new_suf[i]] = cls;
-                continue;
-            }
-            pair<int, int> prev = {c[new_suf[i - 1]], c[(new_suf[i - 1] + L) % n]};
-            pair<int, int> now = {c[new_suf[i]], c[(new_suf[i] + L) % n]};
-            if (prev != now) {
-                cls++;
-            }
-            new_c[new_suf[i]] = cls;
-        }
-        swap(c, new_c);
-        swap(suf, new_suf);
-    }
-    vector<int> res;
+    pos[0] = 0;
     for (int i = 1; i < n; i++) {
-        res.push_back(suf[i]);
+      pos[i] = pos[i - 1] + cnt[i - 1];
     }
-    return res;
-}
-
-vector<int> lcp_neighboring(string &s, vector<int> &suf) {
-    int n = s.size();
-    vector<int> lcp(n), where(n);
     for (int i = 0; i < n; i++) {
-        where[suf[i]] = i;
+      suf[i] = (suf[i] - L + n) % n;
     }
-    int k = 0;
-    for (int j = 0; j < n; j++) {
-        int pos = where[j];
-        if (pos == n - 1) {
-            k = 0;
-            lcp[pos] = 0;
-        } else {
-            k = max(0LL, k - 1);
-            while (s[j + k] == s[suf[pos + 1] + k]) {
-                k++;
-                if (j + k >= n || suf[pos + 1] + k >= n) {
-                    break;
-                }
-            }
-            lcp[pos] = k;
-        }
-    }
-    return lcp;
-}
-
-int sol(int k, string s) {
-    int n = s.size();
-    vector<int> suf = build_suff_arr(s);
-    vector<int> lcp = lcp_neighboring(s, suf);
-    vector<int> where(n);
+    vector<int> new_suf(n), new_c(n);
     for (int i = 0; i < n; i++) {
-        where[suf[i]] = i;
+      int where = pos[c[suf[i]]];
+      new_suf[where] = suf[i];
+      pos[c[suf[i]]]++;
     }
-    Sparse_Table st(lcp);
-    int ans = 0;
-    for (int i = 0; i < n - k; i++) {
-        ans += st.rmq(where[i], where[i + k]);
+    cls = -1;
+    for (int i = 0; i < n; i++) {
+      if (i == 0) {
+        cls++;
+        new_c[new_suf[i]] = cls;
+        continue;
+      }
+      pair<int, int> prev = {c[new_suf[i - 1]], c[(new_suf[i - 1] + L) % n]};
+      pair<int, int> now = {c[new_suf[i]], c[(new_suf[i] + L) % n]};
+      if (prev != now) {
+        cls++;
+      }
+      new_c[new_suf[i]] = cls;
     }
-    return ans;
+    swap(c, new_c);
+    swap(suf, new_suf);
+  }
+  vector<int> res;
+  for (int i = 1; i < n; i++) {
+    res.push_back(suf[i]);
+  }
+  return res;
 }
 
+vector<int> kasai(string s, vector<int> sa) {
+  int n = s.size(), k = 0;
+  vector<int> lcp(n, 0);
+  vector<int> rank(n, 0);
+  for (int i = 0; i < n; i++) rank[sa[i]] = i;
+  for (int i = 0; i < n; i++, k ? k-- : 0) {
+    if (rank[i] == n - 1) {
+      k = 0;
+      continue;
+    }
+    int j = sa[rank[i] + 1];
+    while (i + k < n && j + k < n && s[i + k] == s[j + k]) k++;
+    lcp[rank[i]] = k;
+  }
+  return lcp;
+}
 \end{lstlisting}
 
 \section{Структуры данных}
@@ -2796,95 +2788,94 @@ int get(int l, int r) {
 \subsection{Segment Tree Beats}
 \begin{lstlisting}[language=C++]
 // min=, sum
-
 struct ST {
-    vector<int> st, mx, mx_cnt, sec_mx;
+  vector<int> st, mx, mx_cnt, sec_mx;
 
-    ST(int n) {
-        st.resize(n * 4, 0);
-        mx.resize(n * 4, 0);
-        mx_cnt.resize(n * 4, 0);
-        sec_mx.resize(n * 4, 0);
-        build(0, 0, n);
-    }
+  ST(int n) {
+    st.resize(n * 4, 0);
+    mx.resize(n * 4, 0);
+    mx_cnt.resize(n * 4, 0);
+    sec_mx.resize(n * 4, 0);
+    build(0, 0, n);
+  }
 
-    void upd_from_children(int v) {
-        st[v] = st[v * 2 + 1] + st[v * 2 + 2];
-        mx[v] = max(mx[v * 2 + 1], mx[v * 2 + 2]);
-        mx_cnt[v] = 0;
-        sec_mx[v] = max(sec_mx[v * 2 + 1], sec_mx[v * 2 + 2]);
-        if (mx[v * 2 + 1] == mx[v]) {
-            mx_cnt[v] += mx_cnt[v * 2 + 1];
-        } else {
-            sec_mx[v] = max(sec_mx[v], mx[v * 2 + 1]);
-        }
-        if (mx[v * 2 + 2] == mx[v]) {
-            mx_cnt[v] += mx_cnt[v * 2 + 2];
-        } else {
-            sec_mx[v] = max(sec_mx[v], mx[v * 2 + 2]);
-        }
+  void upd_from_children(int v) {
+    st[v] = st[v * 2 + 1] + st[v * 2 + 2];
+    mx[v] = max(mx[v * 2 + 1], mx[v * 2 + 2]);
+    mx_cnt[v] = 0;
+    sec_mx[v] = max(sec_mx[v * 2 + 1], sec_mx[v * 2 + 2]);
+    if (mx[v * 2 + 1] == mx[v]) {
+      mx_cnt[v] += mx_cnt[v * 2 + 1];
+    } else {
+      sec_mx[v] = max(sec_mx[v], mx[v * 2 + 1]);
     }
+    if (mx[v * 2 + 2] == mx[v]) {
+      mx_cnt[v] += mx_cnt[v * 2 + 2];
+    } else {
+      sec_mx[v] = max(sec_mx[v], mx[v * 2 + 2]);
+    }
+  }
 
-    void build(int i, int l, int r) {
-        if (l + 1 == r) {
-            st[i] = mx[i] = 0;
-            mx_cnt[i] = 1;
-            sec_mx[i] = -INF;
-            return;
-        }
-        int m = (r + l) / 2;
-        build(i * 2 + 1, l, m);
-        build(i * 2 + 2, m, r);
-        upd_from_children(i);
+  void build(int i, int l, int r) {
+    if (l + 1 == r) {
+      st[i] = mx[i] = 0;
+      mx_cnt[i] = 1;
+      sec_mx[i] = -INF;
+      return;
     }
+    int m = (r + l) / 2;
+    build(i * 2 + 1, l, m);
+    build(i * 2 + 2, m, r);
+    upd_from_children(i);
+  }
 
-    void push_min_eq(int v, int val) {
-        if (mx[v] > val) {
-            st[v] -= (mx[v] - val) * mx_cnt[v];
-            mx[v] = val;
-        }
+  void push_min_eq(int v, int val) {
+    if (mx[v] > val) {
+      st[v] -= (mx[v] - val) * mx_cnt[v];
+      mx[v] = val;
     }
+  }
 
-    void push(int i) {
-        push_min_eq(i * 2 + 1, mx[i]);
-        push_min_eq(i * 2 + 2, mx[i]);
-    }
+  void push(int i) {
+    push_min_eq(i * 2 + 1, mx[i]);
+    push_min_eq(i * 2 + 2, mx[i]);
+  }
 
-    void update(int i, int l, int r, int ql, int qr, int val) {
-        if (mx[i] <= val) {
-            return;
-        }
-        if (ql == l && qr == r && sec_mx[i] < val) {
-            push_min_eq(i, val);
-            return;
-        }
-        push(i);
-        int m = (r + l) / 2;
-        if (qr <= m) {
-            update(i * 2 + 1, l, m, ql, qr, val);
-        } else if (ql >= m) {
-            update(i * 2 + 2, m, r, ql, qr, val);
-        } else {
-            update(i * 2 + 1, l, m, ql, m, val);
-            update(i * 2 + 2, m, r, m, qr, val);
-        }
-        upd_from_children(i);
+  void update(int i, int l, int r, int ql, int qr, int val) {
+    if (mx[i] <= val) {
+      return;
     }
+    if (ql == l && qr == r && sec_mx[i] < val) {
+      push_min_eq(i, val);
+      return;
+    }
+    push(i);
+    int m = (r + l) / 2;
+    if (qr <= m) {
+      update(i * 2 + 1, l, m, ql, qr, val);
+    } else if (ql >= m) {
+      update(i * 2 + 2, m, r, ql, qr, val);
+    } else {
+      update(i * 2 + 1, l, m, ql, m, val);
+      update(i * 2 + 2, m, r, m, qr, val);
+    }
+    upd_from_children(i);
+  }
 
-    int sum(int i, int l, int r, int ql, int qr) {
-        if (l == ql && r == qr) {
-            return st[i];
-        }
-        push(i);
-        int m = (r + l) / 2;
-        if (qr <= m) {
-            return sum(i * 2 + 1, l, m, ql, qr);
-        }
-        if (ql >= m) {
-            return sum(i * 2 + 2, m, r, ql, qr);
-        }
-        return sum(i * 2 + 1, l, m, ql, m) + sum(i * 2 + 2, m, r, m, qr);
+  int sum(int i, int l, int r, int ql, int qr) {
+    if (l == ql && r == qr) {
+      return st[i];
     }
+    push(i);
+    int m = (r + l) / 2;
+    if (qr <= m) {
+      return sum(i * 2 + 1, l, m, ql, qr);
+    }
+    if (ql >= m) {
+      return sum(i * 2 + 2, m, r, ql, qr);
+    }
+    return sum(i * 2 + 1, l, m, ql, m) + sum(i * 2 + 2, m, r, m, qr);
+  }
 };
 \end{lstlisting}
 
