@@ -34,7 +34,7 @@ function walk (_path, depth) {
       if (path.extname(f) !== '.tex') {
         ans += `\\begin{lstlisting}[language=${extensions[path.extname(f)]}]\n` + fs.readFileSync(f, 'utf8') + '\\end{lstlisting}\n'
       } else {
-        ans += fs.readFileSync(f)
+        ans += '\\noindent\\rule{\\linewidth}{0.15mm}\n' + fs.readFileSync(f) + '\\noindent\\rule{\\linewidth}{0.15mm}\n'
       }
     }
   })
