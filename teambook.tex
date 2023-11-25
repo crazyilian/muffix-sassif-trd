@@ -187,8 +187,30 @@
 
 \subsection{3D}
 \begin{lstlisting}[language=C++]
+double eps = 1e-7;
+
 struct Pt {
-  double x, y, z;
+  double x;
+  double y;
+  double z;
+
+  Pt(double x_, double y_, double z_) : x(x_), y(y_), z(z_) {}
+
+  Pt operator-(const Pt& other) const {
+    return {x - other.x, y - other.y, z - other.z};
+  }
+
+  Pt operator+(const Pt& other) const {
+    return {x + other.x, y + other.y, z + other.z};
+  }
+
+  Pt operator/(const double& a) const {
+    return {x / a, y / a, z / a};
+  }
+
+  Pt operator*(const double& a) const {
+    return {x * a, y * a, z * a};
+  }
 
   Pt cross(const Pt& p2) const {
     double nx = y * p2.z - z * p2.y;
@@ -196,21 +218,83 @@ struct Pt {
     double nz = x * p2.y - y * p2.x;
     return {nx, ny, nz};
   }
+
+  bool operator==(const Pt& pt) const {
+    return abs(x - pt.x) < eps && abs(y - pt.y) < eps && abs(z - pt.z) < eps;
+  }
+
+  double dist() {
+    return sqrtl(x * x + y * y + z * z);
+  }
 };
 
 struct Plane {
   double a, b, c, d;
-  
+
+  Plane(double a_, double b_, double c_, double d_) : a(a_), b(b_), c(c_), d(d_) {
+    double kek = sqrtl(a * a + b * b + c * c);
+    if (kek < eps) return;
+    a /= kek;
+    b /= kek;
+    c /= kek;
+    d /= kek;
+  }
+
   double get_val(Pt p) {
     return a * p.x + b * p.y + c * p.z + d;
   }
+
+  bool on_plane(Pt p) {
+    return abs(get_val(p)) / sqrtl(a * a + b * b + c * c) < eps;
+  }
+
+  Pt proj(Pt p) {
+    double t = (a * p.x + b * p.y + c * p.z + d) / (a * a + b * b + c * c);
+    return p - Pt(a, b, c) * t;
+  }
 };
+
+bool on_line(Pt p1, Pt p2, Pt p3) {
+  return (p2 - p1).cross(p3 - p1) == Pt(0, 0, 0);
+}
 
 Plane get_plane(Pt p1, Pt p2, Pt p3) {
   Pt norm = (p2 - p1).cross(p3 - p1);
   Plane pl(norm.x, norm.y, norm.z, 0);
   pl.d = -pl.get_val(p1);
   return pl;
+}
+
+pair<pair<double, double>, pair<double, double>> get_xy(double a, double b, double c) {
+  if (abs(a) > eps) {
+    double y1 = 0, y2 = 10;
+    return {{(-c - b * y1) / a, y1}, {(-c - b * y2) / a, y2}};
+  }
+  double x1 = 0, x2 = 10;
+  return {{x1, (-c - a * x1) / b}, {x2, (-c - a * x2) / b}};
+}
+
+pair<Pt, Pt> intersect(Plane pl1, Plane pl2) {
+  if (abs(pl2.a) < eps && abs(pl2.b) < eps && abs(pl2.c) < eps) {
+    assert(false);
+  }
+  if (abs(pl2.a) > eps) {
+    double nd = pl1.d - pl1.a * pl2.d / pl2.a;
+    double nc = pl1.c - pl1.a * pl2.c / pl2.a;
+    double nb = pl1.b - pl1.a * pl2.b / pl2.a;
+    if (abs(nc) < eps && abs(nb) < eps) {
+      // плоскости параллельны (могут совпадать)
+      return {Pt(0, 0, 0), Pt(0, 0, 0)};
+    }
+    auto [yz1, yz2] = get_xy(nb, nc, nd);
+    double x1 = (-pl2.d - pl2.c * yz1.second - pl2.b * yz1.first) / pl2.a;
+    double x2 = (-pl2.d - pl2.c * yz2.second - pl2.b * yz2.first) / pl2.a;
+    return {Pt(x1, yz1.first, yz1.second), Pt(x2, yz2.first, yz2.second)};
+  }
+  Plane copy_pl1(pl1.c, pl1.a, pl1.b, pl1.d);
+  Plane copy_pl2(pl2.c, pl2.a, pl2.b, pl2.d);
+  auto [p1, p2] = intersect(copy_pl1, copy_pl2);
+  return {Pt(p1.y, p1.z, p1.x), Pt(p2.y, p2.z, p2.x)};
 }
 \end{lstlisting}
 
@@ -275,9 +359,6 @@ struct line {
     dbl x = -a * c / (a * a + b * b);
     dbl y = -b * c / (a * a + b * b);
     return vctr(x, y);
-  }
-  vctr getNorm() const {
-    return vctr(a, b) / sqrtl(a * a + b * b);
   }
   void normalize() {
     dbl d = sqrtl(a * a + b * b);
@@ -363,6 +444,105 @@ vector<vctr> get_convex_hull(vector<vctr> arr) {
 
 \end{lstlisting}
 
+\subsection{Задача 16}
+\begin{lstlisting}[language=C++]
+bool isInSameHalf(vctr p, vctr r1, vctr r2) {
+  return sign((r2 - r1) % (p - r1)) >= 0;
+}
+
+dbl distPointPoint(vctr a, vctr b) {
+  return (a - b).dist();
+}
+
+dbl distPointLine(vctr a, vctr l1, vctr l2) {
+  line l(l1, l2);
+  l.normalize();
+  return abs(l.get(a));
+}
+
+dbl distPointRay(vctr a, vctr r1, vctr r2) {
+  if (!isInSameHalf(a, r1, r2))
+    return distPointPoint(a, r1);
+  return distPointLine(a, r1, r2);
+}
+
+dbl distPointSeg(vctr a, vctr s1, vctr s2) {
+  return max(distPointRay(a, s1, s2),
+             distPointRay(a, s2, s1));
+}
+
+bool isIntersectionLineLine(line l1, line l2) {
+  dbl znam = l1.b * l2.a - l1.a * l2.b;
+  return sign(znam) != 0;
+}
+
+vctr intersectionLineLine(line l1, line l2) {
+  dbl znam = l1.b * l2.a - l1.a * l2.b;
+  dbl y = -(l1.c * l2.a - l2.c * l1.a) / znam;
+  dbl x = -(l1.c * l2.b - l2.c * l1.b) / -znam;
+  return vctr(x, y);
+}
+
+vctr getPointOnLine(line l) {
+  if (sign(l.b) != 0)
+    return vctr(0, -l.c / l.b);
+  return vctr(-l.c / l.a, 0);
+}
+
+dbl distLineLine(vctr l1a, vctr l1b, vctr l2a, vctr l2b) {
+  line l1(l1a, l1b);
+  line l2(l2a, l2b);
+  if (isIntersectionLineLine(l1, l2))
+    return 0;
+  vctr p = getPointOnLine(l1);
+  l2.normalize();
+  return abs(l2.get(p));
+}
+
+dbl distRayLine(vctr r1, vctr r2, vctr l1, vctr l2) {
+  line r(r1, r2);
+  line l(l1, l2);
+  if (!isIntersectionLineLine(l, r))
+    return distLineLine(r1, r2, l1, l2);
+  vctr p = intersectionLineLine(l, r);
+  if (isInSameHalf(p, r1, r2))
+    return 0;
+  return distPointLine(r1, l1, l2);
+}
+
+dbl distSegLine(vctr s1, vctr s2, vctr l1, vctr l2) {
+  return max(distRayLine(s1, s2, l1, l2),
+             distRayLine(s2, s1, l1, l2));
+}
+
+dbl distRayRay(vctr r1a, vctr r1b, vctr r2a, vctr r2b) {
+  line r1(r1a, r1b);
+  line r2(r2a, r2b);
+  if (!isIntersectionLineLine(r1, r2)) {
+    if (isInSameHalf(r1a, r2a, r2b) || isInSameHalf(r2a, r1a, r1b))
+      return distLineLine(r1a, r1b, r2a, r2b);
+    else
+      return distPointPoint(r1a, r2a);
+  }
+  vctr p = intersectionLineLine(r1, r2);
+  if (isInSameHalf(p, r1a, r1b) && isInSameHalf(p, r2a, r2b))
+    return 0;
+  return min(distPointRay(r1a, r2a, r2b),
+             distPointRay(r2a, r1a, r1b));
+}
+
+dbl distSegRay(vctr s1, vctr s2, vctr r1, vctr r2) {
+  return max(distRayRay(s1, s2, r1, r2),
+             distRayRay(s2, s1, r1, r2));
+}
+
+dbl distSegSeg(vctr s1a, vctr s1b, vctr s2a, vctr s2b) {
+  return max(distSegRay(s1a, s1b, s2a, s2b),
+             distSegRay(s1a, s1b, s2b, s2a));
+}
+
+\end{lstlisting}
+
 \subsection{Касательные из точки}
 \begin{lstlisting}[language=C++]
 pair<int, int> tangents_from_point(vector<vctr> &p, vctr &a) {
@@ -424,6 +604,47 @@ bool is_point_in_poly(vctr A, vector<vctr> &P) {
 
 \end{lstlisting}
 
+\subsection{Минимальная покрывающая окружность}
+\begin{lstlisting}[language=C++]
+mt19937 rnd(179);
+
+circle MinDisk2(vector<vctr> &p, vctr A, vctr B, int sz) {
+  circle w(A, B);
+  for (int i = 0; i < sz; ++i) {
+    if (w.isin(p[i]))
+      continue;
+    w = circle(A, B, p[i]);
+  }
+  return w;
+}
+
+circle MinDisk1(vector<vctr> &p, vctr A, int sz) {
+  shuffle(p.begin(), p.begin() + sz, rnd);
+  circle w(A, p[0]);
+  for (int i = 1; i < sz; ++i) {
+    if (w.isin(p[i]))
+      continue;
+    w = MinDisk2(p, A, p[i], i);
+  }
+  return w;
+}
+
+circle MinDisk(vector<vctr> &p) {
+  int sz = p.size();
+  if (sz == 1)
+    return circle(p[0], 0);
+  shuffle(p.begin(), p.end(), rnd);
+  circle w(p[0], p[1]);
+  for (int i = 2; i < sz; ++i) {
+    if (w.isin(p[i]))
+      continue;
+    w = MinDisk1(p, p[i], i);
+  }
+  return w;
+}
+
+\end{lstlisting}
+
 \subsection{Многоугольники}
 \begin{lstlisting}[language=C++]
 // Сдвиг многоугольника, чтобы начинался с минимального вектора
@@ -443,6 +664,122 @@ vector<vctr> poly_to_edges(const vector<vctr> &A) {
   for (int i = 0; i < A.size(); ++i)
     edg[i] = A[(i + 1) % A.size()] - A[i];
   return edg;
+}
+
+\end{lstlisting}
+
+\subsection{Пересечение полуплоскостей}
+\begin{lstlisting}[language=C++]
+// half plane: ax+by+c > 0
+// bounding box MUST have
+vector<int> intersection_half_planes_inds(const vector<line> &ls) {
+  int n = (int)ls.size();
+  vector<int> lsi(n);
+  iota(lsi.begin(), lsi.end(), 0);
+  sort(lsi.begin(), lsi.end(), [&](int i, int j) {
+    vctr aa(ls[i].a, ls[i].b);
+    vctr bb(ls[j].a, ls[j].b);
+    bool pla = is2plane(aa);
+    bool plb = is2plane(bb);
+    if (pla != plb)
+      return pla < plb;
+    return aa * bb > 0;
+  });
+
+  vector<line> st;
+  vector<int> inds;
+  for (int ii = 0; ii < 2 * n; ++ii) {
+    int i = lsi[ii % n];
+    if (st.empty()) {
+      st.push_back(ls[i]);
+      inds.push_back(i);
+      continue;
+    }
+    vctr p = intersection(ls[i], st.back());
+    bool pp = isparallel(ls[i], st.back());
+    bool bad = false;
+    while (st.size() >= 2) {
+      if (!pp && sign(st[st.size() - 2].get(p)) >= 0)
+        break;
+      else if (pp && sign(st.back().get(ls[i].anyPoint())) <= 0) {
+        bad = true;
+        break;
+      }
+      st.pop_back();
+      inds.pop_back();
+      p = intersection(ls[i], st.back());
+      pp = isparallel(ls[i], st.back());
+    }
+    if (!bad) {
+      st.push_back(ls[i]);
+      inds.push_back(i);
+    }
+  }
+  vector<int> cnt(n, 0);
+  for (int i : inds)
+    cnt[i]++;
+  vector<int> good;
+  for (int i : inds) {
+    if (cnt[i]-- == 2)
+      good.push_back(i);
+  }
+  return good;
+}
+
+vector<vctr> intersection_half_planes(vector<line> &ls) {
+  vector<int> inter = intersection_half_planes_inds(ls);
+  int n = inter.size();
+  vector<vctr> pts;
+  for (int i = 0; i < n; ++i) {
+    int j = (i + 1) % n;
+    vctr P = intersection(ls[inter[i]], ls[inter[j]]);
+    if (pts.empty() || sign(pts.back().x - P.x) != 0
+         || sign(pts.back().y - P.y) != 0)
+      pts.push_back(P);
+  }
+  return pts;
+}
+
+\end{lstlisting}
+
+\subsection{Пересечение с окружностью}
+\begin{lstlisting}[language=C++]
+bool is_intersection_line_circ(line l, circle c) {
+  l.normalize();
+  dbl d = abs(l.get(c.cent()));
+  return d < c.r - EPS;
+}
+
+vector<vctr> intersection_line_circ(line l, circle c) {
+  l.normalize();
+  dbl d = abs(l.get(c.cent()));
+  vctr per = vctr(l.a, l.b).norm() * d;
+  vctr a = c.cent() + per;
+  if (sign(abs(l.get(a)) - d) > 0)
+    a = c.cent() - per;
+  if (sign(c.r - d) == 0)
+    return {a};
+  dbl k = sqrtl(c.r * c.r - d * d);
+  vctr par = vctr(-l.b, l.a).norm() * k;
+  return {a + par, a - par};
+}
+
+vector<vctr> intersection_circ_circ(circle a, circle b) {
+  line l(2 * (b.x - a.x),
+         2 * (b.y - a.y),
+         b.r * b.r - a.r * a.r
+             + (a.x * a.x + a.y * a.y)
+             - (b.x * b.x + b.y * b.y));
+  if (sign(l.a) == 0 && sign(l.b) == 0)
+    return {};
+  return intersection_line_circ(l, a);
+}
+
+vector<vctr> tangent_vctr_circ(vctr v, circle c) {
+  dbl d = (c.cent() - v).dist();
+  dbl k = sqrtl(d * d - c.r * c.r);
+  circle c2(v.x, v.y, k);
+  return intersection_circ_circ(c, c2);
 }
 
 \end{lstlisting}
@@ -489,6 +826,17 @@ vector<vctr> minkowski_sum(const vector<vctr> &A, const vector<vctr> &B) {
 }
 
 \end{lstlisting}
+
+\subsection{Формула Эйлера}
+\noindent\rule{\linewidth}{0.15mm}
+\begin{itemize}
+    \item $V$ -- число вершин выпуклого многогранника (планарного графа)
+    \item $E$ -- число рёбер
+    \item $F$ -- число граней (если планарный граф, то включая внешнюю)
+\end{itemize}
+Тогда $V-E+F=2$
+
+\noindent\rule{\linewidth}{0.15mm}
 
 \section{Графы}
 
@@ -2108,18 +2456,20 @@ bool is_prime(int n) {
 
 \subsection{Ро-Поллард}
 \begin{lstlisting}[language=C++]
-long long mult(long long a, long long b, long long mod) {
+typedef long long ll;
+
+ll mult(ll a, ll b, ll mod) {
   return (__int128)a * b % mod;
 }
 
-long long f(long long x, long long c, long long mod) {
+ll f(ll x, ll c, ll mod) {
   return (mult(x, x, mod) + c) % mod;
 }
 
-long long rho(long long n, long long x0=2, long long c=1) {
-  long long x = x0;
-  long long y = x0;
-  long long g = 1;
+ll rho(ll n, ll x0=2, ll c=1) {
+  ll x = x0;
+  ll y = x0;
+  ll g = 1;
   while (g == 1) {
     x = f(x, c, n);
     y = f(y, c, n);
@@ -2144,7 +2494,7 @@ void factor(int n, vector<int> &pr) {
     pr.push_back(n);
     return;
   }
-  int d = rho(n, abs((int) rnd()) % (n - 2) + 2, abs((int) rnd()) % 3 + 1);
+  int d = rho(n, rnd() % (n - 2) + 2, rnd() % 3 + 1);
   factor(n / d, pr);
   factor(d, pr);
 }
@@ -2412,7 +2762,35 @@ int sol(int k, string s) {
 
 \subsection{Disjoint Sparse Table}
 \begin{lstlisting}[language=C++]
-// TODO
+int tree[LOG][MAXN];
+int floorlog2[MAXN]; // i ? (31 - __builtin_clz(i)) : 0
+
+void build(vector<int> &a) {
+  int n = a.size();
+  copy(a.begin(), a.end(), tree[0]);
+  for (int lg = 1; lg < LOG; ++lg) {
+    int len = 1 << lg;
+    auto &lvl = tree[lg];
+    for (int m = len; m < n; m += len * 2) {
+      lvl[m - 1] = a[m - 1];
+      lvl[m] = a[m];
+      for (int i = m - 2; i >= m - len; --i)
+        lvl[i] = min(lvl[i + 1], a[i]);
+      for (int i = m + 1; i < m + len && i < n; ++i)
+        lvl[i] = min(lvl[i - 1], a[i]);
+    }
+  }
+  for (int i = 2; i <= n; ++i)
+    floorlog2[i] = floorlog2[i / 2] + 1;
+}
+
+// a[l..r)
+int get(int l, int r) {
+  r--;
+  int i = floorlog2[l ^ r];
+  return min(tree[i][l], tree[i][r]);
+}
+
 \end{lstlisting}
 
 \subsection{Segment Tree Beats}
@@ -2753,37 +3131,27 @@ int get(Node *v, int l, int r, int ql, int qr) {
 
 \subsection{Спарсы}
 \begin{lstlisting}[language=C++]
-struct SparseTable {
-  vector<vector<int>> st;
-  vector<int> max2;
+int tree[LOG][MAXN];
+int floorlog2[MAXN]; // i ? (31 - __builtin_clz(i)) : 0
 
-  SparseTable(vector<int> &a) {
-    int n = a.size();
-    st.push_back(a);
-    for (int i = 1; (1 << i) <= n; i++) {
-      st.emplace_back(n - (1 << i) + 1);
-      for (int p = 0; p < st[i].size(); p++) {
-        st[i][p] = min(st[i - 1][p], st[i - 1][p + (1 << (i - 1))]);
-      }
-      st.push_back(st[i - 1]);
-      for (int p = 0; p + (1 << (i - 1)) <= n; ++p) {
-        st[i][p] = min(st[i - 1][p], st[i - 1][p + (1 << (i - 1))]);
-      }
-    }
-    // max2[i] = i ? (32 - __builtin_clz(i - 1)) : 0
-    max2.resize(n + 1);
-    max2[0] = -1;
-    max2[1] = 0;
-    for (int i = 2; i <= n; i++)
-      max2[i] = max2[i / 2] + 1;
+void build(vector<int> &a) {
+  int n = a.size();
+  copy(a.begin(), a.end(), tree[0]);
+  for (int i = 1; i < LOG; ++i) {
+    int len = 1 << (i - 1);
+    for (int j = 0; j + len < n; ++j)
+      tree[i][j] = min(tree[i - 1][j], tree[i - 1][j + len]);
   }
+  for (int i = 2; i <= n; ++i)
+    floorlog2[i] = floorlog2[i / 2] + 1;
+}
 
-  // min a[l..r)
-  int rmq(int l, int r) {
-    int i = max2[r - l];
-    return min(st[i][l], st[i][r - (1 << i)]);
-  }
-};
+// min a[l..r)
+int get(int l, int r) {
+  int i = floorlog2[r - l];
+  return min(tree[i][l], tree[i][r - (1 << i)]);
+}
+
 \end{lstlisting}
 
 \subsection{Фенвик (+ на отрезке)}
