@@ -14,7 +14,7 @@
 \usepackage{multicol}
 \usepackage{graphicx}
 
-\geometry{verbose,landscape,a4paper,tmargin=0.7cm,bmargin=0.7cm,lmargin=0.3cm,rmargin=0.3cm}
+\geometry{verbose,landscape,a4paper,tmargin=1.1cm,bmargin=0.7cm,lmargin=0.6cm,rmargin=0.6cm}
 
 \usepackage{listings}
 \usepackage{color}
@@ -909,6 +909,77 @@ pair<int, vector<int>> venger(vector<vector<int>> a) {
   for (int j = 1; j <= m; ++j)
     ans[p[j]] = j;
   return {cost, ans};
+}
+\end{lstlisting}
+
+\subsection{Вершинная двусвязность}
+\begin{lstlisting}[language=C++]
+struct edge {
+  int u, ind;
+
+  bool operator<(const edge &other) const {
+    return u < other.u;
+  }
+};
+
+vector<int> stack_;
+
+void paint(int v, int pr = -1) {
+  used[v] = pr;
+  up[v] = tin[v] = ++timer;
+  for (auto e: g[v]) {
+    if (e.u == pr) {
+      continue;
+    }
+    if (!used[e.u]) {
+      stack_.push_back(e.ind);
+      paint(e.u, v);
+      if (up[e.u] >= tin[v]) {
+        ++mx_col;
+        while (true) {
+          int cur_edge = stack_.back();
+          col[cur_edge] = mx_col;
+          stack_.pop_back();
+          if (cur_edge == e.ind) {
+            break;
+          }
+        }
+      }
+      up[v] = min(up[v], up[e.u]);
+    } else if (tin[e.u] < tin[v]) {
+      stack_.push_back(e.ind);
+      up[v] = min(up[v], tin[e.u]);
+    } else if (up[v] > tin[e.u]) {
+      up[v] = up[e.u];
+    }
+  }
+}
+
+signed main() {
+  int n, m;
+  cin >> n >> m;
+  for (int i = 0; i < m; ++i) {
+    int u, v;
+    cin >> u >> v;
+    g[u].push_back({v, i});
+    g[v].push_back({u, i});
+  }
+  for (int v = 1; v <= n; ++v) {
+    sort(all(g[v]));
+  }
+  for (int v = 1; v <= n; ++v) {
+    if (!used[v]) {
+      paint(v);
+    }
+  }
+  for (int v = 1; v <= n; ++v) {
+    int len = g[v].size();
+    for (int i = 1; i < len; ++i) {
+      if (col[g[v][i].ind] == 0) {
+        col[g[v][i].ind] = col[g[v][i - 1].ind];
+      }
+    }
+  }
 }
 \end{lstlisting}
 
@@ -2585,88 +2656,7 @@ void bfs() {
 }
 \end{lstlisting}
 
-\subsection{Префикс-функция}
-\begin{lstlisting}[language=C++]
-vector<int> prefix_func(string s) {
-  int n = s.size();
-  vector<int> pref(n, 0);
-  int ans = 0;
-  for (int i = 1; i < n; i++) {
-    while (ans > 0 && s[ans] != s[i]) {
-      ans = pref[ans - 1];
-    }
-    if (s[i] == s[ans]) {
-      ans++;
-    }
-    pref[i] = ans;
-  }
-  return pref;
-}
-\end{lstlisting}
-
-\subsection{Суффиксный автомат}
-\begin{lstlisting}[language=C++]
-// Суфавтомат с подсчётом кол-ва различных подстрок
-
-const int SIGMA = 26;
-int ans = 0;
-
-struct Node {
-  int go[SIGMA];
-  int s, p;
-  int len;
-
-  Node() {
-    fill(go, go + SIGMA, -1);
-    s = -1, p = -1;
-    len = 0;
-  }
-};
-
-int add(int A, int ch, vector<Node> &sa) {
-  int B = sa.size();
-  sa.emplace_back();
-  sa[B].p = A;
-  sa[B].s = 0;
-  sa[B].len = sa[A].len + 1;
-  for (; A != -1; A = sa[A].s) {
-    if (sa[A].go[ch] == -1) {
-      sa[A].go[ch] = B;
-      continue;
-    }
-    int C = sa[A].go[ch];
-    if (sa[C].p == A) {
-      sa[B].s = C;
-      break;
-    }
-    int D = sa.size();
-    sa.emplace_back();
-    sa[D].s = sa[C].s;
-    sa[D].p = A;
-    sa[D].len = sa[A].len + 1;
-    sa[C].s = D;
-    sa[B].s = D;
-    copy(sa[C].go, sa[C].go + SIGMA, sa[D].go);
-    for (; A != -1 && sa[A].go[ch] == C; A = sa[A].s)
-      sa[A].go[ch] = D;
-    break;
-  }
-  ans += sa[B].len - sa[sa[B].s].len;
-  return B;
-}
-
-signed main() {
-  string s;
-  cin >> s;
-  vector<Node> sa(1);
-  int A = 0;
-  for (char c : s)
-    A = add(A, c - 'a', sa);
-  cout << ans;
-}
-\end{lstlisting}
-
-\subsection{Суффиксный массив}
+\subsection{Муффиксный Сассив}
 \begin{lstlisting}[language=C++]
 vector<int> build_suff_arr(string s) {
   s.push_back('#');
@@ -2747,6 +2737,87 @@ vector<int> kasai(string s, vector<int> sa) {
     lcp[rank[i]] = k;
   }
   return lcp;
+}
+\end{lstlisting}
+
+\subsection{Префикс-функция}
+\begin{lstlisting}[language=C++]
+vector<int> prefix_func(string s) {
+  int n = s.size();
+  vector<int> pref(n, 0);
+  int ans = 0;
+  for (int i = 1; i < n; i++) {
+    while (ans > 0 && s[ans] != s[i]) {
+      ans = pref[ans - 1];
+    }
+    if (s[i] == s[ans]) {
+      ans++;
+    }
+    pref[i] = ans;
+  }
+  return pref;
+}
+\end{lstlisting}
+
+\subsection{Суффиксный автомат}
+\begin{lstlisting}[language=C++]
+// Суфавтомат с подсчётом кол-ва различных подстрок
+
+const int SIGMA = 26;
+int ans = 0;
+
+struct Node {
+  int go[SIGMA];
+  int s, p;
+  int len;
+
+  Node() {
+    fill(go, go + SIGMA, -1);
+    s = -1, p = -1;
+    len = 0;
+  }
+};
+
+int add(int A, int ch, vector<Node> &sa) {
+  int B = sa.size();
+  sa.emplace_back();
+  sa[B].p = A;
+  sa[B].s = 0;
+  sa[B].len = sa[A].len + 1;
+  for (; A != -1; A = sa[A].s) {
+    if (sa[A].go[ch] == -1) {
+      sa[A].go[ch] = B;
+      continue;
+    }
+    int C = sa[A].go[ch];
+    if (sa[C].p == A) {
+      sa[B].s = C;
+      break;
+    }
+    int D = sa.size();
+    sa.emplace_back();
+    sa[D].s = sa[C].s;
+    sa[D].p = A;
+    sa[D].len = sa[A].len + 1;
+    sa[C].s = D;
+    sa[B].s = D;
+    copy(sa[C].go, sa[C].go + SIGMA, sa[D].go);
+    for (; A != -1 && sa[A].go[ch] == C; A = sa[A].s)
+      sa[A].go[ch] = D;
+    break;
+  }
+  ans += sa[B].len - sa[sa[B].s].len;
+  return B;
+}
+
+signed main() {
+  string s;
+  cin >> s;
+  vector<Node> sa(1);
+  int A = 0;
+  for (char c : s)
+    A = add(A, c - 'a', sa);
+  cout << ans;
 }
 \end{lstlisting}
 
