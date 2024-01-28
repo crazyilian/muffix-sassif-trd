@@ -753,8 +753,10 @@ vector<vctr> intersection_line_circ(line l, circle c) {
   dbl d = abs(l.get(c.cent()));
   vctr per = vctr(l.a, l.b).norm() * d;
   vctr a = c.cent() + per;
-  if (sign(abs(l.get(a)) - d) > 0)
-    a = c.cent() - per;
+  if (sign(d - c.r) > 0)
+      return {};
+  if (sign(l.get(a)) != 0)
+      a = c.cent() - per;
   if (sign(c.r - d) == 0)
     return {a};
   dbl k = sqrtl(c.r * c.r - d * d);
