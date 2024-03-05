@@ -1,3 +1,12 @@
+// Список вершин -> список рёбер
+vector<vctr> poly_to_edges(const vector<vctr> &A) {
+  vector<vctr> edg(A.size());
+  for (int i = 0; i < A.size(); ++i)
+    edg[i] = A[(i + 1) % A.size()] - A[i];
+  return edg;
+}
+
+// A и B начинаются с минимальных вершин
 vector<vctr> minkowski_sum(const vector<vctr> &A, const vector<vctr> &B) {
   auto edgA = poly_to_edges(A);
   auto edgB = poly_to_edges(B);
