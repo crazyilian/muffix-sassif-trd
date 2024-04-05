@@ -52,7 +52,12 @@ struct Plane {
   }
 
   double get_val(Pt p) {
+    // НЕ СТАВИТЬ МОДУЛЬ
     return a * p.x + b * p.y + c * p.z + d;
+  }
+  
+  double dist(Pt p) {
+    return abs(get_val(p));
   }
 
   bool on_plane(Pt p) {
