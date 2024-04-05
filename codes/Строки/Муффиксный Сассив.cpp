@@ -1,4 +1,5 @@
 vector<int> build_suff_arr(string s) {
+  int MAX = max((int) s.size() + 10, (int) 256);
   s.push_back('#');
   int n = s.size();
   vector<int> suf(n), c(n);
@@ -54,12 +55,12 @@ vector<int> build_suff_arr(string s) {
     }
     swap(c, new_c);
     swap(suf, new_suf);
+    if (cls == n - 1) {
+      break;
+    }
   }
-  vector<int> res;
-  for (int i = 1; i < n; i++) {
-    res.push_back(suf[i]);
-  }
-  return res;
+  suf.erase(suf.begin());
+  return suf;
 }
 
 vector<int> kasai(string s, vector<int> sa) {
