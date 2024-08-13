@@ -18,7 +18,7 @@ int get_link(int v) {
   return v;
 }
 
-void add_char(char c, int to_sm) {
+void add_char(char c) {
   c -= 'a';
   s[n++] = c;
   last = get_link(last);
