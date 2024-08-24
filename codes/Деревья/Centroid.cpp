@@ -1,4 +1,3 @@
-vector<int> graph[MAXN];
 int levels[MAXN];
 int szs[MAXN];
 int cent_par[MAXN];
@@ -12,7 +11,7 @@ int calcsizes(int v, int p) {
   return szs[v] = sz;
 }
 
-void centroid(int v, int lvl = 1, int p = -1) {
+void centroid(int v, int lvl=1, int p=-1) {
   int sz = calcsizes(v, -1);
   int nxt = v, prv;
   while (nxt != -1) {
