@@ -1,3 +1,6 @@
+// __builtin_ctz = Count Trailing Zeroes
+// __builtin_clz = Count Leading Zeroes
+// both are UB in gcc when pass 0
 struct custom_bitset {
   vector<uint64_t> bits;
   int64_t b, n;
@@ -49,7 +52,7 @@ struct custom_bitset {
   }
 
   // Simulates `bs |= bs >> shift;`
-  // also `=`, `&=` and `^=` as in `or_shift`
+  // also `=`, `&=` and `^=` as in `or_shift_left`
   void or_shift_right(int64_t shift) {
     int64_t div = shift / 64, mod = shift % 64;
     if (mod == 0) {
