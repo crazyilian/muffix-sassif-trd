@@ -26,14 +26,15 @@ struct custom_bitset {
     return bits[index / 64] >> (index % 64) & 1;
   }
   void set(int64_t index, bool value) {
-    assert(0 <= index && index < b);
+//    assert(0 <= index && index < b);
     bits[index / 64] &= ~(1LLU << (index % 64));
     bits[index / 64] |= uint64_t(value) << (index % 64);
   }
 
   // Simulates `bs |= bs << shift;`
-  void or_shift(int64_t shift) {
-    // for bs <<= shift: change all |= to =; return *this
+  // for `bs ? bs << shift` change all `|=` to `?`
+  // `?` can be `=`, `&=`, `^=`
+  void or_shift_left(int64_t shift) {
     int64_t div = shift / 64, mod = shift % 64;
     if (mod == 0) {
       for (int64_t i = n - 1; i >= div; i--)
@@ -48,8 +49,8 @@ struct custom_bitset {
   }
 
   // Simulates `bs |= bs >> shift;`
-  void or_shift_down(int64_t shift) {
-    // for bs >>= shift: change all |= to =; return *this
+  // also `=`, `&=` and `^=` as in `or_shift`
+  void or_shift_right(int64_t shift) {
     int64_t div = shift / 64, mod = shift % 64;
     if (mod == 0) {
       for (int64_t i = div; i < n; i++)
@@ -69,11 +70,12 @@ struct custom_bitset {
         return 64 * i + __builtin_ctzll(bits[i]);
     return -1;
   }
+
+  // for operators `|=` and `^=`: change to `|=` and `^=`
   custom_bitset &operator&=(const custom_bitset &other) {
 //    assert(b == other.b);
     for (int i = 0; i < n; i++)
       bits[i] &= other.bits[i];
-      // for operators |= and ^=: change to |= and ^=
     return *this;
   }
 };
