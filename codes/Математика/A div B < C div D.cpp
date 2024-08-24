@@ -3,7 +3,7 @@ char sign(int x) {
 }
 
 // -1 = less, 0 = equal, 1 = greater
-char is_less(int a, int b, int c, int d) {
+char compare(int a, int b, int c, int d) {
   if (a / b != c / d)
     return sign(a / b - c / d);
   a = a % b;
