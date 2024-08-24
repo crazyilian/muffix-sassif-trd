@@ -12,8 +12,9 @@ bool cmp_convex_hull(const vctr &a, const vctr &b) {
 // minvctr updates here
 vector<vctr> get_convex_hull(vector<vctr> arr) {
   minvctr = {INF, INF};
-  for (auto v : pts) {
-    if (is2plane(v - minvctr))
+  for (auto v : arr) {
+    auto tmp = v - minvctr;
+    if (sign(tmp.y) < 0 || (sign(tmp.y) == 0 && sign(tmp.x) < 0))
       minvctr = v;
   }
   vector<vctr> hull;

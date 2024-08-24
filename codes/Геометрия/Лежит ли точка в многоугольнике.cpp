@@ -1,4 +1,4 @@
-// P starts with minvctr
+// Выпуклый многоугольник, P[0] = minvctr
 bool is_point_in_poly(vctr A, vector<vctr> &P) {
   int n = P.size();
   int ind = lower_bound(P.begin(), P.end(), A, cmp_convex_hull) - P.begin();

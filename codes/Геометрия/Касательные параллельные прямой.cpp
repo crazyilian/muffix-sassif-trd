@@ -1,5 +1,6 @@
-// find point with max signed distance to line
-int tangent_parallel_line(const vector<vctr> &p, line l) {
+// find point with max (sgn=1) or min (sgn=-1) signed distance to line
+int tangent_parallel_line(const vector<vctr> &p, line l, int sgn) {
+  l *= sgn;
   int n = p.size();
   int i = 0;
   int logn = 31 - __builtin_clz(n);
