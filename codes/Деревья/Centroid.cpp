@@ -1,51 +1,32 @@
-void sizes(int v, int p) {
-  sz[v] = 1;
-  for (auto u : g[v]) {
-    if (u != p && !used[u]) {
-      sizes(u, v);
-      sz[v] += sz[u];
-    }
+vector<int> graph[MAXN];
+int levels[MAXN];
+int szs[MAXN];
+int cent_par[MAXN];
+
+int calcsizes(int v, int p) {
+  int sz = 1;
+  for (int u : graph[v]) {
+    if (u != p && levels[u] == 0)
+      sz += calcsizes(u, v);
   }
+  return szs[v] = sz;
 }
 
-int centroid(int v, int p, int n) {
-  for (int u : g[v]) {
-    if (sz[u] > n / 2 && u != p && !used[u]) {
-      return centroid(u, v, n);
+void centroid(int v, int lvl = 1, int p = -1) {
+  int sz = calcsizes(v, -1);
+  int nxt = v, prv;
+  while (nxt != -1) {
+    prv = v, v = nxt, nxt = -1;
+    for (int u : graph[v]) {
+      if (u != prv && levels[u] == 0 && szs[u] * 2 >= sz)
+        nxt = u;
     }
   }
-  return v;
-}
-
-void dfs(int v, int p) {
-  // code
-  for (auto u : g[v]) {
-    if (u != p && !used[u]) {
-      dfs(u, v);
-    }
+  levels[v] = lvl;
+  cent_par[v] = p;
+  for (int u : graph[v]) {
+    if (levels[u] == 0)
+      centroid(u, lvl + 1, v);
   }
-}
-
-void solve(int v) {
-  sizes(v, -1);
-  // code (?)
-  for (auto u : g[v]) {
-    if (!used[u]) {
-      // code (?)
-      dfs(u, v);
-      // сохраняем результаты dfs
-    }
-  }
-  // code (сливаем результаты dfs)
-  used[v] = 1;
-  for (int u : g[v]) {
-    if (!used[u]) {
-      solve(centroid(u, v, sz[u]));
-    }
-  }
-}
-
-signed main() {
-  sizes(0, -1);
-  solve(centroid(0, -1, n));
+  // calc smth for centroid v
 }
