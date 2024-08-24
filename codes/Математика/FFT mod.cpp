@@ -108,15 +108,6 @@ vector<int> mul(vector<int> A, vector<int> B) {
 signed main() {
   calctail(); // НЕ ЗАБЫТЬ
   calcomega(); // НЕ ЗАБЫТЬ
-  int n, m;
-  cin >> n >> m;
-  vector<int> A(n), B(m);
-  for (int &el : A)
-    cin >> el;
-  for (int &el : B)
-    cin >> el;
-  auto C = mul(A, B);
-  for (auto el : C)
-    cout << el << ' ';
+  // your code here
 }
 
