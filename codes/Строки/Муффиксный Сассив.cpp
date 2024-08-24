@@ -10,24 +10,18 @@ vector<int> build_suff_arr(string &s) {
   vector<int> c(n);
   int cc = 0;
   for (int i = 0; i < n; i++) {
-    if (i == 0 || s[a[i]] != s[a[i - 1]]) {
+    if (i == 0 || s[a[i]] != s[a[i - 1]])
       c[a[i]] = cc++;
-    } else {
+    else
       c[a[i]] = c[a[i - 1]];
-    }
   }
   for (int L = 1; L < n; L *= 2) {
     vector<int> cnt(n);
-    for (auto i: c) {
-      cnt[i]++;
-    }
-    if (*min_element(all(cnt)) > 0) {
-      break;
-    }
+    for (auto i: c) cnt[i]++;
+    if (*min_element(all(cnt)) > 0) break;
     vector<int> pref(n);
-    for (int i = 1; i < n; i++) {
+    for (int i = 1; i < n; i++)
       pref[i] = pref[i - 1] + cnt[i - 1];
-    }
     vector<int> na(n);
     for (int i = 0; i < n; i++) {
       int pos = (a[i] - L + n) % n;
@@ -38,11 +32,10 @@ vector<int> build_suff_arr(string &s) {
     cc = 0;
     for (int i = 0; i < n; i++) {
       if (i == 0 || c[a[i]] != c[a[i - 1]] ||
-          c[(a[i] + L) % n] != c[(a[i - 1] + L) % n]) {
+          c[(a[i] + L) % n] != c[(a[i - 1] + L) % n])
         nc[a[i]] = cc++;
-      } else {
+      else
         nc[a[i]] = nc[a[i - 1]];
-      }
     }
     c = nc;
   }
@@ -53,6 +46,7 @@ vector<int> build_suff_arr(string &s) {
 }
 
 vector<int> kasai(string s, vector<int> sa) {
+  // lcp[i] = lcp(sa[i], sa[i + 1])
   int n = s.size(), k = 0;
   vector<int> lcp(n, 0);
   vector<int> rank(n, 0);
