@@ -1,9 +1,9 @@
-char sign(int x) {
+char sign(ll x) {
   return x < 0 ? -1 : x > 0;
 }
 
 // -1 = less, 0 = equal, 1 = greater
-char compare(int a, int b, int c, int d) {
+char compare(ll a, ll b, ll c, ll d) {
   if (a / b != c / d)
     return sign(a / b - c / d);
   a = a % b;
