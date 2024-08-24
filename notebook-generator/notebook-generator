@@ -15,6 +15,7 @@ options
   .option('-c --columns <amount>', 'number of columns is allowed 2, 3.', /^(2|3)$/i, '3')
   .option('-p --paper <size>', 'paper size is allowed letterpaper, a4paper, a5paper.', /^(letterpaper|a4paper|a5paper)$/i, 'a4paper')
   .option('-I --image <source>', 'cover image to be added in the notebook.')
+  .option('--assets <source>', 'assets directory.')
 
 options.parse(process.argv)
 

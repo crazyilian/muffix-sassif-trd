@@ -241,7 +241,12 @@ struct Plane {
   }
 
   double get_val(Pt p) {
+    // НЕ СТАВИТЬ МОДУЛЬ
     return a * p.x + b * p.y + c * p.z + d;
+  }
+  
+  double dist(Pt p) {
+    return abs(get_val(p));
   }
 
   bool on_plane(Pt p) {
@@ -296,6 +301,46 @@ pair<Pt, Pt> intersect(Plane pl1, Plane pl2) {
   auto [p1, p2] = intersect(copy_pl1, copy_pl2);
   return {Pt(p1.y, p1.z, p1.x), Pt(p2.y, p2.z, p2.x)};
 }
+\end{lstlisting}
+
+\subsection{SVG}
+\begin{lstlisting}[language=C++]
+struct SVG {
+    FILE *out;
+    ld sc = 50;
+
+    void open() {
+      out = fopen("image.svg", "w");
+      fprintf(out, "<svg xmlns='http://www.w3.org/2000/svg' viewBox='-1000 -1000 2000 2000'>\n");
+    }
+
+    void line(pt a, pt b, string col = "green") {
+      a = a * sc, b = b * sc;
+      fprintf(out, "<line x1='%Lf' y1='%Lf' x2='%Lf' y2='%Lf' stroke='%s'/>\n", a.x, -a.y, b.x, -b.y, col.c_str());
+    }
+
+    void circle(pt a, ld r = -1, string col = "red") {
+      r = (r == -1 ? 10 : sc * r);
+      a = a * sc;
+      fprintf(out, "<circle cx='%Lf' cy='%Lf' r='%Lf' fill='%s' fill-opacity='0.5'/>\n", a.x, -a.y, r, col.c_str());
+    }
+
+    void text(pt a, string s) {
+      a = a * sc;
+      fprintf(out, "<text x='%Lf' y='%Lf' font-size='10px'>%s</text>\n", a.x, -a.y, s.c_str());
+    }
+
+    void close() {
+      fprintf(out, "</svg>\n");
+      fclose(out);
+      out = 0;
+    }
+
+    ~SVG() {
+      if (out)
+        close();
+    }
+};
 \end{lstlisting}
 
 \subsection{Вектор, прямая, окружность}
@@ -853,6 +898,33 @@ for (int v = 1; v <= n; ++v) {
 for (int v = 1; v <= n; ++v)
   cout << (comp[v] > comp[not_v[v]] ? v : not_v[v]);
 \end{lstlisting}
+
+\subsection{l-r-capacity-maxflow}
+\noindent\rule{\linewidth}{0.15mm}
+\section*{Maximum flow problem with minimum capacities}
+
+We describe how to find the maximum flow from $S'$ to $T'$ when the edges also constrain the minimum bound of the flow amount (edges have ``minimum capacities''). It can be boiled down to an ordinary max-flow problem.
+
+Consider an edge from $u$ to $v$ whose capacity is $R$ and minimum capacity is $L$. To deal with the minimum capacity, create a new vertex $S'$ to $T'$, remove the original edge, and add edges with the following capacities:
+
+\begin{center}
+    \includegraphics[width=5cm]{/home/ilian/github/muffix-sassif-trd/assets/flow.png} \\
+    \caption{Flow network example with minimum capacities}
+\end{center}
+
+Add such edges for all edges with the minimum capacities. On the resulting graph, accumulate maximum flow in the following order:
+
+\begin{itemize}
+    \item from $S'$ to $T'$
+    \item from $S'$ to $T$
+    \item from $S$ to $T'$
+    \item from $S$ to $T$
+\end{itemize}
+
+An $S$--$T$ flow that satisfies the minimum capacities exists if and only if, for all outgoing edges from $S'$ and incoming edges to $T'$, the flow and capacity are equal. (This can be understood by corresponding the flows from $S'$ and $T'$ to the original edges.)
+
+Alternatively, if you just want to know the existence of a flow satisfying the minimum capacities, one can add an edge from $T'$ to $S'$ with infinite capacity and consider the flow from $S'$ to $T'$ once, instead of accumulating flows four times.
+\noindent\rule{\linewidth}{0.15mm}
 
 \subsection{Венгерский алгоритм}
 \begin{lstlisting}[language=C++]
@@ -1608,208 +1680,103 @@ vector<int> lcis(vector<int> a, vector<int> b) {
 
 \subsection{Centroid}
 \begin{lstlisting}[language=C++]
-void sizes(int v, int p) {
-  sz[v] = 1;
-  for (auto u : g[v]) {
-    if (u != p && !used[u]) {
-      sizes(u, v);
-      sz[v] += sz[u];
-    }
+int levels[MAXN];
+int szs[MAXN];
+int cent_par[MAXN];
+
+int calcsizes(int v, int p) {
+  int sz = 1;
+  for (int u : graph[v]) {
+    if (u != p && levels[u] == 0)
+      sz += calcsizes(u, v);
   }
+  return szs[v] = sz;
 }
 
-int centroid(int v, int p, int n) {
-  for (int u : g[v]) {
-    if (sz[u] > n / 2 && u != p && !used[u]) {
-      return centroid(u, v, n);
+void centroid(int v, int lvl=1, int p=-1) {
+  int sz = calcsizes(v, -1);
+  int nxt = v, prv;
+  while (nxt != -1) {
+    prv = v, v = nxt, nxt = -1;
+    for (int u : graph[v]) {
+      if (u != prv && levels[u] == 0 && szs[u] * 2 >= sz)
+        nxt = u;
     }
   }
-  return v;
-}
-
-void dfs(int v, int p) {
-  // code
-  for (auto u : g[v]) {
-    if (u != p && !used[u]) {
-      dfs(u, v);
-    }
+  levels[v] = lvl;
+  cent_par[v] = p;
+  for (int u : graph[v]) {
+    if (levels[u] == 0)
+      centroid(u, lvl + 1, v);
   }
-}
-
-void solve(int v) {
-  sizes(v, -1);
-  // code (?)
-  for (auto u : g[v]) {
-    if (!used[u]) {
-      // code (?)
-      dfs(u, v);
-      // сохраняем результаты dfs
-    }
-  }
-  // code (сливаем результаты dfs)
-  used[v] = 1;
-  for (int u : g[v]) {
-    if (!used[u]) {
-      solve(centroid(u, v, sz[u]));
-    }
-  }
-}
-
-signed main() {
-  sizes(0, -1);
-  solve(centroid(0, -1, n));
+  // calc smth for centroid v
 }
 \end{lstlisting}
 
 \subsection{HLD}
 \begin{lstlisting}[language=C++]
-const int MAXN = 50500;
-const int INF = (int) 1e15;
-const int L = 20;
-vector<int> g[MAXN];
-int sz[MAXN];
-int depth[MAXN];
+int par[MAXN], sizes[MAXN];
+int pathup[MAXN];
+int tin[MAXN], tout[MAXN];
+int timer;
 
-vector<vector<int>> up(MAXN, vector<int>(L + 1));
-
-void dfs(int v, int p) {
-  up[v][0] = p;
-  for (int i = 1; i <= L; i++) {
-    up[v][i] = up[up[v][i - 1]][i - 1];
-  }
-  for (int u : g[v]) {
-    if (u != p) {
-      dfs(u, v);
+int dfs1_hld(int v, int p) {
+  par[v] = p;
+  int sz = 1;
+  for (int i = 0; i < graph[v].size(); ++i) {
+    int u = graph[v][i];
+    if (u == p) {
+      swap(graph[v][i--], graph[v].back());
+      graph[v].pop_back();
+      continue;
     }
+    sz += dfs1_hld(u, v);
   }
+  return sizes[v] = sz;
 }
 
-int lca(int u, int v) {
-  if (u == v) {
-    return u;
+void dfs2_hld(int v, int up) {
+  tin[v] = timer++;
+  pathup[v] = up;
+  if (graph[v].empty()) {
+    tout[v] = timer;
+    return;
   }
-  int du = depth[u], dv = depth[v];
-  if (du < dv) {
-    swap(du, dv);
-    swap(u, v);
+  for (int i = 1; i < graph[v].size(); ++i) {
+    if (sizes[graph[v][i]] > sizes[graph[v][0]])
+      swap(graph[v][i], graph[v][0]);
   }
-  for (int i = L; i >= 0; i--) {
-    if (du - (int) pow(2, i) >= dv) {
-      u = up[u][i];
-      du -= (int) pow(2, i);
-    }
-  }
-  if (u == v) {
-    return u;
-  }
-  for (int i = L; i >= 0; i--) {
-    if (up[u][i] != up[v][i]) {
-      u = up[u][i];
-      v = up[v][i];
-    }
-  }
-  return up[u][0];
+  dfs2_hld(graph[v][0], up);
+  for (int i = 1; i < graph[v].size(); ++i)
+    dfs2_hld(graph[v][i], graph[v][i]);
+  tout[v] = timer;
 }
 
-void dfs1(int v, int p) {
-  sz[v] = 1;
-  for (int u : g[v]) {
-    if (u != p) {
-      dfs1(u, v);
-      sz[v] += sz[u];
-    }
-  }
+bool is_ancestor(int v, int p) {
+  return tin[p] <= tin[v] && tout[v] <= tout[p];
 }
 
-int cnt = 0;
-int nn[MAXN];
-int pred[MAXN];
-int rup[MAXN];
-
-void dfs2(int v, int p, int root, int dep = 0) {
-  depth[v] = dep;
-  nn[v] = cnt++;
-  pred[v] = p;
-  rup[v] = root;
-  int mx = 0;
-  int vert = -1;
-  for (int u : g[v]) {
-    if (u != p) {
-      if (mx < sz[u]) {
-        mx = sz[u];
-        vert = u;
-      }
+// get_hld полностью аналогичный
+void update_hld(int v, int u, int ARG) {
+  for (int _ = 0; _ < 2; ++_) {
+    while (!is_ancestor(u, pathup[v])) {
+      int vup = pathup[v];
+      ST.update(0, 0, timer, tin[vup], tin[v] + 1, ARG);
+      v = par[vup];
     }
+    swap(v, u);
   }
-  if (vert != -1) {
-    dfs2(vert, v, root, dep + 1);
-  }
-  for (int u : g[v]) {
-    if (u != p && u != vert) {
-      dfs2(u, v, u, dep + 1);
-    }
-  }
-}
-
-ST st({});
-int n;
-
-int mx_path_up(int u, int v) {
-  if (depth[u] < depth[v]) {
-    swap(u, v);
-  }
-  int res = -INF;
-  while (true) {
-    int root = rup[u];
-    if (depth[root] <= depth[v]) {
-      res = max(res, st.rmq(0, 0, n, nn[v], nn[u] + 1));
-      break;
-    }
-    res = max(res, st.rmq(0, 0, n, nn[root], nn[u] + 1));
-    u = pred[rup[u]];
-  }
-  return res;
-}
-
-int mx_path(int u, int v) {
-  int vert = lca(u, v);
-  return max(mx_path_up(u, vert), mx_path_up(v, vert));
-}
-
-void change(int u, int qd) {
-  st.update(0, 0, n, nn[u], qd);
+  if (tin[v] > tin[u])
+    swap(v, u);
+  // v = lca
+  ST.update(0, 0, timer, tin[v], tin[u] + 1, ARG);
 }
 
 signed main() {
-  cin >> n;
-  vector<int> hs(n);
-  for (auto &x : hs) {
-    cin >> x;
-  }
-  for (int i = 0; i < n - 1; i++) {
-    cin >> u1 >> v1;
-    g[u1].push_back(v1);
-    g[v1].push_back(u1);
-  }
-  dfs1(1, -1);
-  dfs(1, 1);
-  dfs2(1, -1, 1);
-  vector<int> nhs(n);
-  for (int i = 1; i <= n; i++) {
-    nhs[nn[i]] = hs[i - 1];
-  }
-  st = *new ST(nhs);
-  char op;
-  int q;
-  cin >> q;
-  while (q--) {
-    cin >> op >> v1 >> u1;
-    if (op == '?') {
-      cout << mx_path(u1, v1) << endl;
-    } else {
-      change(v1, u1);
-    }
-  }
+  dfs1_hld(0, -1);
+  dfs2_hld(0, 0);
+  ST.build();
+  // your code here
 }
 \end{lstlisting}
 
@@ -1994,6 +1961,124 @@ struct Kek {
 // sizeof = 9 (instead of 12)
 \end{lstlisting}
 
+\subsection{custom\_bitset}
+\begin{lstlisting}[language=C++]
+struct custom_bitset {
+    vector<uint64_t> bits;
+    int64_t b, n;
+
+    custom_bitset(int64_t _b = 0) {
+        init(_b);
+    }
+
+    void init(int64_t _b) {
+        b = _b;
+        n = (b + 63) / 64;
+        bits.assign(n, 0);
+    }
+
+    void clear() {
+        b = n = 0;
+        bits.clear();
+    }
+
+    void reset() {
+        bits.assign(n, 0);
+    }
+
+    void _clean() {
+        // Reset all bits after `b`.
+        if (b != 64 * n)
+            bits.back() &= (1LLU << (b - 64 * (n - 1))) - 1;
+    }
+
+    bool get(int64_t index) const {
+        return bits[index / 64] >> (index % 64) & 1;
+    }
+
+    void set(int64_t index, bool value) {
+        assert(0 <= index && index < b);
+        bits[index / 64] &= ~(1LLU << (index % 64));
+        bits[index / 64] |= uint64_t(value) << (index % 64);
+    }
+
+    // Simulates `bs |= bs << shift;`
+    void or_shift(int64_t shift) {
+        int64_t div = shift / 64, mod = shift % 64;
+
+        if (mod == 0) {
+            for (int64_t i = n - 1; i >= div; i--)
+                bits[i] |= bits[i - div];
+
+            return;
+        }
+
+        for (int64_t i = n - 1; i >= div + 1; i--)
+            bits[i] |= bits[i - (div + 1)] >> (64 - mod) | bits[i - div] << mod;
+
+        if (div < n)
+            bits[div] |= bits[0] << mod;
+
+        _clean();
+    }
+
+    // Simulates `bs |= bs >> shift;`
+    void or_shift_down(int64_t shift) {
+        int64_t div = shift / 64, mod = shift % 64;
+
+        if (mod == 0) {
+            for (int64_t i = div; i < n; i++)
+                bits[i - div] |= bits[i];
+
+            return;
+        }
+
+        for (int64_t i = 0; i < n - (div + 1); i++)
+            bits[i] |= bits[i + (div + 1)] << (64 - mod) | bits[i + div] >> mod;
+
+        if (div < n)
+            bits[n - div - 1] |= bits[n - 1] >> mod;
+
+        _clean();
+    }
+
+    int64_t find_first() const {
+        for (int i = 0; i < n; i++)
+            if (bits[i] != 0)
+                return 64 * i + __builtin_ctzll(bits[i]);
+
+        return -1;
+    }
+
+    custom_bitset &operator&=(const custom_bitset &other) {
+        assert(b == other.b);
+
+        for (int i = 0; i < n; i++)
+            bits[i] &= other.bits[i];
+
+        return *this;
+    }
+
+    custom_bitset &operator|=(const custom_bitset &other) {
+        assert(b == other.b);
+
+        for (int i = 0; i < n; i++)
+            bits[i] |= other.bits[i];
+
+        return *this;
+    }
+
+    custom_bitset &operator^=(const custom_bitset &other) {
+        assert(b == other.b);
+
+        for (int i = 0; i < n; i++)
+            bits[i] ^= other.bits[i];
+
+        return *this;
+    }
+};
+\end{lstlisting}
+
 \subsection{ordered\_set}
 \begin{lstlisting}[language=C++]
 #include <ext/pb_ds/assoc_container.hpp>
@@ -2035,6 +2120,27 @@ inline void operator delete(void *, std::size_t) noexcept {} // fix!!
 \end{lstlisting}
 
 \section{Математика}
+
+\subsection{A div B < C div D}
+\begin{lstlisting}[language=C++]
+char sign(ll x) {
+  return x < 0 ? -1 : x > 0;
+}
+
+// -1 = less, 0 = equal, 1 = greater
+char compare(ll a, ll b, ll c, ll d) {
+  if (a / b != c / d)
+    return sign(a / b - c / d);
+  a = a % b;
+  c = c % d;
+  if (a == 0)
+    return -sign(c) * sign(d);
+  if (c == 0)
+    return sign(a) * sign(b);
+  return is_less(d, c, b, a) * sign(a) * sign(b) * sign(c) * sign(d);
+}
+
+\end{lstlisting}
 
 \subsection{FFT mod}
 \begin{lstlisting}[language=C++]
@@ -2133,6 +2239,8 @@ void invfft(vector<int> &A, int lg) {
 }
 
 vector<int> mul(vector<int> A, vector<int> B) {
+  if (A.empty() || B.empty())
+    return {};
   int lg = 32 - __builtin_clz(A.size() + B.size() - 1);
   int n = 1 << lg;
   A.resize(n, 0);
@@ -2148,16 +2256,7 @@ vector<int> mul(vector<int> A, vector<int> B) {
 signed main() {
   calctail(); // НЕ ЗАБЫТЬ
   calcomega(); // НЕ ЗАБЫТЬ
-  int n, m;
-  cin >> n >> m;
-  vector<int> A(n), B(m);
-  for (int &el : A)
-    cin >> el;
-  for (int &el : B)
-    cin >> el;
-  auto C = mul(A, B);
-  for (auto el : C)
-    cout << el << ' ';
+  // your code here
 }
 
 \end{lstlisting}
@@ -2168,26 +2267,17 @@ const double PI = acos(-1);
 const int LOG = 20;
 const int MAXN = 1 << LOG;
 
+//using comp = complex<double>;
 struct comp {
   double x, y;
   comp() : x(0), y(0) {}
   comp(double x, double y) : x(x), y(y) {}
   comp(int x) : x(x), y(0) {}
-  comp operator+(const comp &o) const {
-    return {x + o.x, y + o.y};
-  }
-  comp operator-(const comp &o) const {
-    return {x - o.x, y - o.y};
-  }
-  comp operator*(const comp &o) const {
-    return {x * o.x - y * o.y, x * o.y + y * o.x};
-  }
-  comp operator/(const int k) const {
-    return {x / k, y / k};
-  }
-  comp conj() const {
-    return {x, -y};
-  }
+  comp operator+(const comp &o) const { return {x + o.x, y + o.y}; }
+  comp operator-(const comp &o) const { return {x - o.x, y - o.y}; }
+  comp operator*(const comp &o) const { return {x * o.x - y * o.y, x * o.y + y * o.x}; }
+  comp operator/(const int k) const { return {x / k, y / k}; }
+  comp conj() const { return {x, -y}; }
 };
 
 comp OMEGA[MAXN + 10];
@@ -2195,6 +2285,10 @@ int tail[MAXN + 10];
 
 comp omega(int n, int k) {
   return OMEGA[MAXN / n * k];
+}
+
+int gettail(int x, int lg) {
+  return tail[x] >> (LOG - lg);
 }
 
 void calcomega() {
@@ -2206,16 +2300,16 @@ void calcomega() {
 
 void calctail() {
   tail[0] = 0;
-  for (int i = 1; i < MAXN; ++i) {
+  for (int i = 1; i < MAXN; ++i)
     tail[i] = (tail[i >> 1] >> 1) | ((i & 1) << (LOG - 1));
-  }
 }
 
-void fft(vector<comp> &A) {
+void fft(vector<comp> &A, int lg) {
   int n = A.size();
   for (int i = 0; i < n; ++i) {
-    if (i < tail[i])
-      swap(A[i], A[tail[i]]);
+    int j = gettail(i, lg);
+    if (i < j)
+      swap(A[i], A[j]);
   }
   for (int len = 2; len <= n; len *= 2) {
     for (int i = 0; i < n; i += len) {
@@ -2229,42 +2323,48 @@ void fft(vector<comp> &A) {
   }
 }
 
-void fft2(vector<comp> &A, vector<comp> &B) {
+void fft2(vector<comp> &A, vector<comp> &B, int lg) {
   int n = A.size();
   vector<comp> C(n);
   for (int i = 0; i < n; ++i) {
     C[i].x = A[i].x;
     C[i].y = B[i].x;
   }
-  fft(C);
+  fft(C, lg);
   C.push_back(C[0]);
   for (int i = 0; i < n; ++i) {
     A[i] = (C[i] + C[n - i].conj()) / 2;
     B[i] = (C[i] - C[n - i].conj()) / 2 * comp(0, -1);
   }
 }
-void invfft(vector<comp> &A) {
-  fft(A);
+
+void invfft(vector<comp> &A, int lg) {
+  int n = 1 << lg;
+  fft(A, lg);
   for (auto &el : A)
-    el = el / MAXN;
+    el = el / n;
   reverse(A.begin() + 1, A.end());
 }
 
 vector<int> mul(vector<int> &a, vector<int> &b) {
-  vector<comp> A(MAXN, 0), B(MAXN, 0);
-  for (int i = 0; i < (int)a.size(); ++i)
+  if (a.empty() || b.empty())
+    return {};
+  int lg = 32 - __builtin_clz(a.size() + b.size() - 1);
+  int n = 1 << lg;
+  vector<comp> A(n, 0), B(n, 0);
+  for (int i = 0; i < a.size(); ++i)
     A[i] = a[i];
-  for (int i = 0; i < (int)b.size(); ++i)
+  for (int i = 0; i < b.size(); ++i)
     B[i] = b[i];
-  fft2(A, B);
-  for (int i = 0; i < MAXN; ++i)
+//  fft2(A, B, lg);
+  fft(A, lg);
+  fft(B, lg);
+  for (int i = 0; i < n; ++i)
     A[i] = A[i] * B[i];
-  invfft(A);
-  vector<int> c(MAXN);
-  for (int i = 0; i < MAXN; ++i) {
-    int x = round(A[i].x);
-    c[i] = x;
-  }
+  invfft(A, lg);
+  vector<int> c(n);
+  for (int i = 0; i < n; ++i)
+    c[i] = round(A[i].x);
   while (!c.empty() && c.back() == 0)
     c.pop_back();
   return c;
@@ -2276,6 +2376,22 @@ signed main() {
   // your code here
 }
 
+\end{lstlisting}
+
+\subsection{Floor Sum}
+\begin{lstlisting}[language=C++]
+int floor_sum(int n, int div, int mul, int add) {
+    // sum_{i=0}^{n-1} floor((add + i*mul)/div)
+    int ans = 0;
+    ans += (n * (n - 1) / 2) * (mul / div);
+    mul %= div;
+    ans += n * (add / div);
+    add %= div;
+    int l = mul * n + add;
+    if (l >= div)
+        ans += floor_sum(l / div, mul, div, l % div);
+    return ans;
+}
 \end{lstlisting}
 
 \subsection{Гаусс}
@@ -2569,6 +2685,41 @@ vector<int> z_func(string s) {
 }
 \end{lstlisting}
 
+\subsection{eertree}
+\begin{lstlisting}[language=C++]
+int len[MAXN], suf[MAXN];
+int go[MAXN][ALPH];
+char s[MAXN];
+
+int n, last, sz;
+
+void init() {
+  n = 0, last = 0;
+  s[n++] = -1;
+  suf[0] = 1; // root of suflink tree = 1
+  len[1] = -1;
+  sz = 2;
+}
+
+int get_link(int v) {
+  while (s[n - len[v] - 2] != s[n - 1])
+    v = suf[v];
+  return v;
+}
+
+void add_char(char c) {
+  c -= 'a';
+  s[n++] = c;
+  last = get_link(last);
+  if (!go[last][c]) {
+    len[sz] = len[last] + 2;
+    suf[sz] = go[get_link(suf[last])][c];
+    go[last][c] = sz++;
+  }
+  last = go[last][c]; // cur v = last
+}
+\end{lstlisting}
+
 \subsection{Ахо-Корасик}
 \begin{lstlisting}[language=C++]
 int go[MAXN][ALPH];
@@ -2620,71 +2771,55 @@ void bfs() {
 
 \subsection{Муффиксный Сассив}
 \begin{lstlisting}[language=C++]
-vector<int> build_suff_arr(string s) {
-  s.push_back('#');
+vector<int> build_suff_arr(string &s) {
+  // Remove, if you want to sort cyclic shifts
+  s += (char) (1);
   int n = s.size();
-  vector<int> suf(n), c(n);
-  vector<int> cnt(MAX);
+  vector<int> a(n);
+  iota(all(a), 0);
+  stable_sort(all(a), [&](int i, int j) {
+      return s[i] < s[j];
+  });
+  vector<int> c(n);
+  int cc = 0;
   for (int i = 0; i < n; i++) {
-    cnt[s[i] - '#']++;
-  }
-  vector<int> pos(MAX);
-  for (int i = 1; i < MAX; i++) {
-    pos[i] = pos[i - 1] + cnt[i - 1];
-  }
-  for (int i = 0; i < n; i++) {
-    suf[pos[s[i] - '#']++] = i;
-  }
-  int cls = -1;
-  for (int i = 0; i < n; i++) {
-    if (i == 0 || s[suf[i]] != s[suf[i - 1]]) {
-      cls++;
-    }
-    c[suf[i]] = cls;
+    if (i == 0 || s[a[i]] != s[a[i - 1]])
+      c[a[i]] = cc++;
+    else
+      c[a[i]] = c[a[i - 1]];
   }
   for (int L = 1; L < n; L *= 2) {
-    fill(cnt.begin(), cnt.end(), 0);
+    vector<int> cnt(n);
+    for (auto i: c) cnt[i]++;
+    if (*min_element(all(cnt)) > 0) break;
+    vector<int> pref(n);
+    for (int i = 1; i < n; i++)
+      pref[i] = pref[i - 1] + cnt[i - 1];
+    vector<int> na(n);
     for (int i = 0; i < n; i++) {
-      cnt[c[i]]++;
+      int pos = (a[i] - L + n) % n;
+      na[pref[c[pos]]++] = pos;
     }
-    pos[0] = 0;
-    for (int i = 1; i < n; i++) {
-      pos[i] = pos[i - 1] + cnt[i - 1];
-    }
+    a = na;
+    vector<int> nc(n);
+    cc = 0;
     for (int i = 0; i < n; i++) {
-      suf[i] = (suf[i] - L + n) % n;
+      if (i == 0 || c[a[i]] != c[a[i - 1]] ||
+          c[(a[i] + L) % n] != c[(a[i - 1] + L) % n])
+        nc[a[i]] = cc++;
+      else
+        nc[a[i]] = nc[a[i - 1]];
     }
-    vector<int> new_suf(n), new_c(n);
-    for (int i = 0; i < n; i++) {
-      int where = pos[c[suf[i]]];
-      new_suf[where] = suf[i];
-      pos[c[suf[i]]]++;
-    }
-    cls = -1;
-    for (int i = 0; i < n; i++) {
-      if (i == 0) {
-        cls++;
-        new_c[new_suf[i]] = cls;
-        continue;
-      }
-      pair<int, int> prev = {c[new_suf[i - 1]], c[(new_suf[i - 1] + L) % n]};
-      pair<int, int> now = {c[new_suf[i]], c[(new_suf[i] + L) % n]};
-      if (prev != now) {
-        cls++;
-      }
-      new_c[new_suf[i]] = cls;
-    }
-    swap(c, new_c);
-    swap(suf, new_suf);
+    c = nc;
   }
-  vector<int> res;
-  for (int i = 1; i < n; i++) {
-    res.push_back(suf[i]);
-  }
-  return res;
+  // Remove, if you want to sort cyclic shifts
+  a.erase(a.begin());
+  s.pop_back();
+  return a;
 }
 
 vector<int> kasai(string s, vector<int> sa) {
+  // lcp[i] = lcp(sa[i], sa[i + 1])
   int n = s.size(), k = 0;
   vector<int> lcp(n, 0);
   vector<int> rank(n, 0);

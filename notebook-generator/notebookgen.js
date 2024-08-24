@@ -112,6 +112,7 @@ module.exports = function (_path, options) {
   options.author = options.author || ''
   options.initials = options.initials || ''
   options.title = options.title || ''
+  options.assets = options.assets || __dirname || ''
 
   if (!options.size.endsWith('pt')) options.size += 'pt'
   if (options.image) {
@@ -131,6 +132,7 @@ module.exports = function (_path, options) {
     .replaceAll(templateParameter('image'), options.image)
     .replaceAll(templateParameter('title'), options.title)
     .replaceAll(templateParameter('codes'), walk(_path, 0))
+    .replaceAll(templateParameter('assets'), options.assets)
   
   let pos = options.output.lastIndexOf(".");
   tex_output = options.output.substr(0, pos < 0 ? options.output.length : pos) + ".tex";

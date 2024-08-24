@@ -5,5 +5,6 @@ notebook-generator/notebook-generator ./codes \
     --author "Andrianov, Lepeshov, Shulyatev" \
     --initials "NRU HSE (Andrianov, Lepeshov, Shulyatev)" \
     --output ./teambook.pdf \
-    --image ./notebook-generator/picture.jpg
+    --image ./notebook-generator/picture.jpg \
+    --assets `pwd`/assets
 
