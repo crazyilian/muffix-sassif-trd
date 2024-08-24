@@ -93,6 +93,8 @@ void invfft(vector<int> &A, int lg) {
 }
 
 vector<int> mul(vector<int> A, vector<int> B) {
+  if (A.empty() || B.empty())
+    return {};
   int lg = 32 - __builtin_clz(A.size() + B.size() - 1);
   int n = 1 << lg;
   A.resize(n, 0);
