@@ -1,5 +1,5 @@
 // works for all n < 2^64
-const int MAGIC[7] = {2, 325, 9375, 28178, 450775, 9780504, 1795265022};
+const ll MAGIC[7] = {2, 325, 9375, 28178, 450775, 9780504, 1795265022};
 
 bool is_prime(ll n) {
   if (n == 1) return false;
