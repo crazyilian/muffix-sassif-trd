@@ -26,11 +26,14 @@ struct ConvexHull {
              intersection(st[st.size() - 2].a, a) <= st[st.size() - 2].x)
         st.pop_back();
       if (!st.empty()) st.back().x = intersection(st.back().a, a);
-      st.push_back({a, INF});
-      // INF = max intersection point
+      st.push_back({a, INFINITY}); // C++ define
     }
 
     int get_val(int x) {
+      if (st.empty()) {
+        return -INF; // min possible value, for max
+//        return INF; // max possible value, for min
+      }
       int l = -1, r = (int) st.size() - 1;
       while (r - l > 1) {
         int m = (l + r) / 2;
