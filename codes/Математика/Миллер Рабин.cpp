@@ -2,21 +2,6 @@
 // works for all n < 2^64
 const int MAGIC[7] = {2, 325, 9375, 28178, 450775, 9780504, 1795265022};
 
-int bpow(__int128 a, int x, int mod) {
-  a %= mod;
-  __int128 ans = 1;
-  while (x) {
-    if (x % 2) {
-      ans *= a;
-      ans %= mod;
-    }
-    a *= a;
-    a %= mod;
-    x /= 2;
-  }
-  return (int) ans;
-}
-
 bool is_prime(int n) {
   if (n == 1) return false;
   if (n <= 3) return true;
@@ -26,9 +11,9 @@ bool is_prime(int n) {
     if (a % n == 0) {
       continue;
     }
-    int x = bpow(a, d, n);
+    int x = binpow(a, d, n); // a -> __int128 in binpow
     for (int _ = 0; _ < s; _++) {
-      int y = bpow(x, 2, n);
+      int y = binpow(x, 2, n);  // x -> __int128 in binpow
       if (y == 1 && x != 1 && x != n - 1) {
         return false;
       }
