@@ -1,4 +1,4 @@
-// x = a_i % p_i
+// ans % p_i = a_i
 vector<vector<int>> r(k, vector<int>(k));
 for (int i = 0; i < k; ++i)
   for (int j = 0; j < k; ++j)
