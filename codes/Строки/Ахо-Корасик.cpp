@@ -34,7 +34,7 @@ void bfs() {
       }
       g[suf[v]].push_back(v);
     }
-    for (int c = 0; c < 26; c++) {
+    for (int c = 0; c < ALPH; c++) {
       if (go[v][c] == 0) {
         go[v][c] = go[suf[v]][c];
       } else {
