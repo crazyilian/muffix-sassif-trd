@@ -1,13 +1,12 @@
-// Быстрое взятие по НЕ константному модулю (~1.5 раза быстрее)
+// Быстрое взятие по НЕ константному модулю (в 1.5-1.9 раза быстрее)
 struct FastMod {
-  ull mod, wtf;
-  FastMod(ull mod) : mod(mod), wtf((__uint128_t(1) << 64) / mod) {}
+  ull b, m;
+  FastMod(ull b) : b(b), m(-1ULL / b) {}
   ull reduce(ull a) const {
-    ull q = ((__uint128_t)wtf * a) >> 64;
-    ull r = a - q * mod;
-    return r >= mod ? r - mod : r;
+      ull r = a - (ull)((__uint128_t(m) * a) >> 64) * b;
+      return r;  // r in [0, 2b) // x1.9 speed
+      return r >= b ? r - b : r; // x1.5 speed
   }
 }; // Usage:
 // FastMod F(m);
 // ull x_mod_m = F.reduce(x);
-
