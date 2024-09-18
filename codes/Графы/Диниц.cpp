@@ -23,6 +23,9 @@ struct Dinic {
               vis[u] = true;
               dist[u] = dist[v] + 1;
               Q[qr++] = u;
+              // удаление ифа может ускорить,
+              // но скорее всего замедлит
+              if (u == T) return true;
           }
       }
       return vis[T];
