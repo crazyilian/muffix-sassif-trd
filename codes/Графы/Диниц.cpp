@@ -1,101 +1,85 @@
-struct edge {
-  int v, f, c, ind;
+const int LOG = 29; // масштабирование
+struct Edge { int u, f, c, r; };
+
+struct Dinic {
+  vector<Edge> graph[MAXN];
+  // разные битсеты, чтобы легко найти разрез
+  bitset<MAXN> vis, visf;
+  int dist[MAXN], Q[MAXN];
+  int ql, qr, S, T, BIT;
+  Dinic() {}
+
+  bool bfs() {
+      vis.reset();
+      ql = 0, qr = 0;
+      dist[S] = 0, vis[S] = true;
+      Q[qr++] = S;
+      while (ql < qr) {
+          int v = Q[ql++];
+          for (auto &e : graph[v]) {
+              int u = e.u;
+              if (vis[u] || e.c - e.f < BIT)
+                  continue;
+              vis[u] = true;
+              dist[u] = dist[v] + 1;
+              Q[qr++] = u;
+          }
+      }
+      return vis[T];
+  }
+
+  int dfs(int v, int minC) {
+      if (v == T) return minC;
+      visf[v] = true;
+      int ans = 0;
+      for (auto &e : graph[v]) {
+          auto cc = min(minC - ans, e.c - e.f);
+          if (dist[e.u] <= dist[v] || visf[e.u] || cc < BIT)
+              continue;
+          auto f = dfs(e.u, cc);
+          if (f != 0) {
+              e.f += f, ans += f;
+              graph[e.u][e.r].f -= f;
+          }
+      }
+      return ans;
+  }
+
+  void run(int s, int t) {
+      S = s, T = t;
+      for (BIT = (1 << LOG); BIT > 0; BIT >>= 1) {
+          while (bfs()) {
+              visf.reset();
+              dfs(S, MAXC);
+          }
+      }
+  }
+
+  void addedge(int v, int u, int c) {
+      graph[v].push_back({u, 0, c, (int)graph[u].size()});
+      // если ориентированно, то обратная capacity = 0
+      graph[u].push_back({v, 0, c, (int)graph[v].size() - 1});
+  }
 };
 
-vector<edge> g[MAXN];
-pair<int, int> pred[MAXN];
-int d[MAXN];
-int inds[MAXN];
+void use_example() {
+    Dinic dinic;
+    for (int i = 0; i < m; ++i) {
+        int v, u, c;
+        cin >> v >> u >> c;
+        v--, u--;
+        dinic.addedge(v, u, c);
+    }
+    dinic.run(s, t);
 
-bool dfs(int v, int final, int W) {
-  if (v == final) {
-    return true;
-  }
-  for (int i = inds[v]; i < (int) g[v].size(); i++) {
-    auto e = g[v][i];
-    if (e.f + W <= e.c && d[v] + 1 == d[e.v]) {
-      pred[e.v] = {v, i};
-      bool flag = dfs(e.v, final, W);
-      if (flag) {
-        return true;
-      }
-      inds[v]++;
-    } else {
-      inds[v]++;
-    }
-  }
-  return false;
-}
+    long long maxflow = 0;
+    for (auto &e : dinic.graph[s])
+        maxflow += e.f;
 
-bool bfs(int start, int final, int W) {
-  fill(d, d + MAXN, INF);
-  d[start] = 0;
-  deque<int> q = {start};
-  while (!q.empty()) {
-    int v = q.front();
-    q.pop_front();
-    for (auto e : g[v]) {
-      if (e.f + W <= e.c && d[e.v] > d[v] + 1) {
-        d[e.v] = d[v] + 1;
-        q.push_back(e.v);
-      }
+    vector<int> cut;
+    for (int i = 0; i < m; i++) {
+        auto &e = edges[i];
+        if (dinic.vis[e.v] != dinic.vis[e.u])
+            cut.push_back(i);
     }
-  }
-  if (d[final] == INF) {
-    return false;
-  }
-  fill(inds, inds + MAXN, 0);
-  while (dfs(start, final, W)) {
-    int v = final;
-    int x = INF;
-    while (v != start) {
-      int ind = pred[v].second;
-      v = pred[v].first;
-      x = min(x, g[v][ind].c - g[v][ind].f);
-    }
-    v = final;
-    while (v != start) {
-      int ind = pred[v].second;
-      v = pred[v].first;
-      g[v][ind].f += x;
-      g[g[v][ind].v][g[v][ind].ind].f -= x;
-    }
-  }
-  return true;
-}
-
-void Dinic(int start, int final) {
-  int W = (1LL << 30);
-  do {
-    while (bfs(start, final, W));
-    W /= 2;
-  } while (W >= 1);
-}
-
-signed main() {
-  int n, m;
-  vector<pair<int, int>> edges;
-  for (int i = 0; i < m; i++) {
-    int u, v, c;
-    cin >> u >> v >> c;
-    edges.emplace_back(u, v);
-    g[u].push_back({v, 0, c, (int) g[v].size()});
-    // если ребро - ориентированно, 
-    // то обратная capacity = 0
-    g[v].push_back({u, 0, c, (int) g[u].size() - 1});
-  }
-  int start = 1, target = n;
-  Dinic(start, target);
-  int res = 0;
-  for (auto e : g[start]) {
-    res += e.f;
-  }
-  vector<int> cut;
-  for (int i = 0; i < m; i++) {
-    int u = edges[i].first, v = edges[i].second;
-    if ((d[u] != INF && d[v] == INF) ||
-        (d[u] == INF && d[v] != INF)) {
-      cut.push_back(i + 1);
-    }
-  }
 }
