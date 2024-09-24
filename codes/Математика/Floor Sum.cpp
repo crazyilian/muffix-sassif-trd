@@ -1,12 +1,12 @@
-int floor_sum(int n, int div, int mul, int add) {
-    // sum_{i=0}^{n-1} floor((add + i*mul)/div), only non-negative integers!
+int floor_sum(int n, int d, int m, int a) {
+    // sum_{i=0}^{n-1} floor((a + i*m)/d), only non-negative integers!
     int ans = 0;
-    ans += (n * (n - 1) / 2) * (mul / div);
-    mul %= div;
-    ans += n * (add / div);
-    add %= div;
-    int l = mul * n + add;
-    if (l >= div)
-        ans += floor_sum(l / div, mul, div, l % div);
+    ans += (n * (n - 1) / 2) * (m / d);
+    m %= d;
+    ans += n * (a / d);
+    a %= d;
+    int l = m * n + a;
+    if (l >= d)
+        ans += floor_sum(l / d, m, d, l % d);
     return ans;
 }
