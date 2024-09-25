@@ -1,15 +1,14 @@
 struct Pt {
-  dbl x;
-  dbl y;
-  dbl z;
+  dbl x, y, z;
 
+  Pt() : x(0), y(0), z(0) {}
   Pt(dbl x_, dbl y_, dbl z_) : x(x_), y(y_), z(z_) {}
 
-  Pt operator-(const Pt& other) const {
-    return {x - other.x, y - other.y, z - other.z};
+  Pt operator-(const Pt& o) const {
+    return {x - o.x, y - o.y, z - o.z};
   }
-  Pt operator+(const Pt& other) const {
-    return {x + other.x, y + other.y, z + other.z};
+  Pt operator+(const Pt& o) const {
+    return {x + o.x, y + o.y, z + o.z};
   }
   Pt operator/(const dbl& a) const {
     return {x / a, y / a, z / a};
@@ -17,17 +16,17 @@ struct Pt {
   Pt operator*(const dbl& a) const {
     return {x * a, y * a, z * a};
   }
-  Pt cross(const Pt& p2) const {
-    dbl nx = y * p2.z - z * p2.y;
-    dbl ny = z * p2.x - x * p2.z;
-    dbl nz = x * p2.y - y * p2.x;
+  Pt cross(const Pt& o) const {
+    dbl nx = y * o.z - z * o.y;
+    dbl ny = z * o.x - x * o.z;
+    dbl nz = x * o.y - y * o.x;
     return {nx, ny, nz};
   }
-  bool operator==(const Pt& pt) const {
-    return abs(x - pt.x) < EPS && abs(y - pt.y) < EPS && abs(z - pt.z) < EPS;
-  }
-  dbl scalar(const Pt &o) const {
+  dbl dot(const Pt &o) const {
     return x * o.x + y * o.y + z * o.z;
+  }
+  bool operator==(const Pt& o) const {
+    return abs(x - o.x) < EPS && abs(y - o.y) < EPS && abs(z - o.z) < EPS;
   }
   dbl dist() {
     return sqrtl(x * x + y * y + z * z);
@@ -38,27 +37,22 @@ struct Plane {
   dbl a, b, c, d;
 
   Plane(dbl a_, dbl b_, dbl c_, dbl d_) : a(a_), b(b_), c(c_), d(d_) {
-    dbl kek = sqrtl(a * a + b * b + c * c);
-    if (kek < EPS) return;
-    a /= kek;
-    b /= kek;
-    c /= kek;
-    d /= kek;
+    dbl z = sqrtl(a * a + b * b + c * c);
+    if (z < EPS) return;
+    a /= z, b /= z, c /= z, d /= z;
   }
-
-  dbl get_val(Pt p) {
+  dbl get_val(const Pt &p) const {
     // НЕ СТАВИТЬ МОДУЛЬ
     return a * p.x + b * p.y + c * p.z + d;
   }
-  dbl dist(Pt p) {
+  dbl dist(const Pt &p) const {
     return abs(get_val(p));
   }
-  bool on_plane(Pt p) {
-    return abs(get_val(p)) / sqrtl(a * a + b * b + c * c) < EPS;
+  bool on_plane(const Pt &p) const {
+    return dist(p) / sqrtl(a * a + b * b + c * c) < EPS;
   }
-  
-  Pt proj(Pt p) {
-    dbl t = (a * p.x + b * p.y + c * p.z + d) / (a * a + b * b + c * c);
+  Pt proj(const Pt &p) const {
+    dbl t = get_val(p) / (a * a + b * b + c * c);
     return p - Pt(a, b, c) * t;
   }
 };
@@ -106,19 +100,21 @@ pair<Pt, Pt> intersect(Plane pl1, Plane pl2) {
   return {Pt(p1.y, p1.z, p1.x), Pt(p2.y, p2.z, p2.x)};
 }
 
-dbl get_ang(Pt p1, Pt p2) { // угол между двумя векторами
-  return acosl(p1.scalar(p2) / p1.dist() / p2.dist());
+// угол между двумя векторами
+dbl get_ang(Pt p1, Pt p2) {
+  return acosl(p1.dot(p2) / p1.dist() / p2.dist());
 }
 
+// любой перпендикулярный вектор
 Pt vector_perp(Pt v1) {
-  if (abs(v1.x) > EPS || abs(v1.y) > EPS) {
+  if (abs(v1.x) > EPS || abs(v1.y) > EPS)
     return {v1.y, -v1.x, 0};
-  }
   return {v1.z, 0, -v1.x};
 }
 
-Plane plane_perp(Pt start, Pt v1) {
-  Pt v2 = vector_perp(v1);
-  Pt v3 = v1.cross(v2);
-  return get_plane(start, v2 + start, v3 + start);
+// плоскость через точку p перпендикулярная вектору v
+Plane plane_perp(Pt p, Pt v) {
+  Pt v1 = vector_perp(v);
+  Pt v2 = v.cross(v1);
+  return get_plane(p, v1 + p, v2 + p);
 }
