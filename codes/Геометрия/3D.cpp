@@ -106,10 +106,10 @@ dbl get_ang(Pt p1, Pt p2) {
 }
 
 // любой перпендикулярный вектор
-Pt vector_perp(Pt v1) {
-  if (abs(v1.x) > EPS || abs(v1.y) > EPS)
-    return {v1.y, -v1.x, 0};
-  return {v1.z, 0, -v1.x};
+Pt vector_perp(Pt v) {
+  if (abs(v.x) > EPS || abs(v.y) > EPS)
+    return {v.y, -v.x, 0};
+  return {v.z, 0, -v.x};
 }
 
 // плоскость через точку p перпендикулярная вектору v
