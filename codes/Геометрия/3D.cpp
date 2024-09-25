@@ -8,34 +8,27 @@ struct Pt {
   Pt operator-(const Pt& other) const {
     return {x - other.x, y - other.y, z - other.z};
   }
-
   Pt operator+(const Pt& other) const {
     return {x + other.x, y + other.y, z + other.z};
   }
-
   Pt operator/(const dbl& a) const {
     return {x / a, y / a, z / a};
   }
-
   Pt operator*(const dbl& a) const {
     return {x * a, y * a, z * a};
   }
-
   Pt cross(const Pt& p2) const {
     dbl nx = y * p2.z - z * p2.y;
     dbl ny = z * p2.x - x * p2.z;
     dbl nz = x * p2.y - y * p2.x;
     return {nx, ny, nz};
   }
-
   bool operator==(const Pt& pt) const {
     return abs(x - pt.x) < EPS && abs(y - pt.y) < EPS && abs(z - pt.z) < EPS;
   }
-
   dbl scalar(const Pt &o) const {
     return x * o.x + y * o.y + z * o.z;
   }
-
   dbl dist() {
     return sqrtl(x * x + y * y + z * z);
   }
@@ -57,15 +50,13 @@ struct Plane {
     // НЕ СТАВИТЬ МОДУЛЬ
     return a * p.x + b * p.y + c * p.z + d;
   }
-
   dbl dist(Pt p) {
     return abs(get_val(p));
   }
-
   bool on_plane(Pt p) {
     return abs(get_val(p)) / sqrtl(a * a + b * b + c * c) < EPS;
   }
-
+  
   Pt proj(Pt p) {
     dbl t = (a * p.x + b * p.y + c * p.z + d) / (a * a + b * b + c * c);
     return p - Pt(a, b, c) * t;
@@ -115,7 +106,6 @@ pair<Pt, Pt> intersect(Plane pl1, Plane pl2) {
   return {Pt(p1.y, p1.z, p1.x), Pt(p2.y, p2.z, p2.x)};
 }
 
-
 dbl get_ang(Pt p1, Pt p2) { // угол между двумя векторами
   return acosl(p1.scalar(p2) / p1.dist() / p2.dist());
 }
@@ -124,10 +114,7 @@ Pt vector_perp(Pt v1) {
   if (abs(v1.x) > EPS || abs(v1.y) > EPS) {
     return {v1.y, -v1.x, 0};
   }
-  if (abs(v1.x) > EPS || abs(v1.z) > EPS) {
-    return {v1.z, 0, -v1.x};
-  }
-  return {0, v1.z, -v1.y};
+  return {v1.z, 0, -v1.x};
 }
 
 Plane plane_perp(Pt start, Pt v1) {
