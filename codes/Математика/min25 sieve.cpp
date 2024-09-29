@@ -95,5 +95,5 @@ ll min25_sieve(ll n) {
     // done, answer for v[i] is r[i]+1 (f(1)=1)
     // in particular \sum_{i=2}^n f(i) is in r.back()
     // therefore \sum_{i=1}^n f(i) is r.back() + 1
-    return r.back() + 1;
+    return r.back() + 1 - g(1, 1); // since f(1)=1 for real, not g(1,1): 1 is not prime
 }
