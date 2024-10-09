@@ -12,6 +12,6 @@ char compare(ll a, ll b, ll c, ll d) {
     return -sign(c) * sign(d);
   if (c == 0)
     return sign(a) * sign(b);
-  return is_less(d, c, b, a) * sign(a) * sign(b) * sign(c) * sign(d);
+  return compare(d, c, b, a) * sign(a) * sign(b) * sign(c) * sign(d);
 }
 
