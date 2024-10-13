@@ -1,3 +1,4 @@
+// MAXN дополнить до степени двойки (или n*2)
 int tree[LOG][MAXN];
 int floorlog2[MAXN]; // i ? (31 - __builtin_clz(i)) : 0
 
@@ -16,7 +17,7 @@ void build(vector<int> &a) {
         lvl[i] = min(lvl[i - 1], a[i]);
     }
   }
-  for (int i = 2; i <= n; ++i)
+  for (int i = 2; i < MAXN; ++i)
     floorlog2[i] = floorlog2[i / 2] + 1;
 }
 
