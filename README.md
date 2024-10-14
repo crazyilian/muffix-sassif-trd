@@ -7,7 +7,7 @@
 ```tex
 \begin{center}
     \includegraphics[width=5cm]{${assets}/image.png} \\
-    \caption{Aboba}
+    Caption here
 \end{center}
 ```
 

@@ -117,7 +117,7 @@ module.exports = function (_path, options) {
   if (!options.size.endsWith('pt')) options.size += 'pt'
   if (options.image) {
     options.image = normalizeUnixStyle(path.resolve(options.image))
-    options.image = '\\begin{center}{\\includegraphics[width=5cm]{' + options.image + '}\\end{center}'
+    options.image = '\\begin{center}\\includegraphics[width=5cm]{' + options.image + '}\\end{center}'
   } else {
     options.image = ''
   }

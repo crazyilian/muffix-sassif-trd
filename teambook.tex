@@ -175,7 +175,7 @@
 \date{\selectlanguage{english}\today}
 \maketitle
 \begin{multicols*}{3}
-\begin{center}{\includegraphics[width=5cm]{/home/ilian/github/muffix-sassif-trd/notebook-generator/picture.jpg}\end{center}
+\begin{center}\includegraphics[width=5cm]{/home/ilian/github/muffix-sassif-trd/notebook-generator/picture.jpg}\end{center}
 \tableofcontents
 \end{multicols*}
 \pagebreak
@@ -187,74 +187,61 @@
 
 \subsection{3D}
 \begin{lstlisting}[language=C++]
-double eps = 1e-7;
-
 struct Pt {
-  double x;
-  double y;
-  double z;
+  dbl x, y, z;
 
-  Pt(double x_, double y_, double z_) : x(x_), y(y_), z(z_) {}
+  Pt() : x(0), y(0), z(0) {}
+  Pt(dbl x_, dbl y_, dbl z_) : x(x_), y(y_), z(z_) {}
 
-  Pt operator-(const Pt& other) const {
-    return {x - other.x, y - other.y, z - other.z};
+  Pt operator-(const Pt& o) const {
+    return {x - o.x, y - o.y, z - o.z};
   }
-
-  Pt operator+(const Pt& other) const {
-    return {x + other.x, y + other.y, z + other.z};
+  Pt operator+(const Pt& o) const {
+    return {x + o.x, y + o.y, z + o.z};
   }
-
-  Pt operator/(const double& a) const {
+  Pt operator/(const dbl& a) const {
     return {x / a, y / a, z / a};
   }
-
-  Pt operator*(const double& a) const {
+  Pt operator*(const dbl& a) const {
     return {x * a, y * a, z * a};
   }
-
-  Pt cross(const Pt& p2) const {
-    double nx = y * p2.z - z * p2.y;
-    double ny = z * p2.x - x * p2.z;
-    double nz = x * p2.y - y * p2.x;
+  Pt cross(const Pt& o) const {
+    dbl nx = y * o.z - z * o.y;
+    dbl ny = z * o.x - x * o.z;
+    dbl nz = x * o.y - y * o.x;
     return {nx, ny, nz};
   }
-
-  bool operator==(const Pt& pt) const {
-    return abs(x - pt.x) < eps && abs(y - pt.y) < eps && abs(z - pt.z) < eps;
+  dbl dot(const Pt &o) const {
+    return x * o.x + y * o.y + z * o.z;
   }
-
-  double dist() {
+  bool operator==(const Pt& o) const {
+    return abs(x - o.x) < EPS && abs(y - o.y) < EPS && abs(z - o.z) < EPS;
+  }
+  dbl dist() {
     return sqrtl(x * x + y * y + z * z);
   }
 };
 
 struct Plane {
-  double a, b, c, d;
+  dbl a, b, c, d;
 
-  Plane(double a_, double b_, double c_, double d_) : a(a_), b(b_), c(c_), d(d_) {
-    double kek = sqrtl(a * a + b * b + c * c);
-    if (kek < eps) return;
-    a /= kek;
-    b /= kek;
-    c /= kek;
-    d /= kek;
+  Plane(dbl a_, dbl b_, dbl c_, dbl d_) : a(a_), b(b_), c(c_), d(d_) {
+    dbl z = sqrtl(a * a + b * b + c * c);
+    if (z < EPS) return;
+    a /= z, b /= z, c /= z, d /= z;
   }
-
-  double get_val(Pt p) {
+  dbl get_val(const Pt &p) const {
     // НЕ СТАВИТЬ МОДУЛЬ
     return a * p.x + b * p.y + c * p.z + d;
   }
-  
-  double dist(Pt p) {
+  dbl dist(const Pt &p) const {
     return abs(get_val(p));
   }
-
-  bool on_plane(Pt p) {
-    return abs(get_val(p)) / sqrtl(a * a + b * b + c * c) < eps;
+  bool on_plane(const Pt &p) const {
+    return dist(p) / sqrtl(a * a + b * b + c * c) < EPS;
   }
-
-  Pt proj(Pt p) {
-    double t = (a * p.x + b * p.y + c * p.z + d) / (a * a + b * b + c * c);
+  Pt proj(const Pt &p) const {
+    dbl t = get_val(p) / (a * a + b * b + c * c);
     return p - Pt(a, b, c) * t;
   }
 };
@@ -270,30 +257,30 @@ Plane get_plane(Pt p1, Pt p2, Pt p3) {
   return pl;
 }
 
-pair<pair<double, double>, pair<double, double>> get_xy(double a, double b, double c) {
-  if (abs(a) > eps) {
-    double y1 = 0, y2 = 10;
+pair<pair<dbl, dbl>, pair<dbl, dbl>> get_xy(dbl a, dbl b, dbl c) {
+  if (abs(a) > EPS) {
+    dbl y1 = 0, y2 = 10;
     return {{(-c - b * y1) / a, y1}, {(-c - b * y2) / a, y2}};
   }
-  double x1 = 0, x2 = 10;
+  dbl x1 = 0, x2 = 10;
   return {{x1, (-c - a * x1) / b}, {x2, (-c - a * x2) / b}};
 }
 
 pair<Pt, Pt> intersect(Plane pl1, Plane pl2) {
-  if (abs(pl2.a) < eps && abs(pl2.b) < eps && abs(pl2.c) < eps) {
+  if (abs(pl2.a) < EPS && abs(pl2.b) < EPS && abs(pl2.c) < EPS) {
     assert(false);
   }
-  if (abs(pl2.a) > eps) {
-    double nd = pl1.d - pl1.a * pl2.d / pl2.a;
-    double nc = pl1.c - pl1.a * pl2.c / pl2.a;
-    double nb = pl1.b - pl1.a * pl2.b / pl2.a;
-    if (abs(nc) < eps && abs(nb) < eps) {
+  if (abs(pl2.a) > EPS) {
+    dbl nd = pl1.d - pl1.a * pl2.d / pl2.a;
+    dbl nc = pl1.c - pl1.a * pl2.c / pl2.a;
+    dbl nb = pl1.b - pl1.a * pl2.b / pl2.a;
+    if (abs(nc) < EPS && abs(nb) < EPS) {
       // плоскости параллельны (могут совпадать)
       return {Pt(0, 0, 0), Pt(0, 0, 0)};
     }
     auto [yz1, yz2] = get_xy(nb, nc, nd);
-    double x1 = (-pl2.d - pl2.c * yz1.second - pl2.b * yz1.first) / pl2.a;
-    double x2 = (-pl2.d - pl2.c * yz2.second - pl2.b * yz2.first) / pl2.a;
+    dbl x1 = (-pl2.d - pl2.c * yz1.second - pl2.b * yz1.first) / pl2.a;
+    dbl x2 = (-pl2.d - pl2.c * yz2.second - pl2.b * yz2.first) / pl2.a;
     return {Pt(x1, yz1.first, yz1.second), Pt(x2, yz2.first, yz2.second)};
   }
   Plane copy_pl1(pl1.c, pl1.a, pl1.b, pl1.d);
@@ -301,11 +288,32 @@ pair<Pt, Pt> intersect(Plane pl1, Plane pl2) {
   auto [p1, p2] = intersect(copy_pl1, copy_pl2);
   return {Pt(p1.y, p1.z, p1.x), Pt(p2.y, p2.z, p2.x)};
 }
+
+// угол между двумя векторами
+dbl get_ang(Pt p1, Pt p2) {
+  return acosl(p1.dot(p2) / p1.dist() / p2.dist());
+}
+
+// любой перпендикулярный вектор
+Pt vector_perp(Pt v) {
+  if (abs(v.x) > EPS || abs(v.y) > EPS)
+    return {v.y, -v.x, 0};
+  return {v.z, 0, -v.x};
+}
+
+// плоскость через точку p перпендикулярная вектору v
+Plane plane_perp(Pt p, Pt v) {
+  Pt v1 = vector_perp(v);
+  Pt v2 = v.cross(v1);
+  return get_plane(p, v1 + p, v2 + p);
+}
 \end{lstlisting}
 
-\subsection{Вектор, прямая, окружность}
+\subsection{База 1: вектор}
 \begin{lstlisting}[language=C++]
-//// Вектор ////
+char sign(dbl x) {
+  return x < -EPS ? -1 : x > EPS;
+}
 
 struct vctr {
   dbl x, y;
@@ -343,8 +351,20 @@ bool cmp_angle(const vctr &a, const vctr &b) {
   return sign(a * b) > 0;
 }
 
-//// Прямая ////
+vctr rotate_ccw(const vctr &a, dbl phi) {
+  dbl cs = cos(phi);
+  dbl sn = sin(phi);
+  return {a.x * cs - a.y * sn, a.y * cs + a.x * sn};
+}
 
+vctr rotate_ccw_90(const vctr &a) {
+  return {-a.y, a.x};
+}
+
+\end{lstlisting}
+
+\subsection{База 2: прямая}
+\begin{lstlisting}[language=C++]
 struct line {
   dbl a, b, c;
 
@@ -354,70 +374,101 @@ struct line {
     a = A.y - B.y;
     b = B.x - A.x;
     c = A * B;
-    assert(a != 0 || b != 0);
+    // left halfplane of A->B is positive
+    // assert(a != 0 || b != 0);
   }
-
   void operator*=(dbl x) { a *= x, b *= x, c *= x; }
   void operator/=(dbl x) { a /= x, b /= x, c /= x; }
   dbl get(const vctr P) const { return a * P.x + b * P.y + c; }
   vctr anyPoint() const {
     dbl x = -a * c / (a * a + b * b);
     dbl y = -b * c / (a * a + b * b);
-    return vctr(x, y);
+    return {x, y};
   }
   void normalize() {
     dbl d = sqrtl(a * a + b * b);
-    a /= d;
-    b /= d;
-    c /= d;
+    a /= d, b /= d, c /= d;
   }
 };
 
 bool isparallel(line l1, line l2) {
-  return vctr(l1.a, l1.b) * vctr(l2.a, l2.b) == 0;
+  return sign(l2.a * l1.b - l2.b * l1.a) == 0;
 }
 
 vctr intersection(const line &l1, const line &l2) {
-  dbl x = (l1.c * l2.b - l2.c * l1.b) / (l2.a * l1.b - l2.b * l1.a);
-  dbl y = -(l1.c * l2.a - l2.c * l1.a) / (l2.a * l1.b - l2.b * l1.a);
-  return vctr(x, y);
+  dbl z = l2.a * l1.b - l2.b * l1.a;
+  dbl x = (l1.c * l2.b - l2.c * l1.b) / z;
+  dbl y = -(l1.c * l2.a - l2.c * l1.a) / z;
+  return {x, y};
 }
 
 // Серединный перпендикуляр (не биссектриса!)
 line bisection(const vctr A, const vctr B) {
   vctr M = (A + B) / 2;
-  vctr AB = B - A;
-  vctr norm = vctr(AB.y, -AB.x);
-  return line(M, M + norm);
+  return line(M, M + rotate_ccw_90(B - A));
 }
 
-//// Окружность ////
+\end{lstlisting}
 
+\subsection{База 3: окружность}
+\begin{lstlisting}[language=C++]
 struct circle {
-  dbl x, y, r;
+  vctr C;
+  dbl r;
 
   circle() {}
-  circle(dbl x, dbl y, dbl r) : x(x), y(y), r(r) {}
-  circle(vctr P, dbl r) : x(P.x), y(P.y), r(r) {}
+  circle(dbl x, dbl y, dbl r) : C(x, y), r(r) {}
+  circle(vctr C, dbl r) : C(C), r(r) {}
   circle(const vctr A, const vctr B) {
-    vctr C = (A + B) / 2;
-    x = C.x, y = C.y;
+    C = (A + B) / 2;
     r = (A - B).dist() / 2;
   }
-  circle(const vctr A, const vctr B, const vctr C) {
+  circle(const vctr A, const vctr B, const vctr D) {
     line l1 = bisection(A, B);
-    line l2 = bisection(B, C);
-    vctr P = intersection(l1, l2);
-    x = P.x, y = P.y;
-    r = (P - A).dist();
+    line l2 = bisection(B, D);
+    C = intersection(l1, l2);
+    r = (C - A).dist();
   }
 
   bool isin(const vctr P) const {
-    return (vctr(x, y) - P).dist2() <= r * r;
+    return sign((C - P).dist2() - r * r) <= 0;
   }
-  vctr cent() const { return vctr(x, y); }
 };
 
+vector<vctr> intersection_line_circ(line l, circle c) {
+  l.normalize();
+  dbl d = abs(l.get(c.C));
+  vctr per = vctr(l.a, l.b).norm() * d;
+  vctr a = c.C + per;
+  if (sign(d - c.r) > 0)
+    return {};
+  if (sign(l.get(a)) != 0)
+    a = c.C - per;
+  if (sign(c.r - d) == 0)
+    return {a};
+  dbl k = sqrtl(c.r * c.r - d * d);
+  vctr v = vctr(-l.b, l.a).norm() * k;
+  return {a + v, a - v};
+}
+
+vector<vctr> intersection_circ_circ(circle A, circle B) {
+  vctr a = A.C, b = B.C;
+  line l(2 * (b.x - a.x),
+         2 * (b.y - a.y),
+         B.r * B.r - A.r * A.r
+             + (a.x * a.x + a.y * a.y)
+             - (b.x * b.x + b.y * b.y));
+  if (sign(l.a) == 0 && sign(l.b) == 0)
+    return {};
+  return intersection_line_circ(l, A);
+}
+
+vector<vctr> tangent_vctr_circ(vctr v, circle c) {
+  dbl d = (c.C - v).dist();
+  dbl k = sqrtl(d * d - c.r * c.r);
+  circle c2(v.x, v.y, k);
+  return intersection_circ_circ(c, c2);
+}
 
 \end{lstlisting}
 
@@ -437,8 +488,9 @@ bool cmp_convex_hull(const vctr &a, const vctr &b) {
 // minvctr updates here
 vector<vctr> get_convex_hull(vector<vctr> arr) {
   minvctr = {INF, INF};
-  for (auto v : pts) {
-    if (is2plane(v - minvctr))
+  for (auto v : arr) {
+    auto tmp = v - minvctr;
+    if (sign(tmp.y) < 0 || (sign(tmp.y) == 0 && sign(tmp.x) < 0))
       minvctr = v;
   }
   vector<vctr> hull;
@@ -557,14 +609,14 @@ dbl distSegSeg(vctr s1a, vctr s1b, vctr s2a, vctr s2b) {
 pair<int, int> tangents_from_point(vector<vctr> &p, vctr &a) {
   int n = p.size();
   int logn = 31 - __builtin_clz(n);
-  auto findWithSign = [&](int val) {
+  auto findWithSign = [&](int sgn) {
     int i = 0;
     for (int k = logn; k >= 0; --k) {
       int i1 = (i - (1 << k) + n) % n;
       int i2 = (i + (1 << k)) % n;
-      if (sign((p[i1] - a) * (p[i] - a)) == val)
+      if (sign((p[i1] - a) * (p[i] - a)) == sgn)
         i = i1;
-      if (sign((p[i2] - a) * (p[i] - a)) == val)
+      if (sign((p[i2] - a) * (p[i] - a)) == sgn)
         i = i2;
     }
     return i;
@@ -576,8 +628,9 @@ pair<int, int> tangents_from_point(vector<vctr> &p, vctr &a) {
 
 \subsection{Касательные параллельные прямой}
 \begin{lstlisting}[language=C++]
-// find point with max signed distance to line
-int tangent_parallel_line(const vector<vctr> &p, line l) {
+// find point with max (sgn=1) or min (sgn=-1) signed distance to line
+int tangent_parallel_line(const vector<vctr> &p, line l, int sgn) {
+  l *= sgn;
   int n = p.size();
   int i = 0;
   int logn = 31 - __builtin_clz(n);
@@ -596,7 +649,7 @@ int tangent_parallel_line(const vector<vctr> &p, line l) {
 
 \subsection{Лежит ли точка в многоугольнике}
 \begin{lstlisting}[language=C++]
-// P starts with minvctr
+// Выпуклый многоугольник, P[0] = minvctr
 bool is_point_in_poly(vctr A, vector<vctr> &P) {
   int n = P.size();
   int ind = lower_bound(P.begin(), P.end(), A, cmp_convex_hull) - P.begin();
@@ -726,50 +779,6 @@ vector<vctr> intersection_half_planes(vector<line> &ls) {
 
 \end{lstlisting}
 
-\subsection{Пересечение с окружностью}
-\begin{lstlisting}[language=C++]
-bool is_intersection_line_circ(line l, circle c) {
-  l.normalize();
-  dbl d = abs(l.get(c.cent()));
-  return d < c.r - EPS;
-}
-
-vector<vctr> intersection_line_circ(line l, circle c) {
-  l.normalize();
-  dbl d = abs(l.get(c.cent()));
-  vctr per = vctr(l.a, l.b).norm() * d;
-  vctr a = c.cent() + per;
-  if (sign(d - c.r) > 0)
-      return {};
-  if (sign(l.get(a)) != 0)
-      a = c.cent() - per;
-  if (sign(c.r - d) == 0)
-    return {a};
-  dbl k = sqrtl(c.r * c.r - d * d);
-  vctr par = vctr(-l.b, l.a).norm() * k;
-  return {a + par, a - par};
-}
-
-vector<vctr> intersection_circ_circ(circle a, circle b) {
-  line l(2 * (b.x - a.x),
-         2 * (b.y - a.y),
-         b.r * b.r - a.r * a.r
-             + (a.x * a.x + a.y * a.y)
-             - (b.x * b.x + b.y * b.y));
-  if (sign(l.a) == 0 && sign(l.b) == 0)
-    return {};
-  return intersection_line_circ(l, a);
-}
-
-vector<vctr> tangent_vctr_circ(vctr v, circle c) {
-  dbl d = (c.cent() - v).dist();
-  dbl k = sqrtl(d * d - c.r * c.r);
-  circle c2(v.x, v.y, k);
-  return intersection_circ_circ(c, c2);
-}
-
-\end{lstlisting}
-
 \subsection{Проверка на пересечение отрезков}
 \begin{lstlisting}[language=C++]
 bool is_intersection_seg(vctr A, vctr B, vctr C, vctr D) {
@@ -813,6 +822,7 @@ vector<vctr> minkowski_sum(const vector<vctr> &A, const vector<vctr> &B) {
   auto edgB = poly_to_edges(B);
   vector<vctr> edgC(A.size() + B.size());
   merge(edgA.begin(), edgA.end(), edgB.begin(), edgB.end(), edgC.begin(), cmp_angle);
+  // cmp_angle из шаблона вектора
   vector<vctr> C(edgC.size());
   C[0] = A[0] + B[0];
   for (int i = 0; i + 1 < C.size(); ++i)
@@ -863,13 +873,13 @@ for (int v = 1; v <= n; ++v)
 \noindent\rule{\linewidth}{0.15mm}
 \section*{Maximum flow problem with minimum capacities}
 
-We describe how to find the maximum flow from $S'$ to $T'$ when the edges also constrain the minimum bound of the flow amount (edges have ``minimum capacities''). It can be boiled down to an ordinary max-flow problem.
+We describe how to find the maximum flow from $S$ to $T$ when the edges also constrain the minimum bound of the flow amount (edges have ``minimum capacities''). It can be boiled down to an ordinary max-flow problem.
 
 Consider an edge from $u$ to $v$ whose capacity is $R$ and minimum capacity is $L$. To deal with the minimum capacity, create a new vertex $S'$ to $T'$, remove the original edge, and add edges with the following capacities:
 
 \begin{center}
     \includegraphics[width=5cm]{/home/ilian/github/muffix-sassif-trd/assets/flow.png} \\
-    \caption{Flow network example with minimum capacities}
+    Flow network example with minimum capacities
 \end{center}
 
 Add such edges for all edges with the minimum capacities. On the resulting graph, accumulate maximum flow in the following order:
@@ -883,7 +893,7 @@ Add such edges for all edges with the minimum capacities. On the resulting graph
 
 An $S$--$T$ flow that satisfies the minimum capacities exists if and only if, for all outgoing edges from $S'$ and incoming edges to $T'$, the flow and capacity are equal. (This can be understood by corresponding the flows from $S'$ and $T'$ to the original edges.)
 
-Alternatively, if you just want to know the existence of a flow satisfying the minimum capacities, one can add an edge from $T'$ to $S'$ with infinite capacity and consider the flow from $S'$ to $T'$ once, instead of accumulating flows four times.
+Alternatively, if you just want to know the existence of a flow satisfying the minimum capacities, one can add an edge from $T$ to $S$ with infinite capacity and consider the flow from $S'$ to $T'$ once, instead of accumulating flows four times.
 \noindent\rule{\linewidth}{0.15mm}
 
 \subsection{Венгерский алгоритм}
@@ -1007,105 +1017,93 @@ signed main() {
 
 \subsection{Диниц}
 \begin{lstlisting}[language=C++]
-struct edge {
-  int v, f, c, ind;
+const int LOG = 29; // масштабирование, =0 если не нужно
+struct Edge { int u, f, c, r; };
+
+struct Dinic {
+  vector<Edge> graph[MAXN];
+  // разные битсеты, чтобы легко найти разрез
+  bitset<MAXN> vis, visf;
+  int dist[MAXN], Q[MAXN];
+  int ql, qr, S, T, BIT;
+  Dinic() {}
+
+  bool bfs() {
+    vis.reset();
+    ql = 0, qr = 0;
+    dist[S] = 0, vis[S] = true;
+    Q[qr++] = S;
+    while (ql < qr) {
+      int v = Q[ql++];
+      for (auto &e : graph[v]) {
+        int u = e.u;
+        if (vis[u] || e.c - e.f < BIT)
+          continue;
+        vis[u] = true;
+        dist[u] = dist[v] + 1;
+        Q[qr++] = u;
+        // удаление ифа может ускорить,
+        // но скорее сильно замедлит
+        if (u == T) return true;
+      }
+    }
+    return vis[T];
+  }
+
+  int dfs(int v, int minC) {
+    if (v == T) return minC;
+    visf[v] = true;
+    int ans = 0;
+    for (auto &e : graph[v]) {
+      auto cc = min(minC - ans, e.c - e.f);
+      // удалить второе условие, если один битсет
+      if (dist[e.u] <= dist[v] || !vis[e.u] || visf[e.u] || cc < BIT)
+        continue;
+      auto f = dfs(e.u, cc);
+      if (f != 0) {
+        e.f += f, ans += f;
+        graph[e.u][e.r].f -= f;
+      }
+    }
+    return ans;
+  }
+
+  void run(int s, int t) {
+    S = s, T = t;
+    for (BIT = (1ll << LOG); BIT > 0; BIT >>= 1) {
+      while (bfs()) {
+        visf.reset();
+        dfs(S, MAXC);
+      }
+    }
+  }
+
+  void addedge(int v, int u, int c) {
+    graph[v].push_back({u, 0, c, (int)graph[u].size()});
+    // если ориентированно, то обратная capacity = 0
+    graph[u].push_back({v, 0, c, (int)graph[v].size() - 1});
+  }
 };
 
-vector<edge> g[MAXN];
-pair<int, int> pred[MAXN];
-int d[MAXN];
-int inds[MAXN];
+void use_example() {
+  Dinic dinic;
+  for (int i = 0; i < m; ++i) {
+    int v, u, c;
+    cin >> v >> u >> c;
+    v--, u--;
+    dinic.addedge(v, u, c);
+  }
+  dinic.run(s, t);
 
-bool dfs(int v, int final, int W) {
-  if (v == final) {
-    return true;
-  }
-  for (int i = inds[v]; i < (int) g[v].size(); i++) {
-    auto e = g[v][i];
-    if (e.f + W <= e.c && d[v] + 1 == d[e.v]) {
-      pred[e.v] = {v, i};
-      bool flag = dfs(e.v, final, W);
-      if (flag) {
-        return true;
-      }
-      inds[v]++;
-    } else {
-      inds[v]++;
-    }
-  }
-  return false;
-}
+  long long maxflow = 0;
+  for (auto &e : dinic.graph[s])
+    maxflow += e.f;
 
-bool bfs(int start, int final, int W) {
-  fill(d, d + MAXN, INF);
-  d[start] = 0;
-  deque<int> q = {start};
-  while (!q.empty()) {
-    int v = q.front();
-    q.pop_front();
-    for (auto e : g[v]) {
-      if (e.f + W <= e.c && d[e.v] > d[v] + 1) {
-        d[e.v] = d[v] + 1;
-        q.push_back(e.v);
-      }
-    }
-  }
-  if (d[final] == INF) {
-    return false;
-  }
-  fill(inds, inds + MAXN, 0);
-  while (dfs(start, final, W)) {
-    int v = final;
-    int x = INF;
-    while (v != start) {
-      int ind = pred[v].second;
-      v = pred[v].first;
-      x = min(x, g[v][ind].c - g[v][ind].f);
-    }
-    v = final;
-    while (v != start) {
-      int ind = pred[v].second;
-      v = pred[v].first;
-      g[v][ind].f += x;
-      g[g[v][ind].v][g[v][ind].ind].f -= x;
-    }
-  }
-  return true;
-}
-
-void Dinic(int start, int final) {
-  int W = (1LL << 30);
-  do {
-    while (bfs(start, final, W));
-    W /= 2;
-  } while (W >= 1);
-}
-
-signed main() {
-  int n, m;
-  vector<pair<int, int>> edges;
-  for (int i = 0; i < m; i++) {
-    int u, v, c;
-    cin >> u >> v >> c;
-    edges.emplace_back(u, v);
-    g[u].push_back({v, 0, c, (int) g[v].size()});
-    // если ребро - ориентированно, 
-    // то обратная capacity = 0
-    g[v].push_back({u, 0, c, (int) g[u].size() - 1});
-  }
-  int start = 1, target = n;
-  Dinic(start, target);
-  int res = 0;
-  for (auto e : g[start]) {
-    res += e.f;
-  }
   vector<int> cut;
   for (int i = 0; i < m; i++) {
-    int u = edges[i].first, v = edges[i].second;
-    if ((d[u] != INF && d[v] == INF) ||
-        (d[u] == INF && d[v] != INF)) {
-      cut.push_back(i + 1);
-    }
+    auto &e = edges[i];
+    if (dinic.vis[e.v] != dinic.vis[e.u])
+      cut.push_back(i);
   }
 }
 \end{lstlisting}
@@ -1410,27 +1408,43 @@ signed main() {
 
 \subsection{Эйлеров цикл}
 \begin{lstlisting}[language=C++]
-// unconnected graph, deleting edges, set<int> g[N];
-for (int v = 0; v < n; v++) {
-  if (!g[v].empty()) {
-    vector<int> ccl;
-    vector<int> s = {v};
-    while (!s.empty()) {
-      int u = s.back();
-      if (g[u].empty()) {
-        ccl.pb(u);
-        s.pop_back();
-      } else {
-        int u2 = *g[u].begin();
-        g[u].erase(u2);
-        g[u2].erase(u);
-        s.pb(u2);
-      }
+// Эйлеров путь/цикл в компоненте связности s. Возвращает индексы рёбер. Если пути/цикла нет, то алгос найдёт хуйню.
+// Если неориентированный граф, то edges[ei] и edges[ei ^ 1] - обратные друг к другу рёбра.
+// edges[graph[v][i]] = {v, u}
+vector<int> eulerpath1(int s, vector<vector<int>> &graph, vector<pair<int, int>> &edges, vector<char> &used, vector<int> &start) {
+  vector<pair<int, int>> st = {{-1, s}};
+  vector<int> res;
+  while (!st.empty()) {
+    auto [ei, v] = st.back();
+    while (start[v] < graph[v].size() && used[graph[v][start[v]]])
+      start[v]++;
+    if (start[v] == graph[v].size()) {
+      if (ei != -1) res.push_back(ei);
+      st.pop_back();
+    } else {
+      int ej = graph[v][start[v]++];
+      used[ej] = true;
+      used[ej ^ 1] = true; // Удалить если ориент. граф
+      st.emplace_back(ej, edges[ej].second);
     }
-    // ccl[0] = ccl.back()
-    // i.e for graph with edges $(1, 2), (1, 3), (2, 3) \to ccl = [1, 2, 3, 1]$
   }
+  return res;
 }
+
+vector<char> used(edges.size(), false);
+vector<int> start(graph.size(), 0);
+for (int v = 0; v < graph.size(); ++v) {
+  // Если ориентированный граф, второе условие заменить на cnt_in[v] >= cnt_out[v]
+  if (start[v]==graph[v].size() || graph[v].size()%2==0)
+    continue;
+  auto path = eulerpath1(v, graph, edges, used, start);
+}
+for (int v = 0; v < graph.size(); ++v) {
+  if (start[v] == graph[v].size())
+    continue;
+  auto cycle = eulerpath1(v, graph, edges, used, start);
+}
+
 \end{lstlisting}
 
 \section{ДП}
@@ -1465,11 +1479,14 @@ struct ConvexHull {
              intersection(st[st.size() - 2].a, a) <= st[st.size() - 2].x)
         st.pop_back();
       if (!st.empty()) st.back().x = intersection(st.back().a, a);
-      st.push_back({a, INF});
-      // INF = max intersection point
+      st.push_back({a, INFINITY}); // C++ define
     }
 
     int get_val(int x) {
+      if (st.empty()) {
+        return -INF; // min possible value, for max
+//        return INF; // max possible value, for min
+      }
       int l = -1, r = (int) st.size() - 1;
       while (r - l > 1) {
         int m = (l + r) / 2;
@@ -1890,6 +1907,22 @@ int main() {
 
 \section{Другое}
 
+\subsection{Fast mod}
+\begin{lstlisting}[language=C++]
+// Быстрое взятие по НЕ константному модулю (в 1.5-1.9 раза быстрее)
+struct FastMod {
+  ull b, m;
+  FastMod(ull b) : b(b), m(-1ULL / b) {}
+  ull reduce(ull a) const {
+      ull r = a - (ull)((__uint128_t(m) * a) >> 64) * b;
+      return r;  // r in [0, 2b) // x1.9 speed
+      return r >= b ? r - b : r; // x1.5 speed
+  }
+}; // Usage:
+// FastMod F(m);
+// ull x_mod_m = F.reduce(x);
+\end{lstlisting}
+
 \subsection{Slope trick}
 \begin{lstlisting}[language=C++]
 // Дан массив $a_n$. Сделать минимальное кол-во $\pm 1$, чтобы $a_n$ стал неубывающим.
@@ -1926,119 +1959,89 @@ struct Kek {
 
 \subsection{custom\_bitset}
 \begin{lstlisting}[language=C++]
+// __builtin_ctz = Count Trailing Zeroes
+// __builtin_clz = Count Leading Zeroes
+// both are UB in gcc when pass 0
 struct custom_bitset {
-    vector<uint64_t> bits;
-    int64_t b, n;
+  vector<uint64_t> bits;
+  int64_t b, n;
 
-    custom_bitset(int64_t _b = 0) {
-        init(_b);
+  custom_bitset(int64_t _b = 0) {
+    init(_b);
+  }
+  void init(int64_t _b) {
+    b = _b;
+    n = (b + 63) / 64;
+    bits.assign(n, 0);
+  }
+  void clear() {
+    b = n = 0;
+    bits.clear();
+  }
+  void reset() {
+    bits.assign(n, 0);
+  }
+  void _clean() {
+    // Reset all bits after `b`.
+    if (b != 64 * n)
+      bits.back() &= (1LLU << (b - 64 * (n - 1))) - 1;
+  }
+  bool get(int64_t index) const {
+    return bits[index / 64] >> (index % 64) & 1;
+  }
+  void set(int64_t index, bool value) {
+//    assert(0 <= index && index < b);
+    bits[index / 64] &= ~(1LLU << (index % 64));
+    bits[index / 64] |= uint64_t(value) << (index % 64);
+  }
+
+  // Simulates `bs |= bs << shift;`
+  // for `bs ? bs << shift` change all `|=` to `?`
+  // `?` can be `=`, `&=`, `^=`
+  void or_shift_left(int64_t shift) {
+    int64_t div = shift / 64, mod = shift % 64;
+    if (mod == 0) {
+      for (int64_t i = n - 1; i >= div; i--)
+        bits[i] |= bits[i - div];
+      return;
     }
+    for (int64_t i = n - 1; i >= div + 1; i--)
+      bits[i] |= bits[i - (div + 1)] >> (64 - mod) | bits[i - div] << mod;
+    if (div < n)
+      bits[div] |= bits[0] << mod;
+    _clean();
+  }
 
-    void init(int64_t _b) {
-        b = _b;
-        n = (b + 63) / 64;
-        bits.assign(n, 0);
+  // Simulates `bs |= bs >> shift;`
+  // also `=`, `&=` and `^=` as in `or_shift_left`
+  void or_shift_right(int64_t shift) {
+    int64_t div = shift / 64, mod = shift % 64;
+    if (mod == 0) {
+      for (int64_t i = div; i < n; i++)
+        bits[i - div] |= bits[i];
+      return;
     }
+    for (int64_t i = 0; i < n - (div + 1); i++)
+      bits[i] |= bits[i + (div + 1)] << (64 - mod) | bits[i + div] >> mod;
+    if (div < n)
+      bits[n - div - 1] |= bits[n - 1] >> mod;
+    _clean();
+  }
 
-    void clear() {
-        b = n = 0;
-        bits.clear();
-    }
+  int64_t find_first() const {
+    for (int i = 0; i < n; i++)
+      if (bits[i] != 0)
+        return 64 * i + __builtin_ctzll(bits[i]);
+    return -1;
+  }
 
-    void reset() {
-        bits.assign(n, 0);
-    }
-
-    void _clean() {
-        // Reset all bits after `b`.
-        if (b != 64 * n)
-            bits.back() &= (1LLU << (b - 64 * (n - 1))) - 1;
-    }
-
-    bool get(int64_t index) const {
-        return bits[index / 64] >> (index % 64) & 1;
-    }
-
-    void set(int64_t index, bool value) {
-        assert(0 <= index && index < b);
-        bits[index / 64] &= ~(1LLU << (index % 64));
-        bits[index / 64] |= uint64_t(value) << (index % 64);
-    }
-
-    // Simulates `bs |= bs << shift;`
-    void or_shift(int64_t shift) {
-        int64_t div = shift / 64, mod = shift % 64;
-
-        if (mod == 0) {
-            for (int64_t i = n - 1; i >= div; i--)
-                bits[i] |= bits[i - div];
-
-            return;
-        }
-
-        for (int64_t i = n - 1; i >= div + 1; i--)
-            bits[i] |= bits[i - (div + 1)] >> (64 - mod) | bits[i - div] << mod;
-
-        if (div < n)
-            bits[div] |= bits[0] << mod;
-
-        _clean();
-    }
-
-    // Simulates `bs |= bs >> shift;`
-    void or_shift_down(int64_t shift) {
-        int64_t div = shift / 64, mod = shift % 64;
-
-        if (mod == 0) {
-            for (int64_t i = div; i < n; i++)
-                bits[i - div] |= bits[i];
-
-            return;
-        }
-
-        for (int64_t i = 0; i < n - (div + 1); i++)
-            bits[i] |= bits[i + (div + 1)] << (64 - mod) | bits[i + div] >> mod;
-
-        if (div < n)
-            bits[n - div - 1] |= bits[n - 1] >> mod;
-
-        _clean();
-    }
-
-    int64_t find_first() const {
-        for (int i = 0; i < n; i++)
-            if (bits[i] != 0)
-                return 64 * i + __builtin_ctzll(bits[i]);
-
-        return -1;
-    }
-
-    custom_bitset &operator&=(const custom_bitset &other) {
-        assert(b == other.b);
-
-        for (int i = 0; i < n; i++)
-            bits[i] &= other.bits[i];
-
-        return *this;
-    }
-
-    custom_bitset &operator|=(const custom_bitset &other) {
-        assert(b == other.b);
-
-        for (int i = 0; i < n; i++)
-            bits[i] |= other.bits[i];
-
-        return *this;
-    }
-
-    custom_bitset &operator^=(const custom_bitset &other) {
-        assert(b == other.b);
-
-        for (int i = 0; i < n; i++)
-            bits[i] ^= other.bits[i];
-
-        return *this;
-    }
+  // for operators `|=` and `^=`: change to `|=` and `^=`
+  custom_bitset &operator&=(const custom_bitset &other) {
+//    assert(b == other.b);
+    for (int i = 0; i < n; i++)
+      bits[i] &= other.bits[i];
+    return *this;
+  }
 };
 \end{lstlisting}
 
@@ -2074,7 +2077,8 @@ int mpos = 0;
 char mem[MAX_MEM];
 
 inline void *operator new(std::size_t n) {
-  assert((mpos += n) <= MAX_MEM);
+  mpos += n;
+//  assert(mpos <= MAX_MEM);
   return (void *)(mem + mpos - n);
 }
 
@@ -2082,9 +2086,57 @@ inline void operator delete(void *) noexcept {} // must have!
 inline void operator delete(void *, std::size_t) noexcept {} // fix!!
 \end{lstlisting}
 
+\subsection{Альфа-бета отсечение}
+\begin{lstlisting}[language=C++]
+int alphabeta(int player, int alpha, int beta, int depth) {
+  if (depth == 0) {
+    // return current position score
+  }
+  if (player == 0) { // maximization player
+    int val = -INF;
+    for (auto move : possible_moves) {
+      val = max(val, alphabeta(1, alpha, beta, depth - 1));
+      if (val > beta) break;
+      alpha = max(alpha, val);
+    }
+    return val;
+  } else {
+    int val = INF;
+    for (auto move : possible_moves) {
+      val = min(val, alphabeta(0, alpha, beta, depth - 1));
+      if (val < alpha) break;
+      beta = min(beta, val);
+    }
+    return val;
+  }
+}
+\end{lstlisting}
+
+\subsection{Отжиг}
+\begin{lstlisting}[language=C++]
+const double lambda = 0.999;
+double temprature = 1;
+mt19937 rnd(777);
+
+double gen_rand_01() {
+  return rnd() / (double) UINT32_MAX;
+}
+bool f(int delta) {
+  return exp(-delta / temprature) > gen_rand_01();
+}
+void make_change() {
+  temprature *= lambda;
+  // calc change score
+  if (change_score <= 0 || f(change_score)) {
+    score += change_score;
+    // make change
+  }
+}
+\end{lstlisting}
+
 \section{Математика}
 
-\subsection{A div B < C div D}
+\subsection{A:B cmp C:D}
 \begin{lstlisting}[language=C++]
 char sign(ll x) {
   return x < 0 ? -1 : x > 0;
@@ -2100,7 +2152,7 @@ char compare(ll a, ll b, ll c, ll d) {
     return -sign(c) * sign(d);
   if (c == 0)
     return sign(a) * sign(b);
-  return is_less(d, c, b, a) * sign(a) * sign(b) * sign(c) * sign(d);
+  return compare(d, c, b, a) * sign(a) * sign(b) * sign(c) * sign(d);
 }
 
 \end{lstlisting}
@@ -2343,17 +2395,276 @@ signed main() {
 
 \subsection{Floor Sum}
 \begin{lstlisting}[language=C++]
-int floor_sum(int n, int div, int mul, int add) {
-    // sum_{i=0}^{n-1} floor((add + i*mul)/div)
+int floor_sum(int n, int d, int m, int a) {
+    // sum_{i=0}^{n-1} floor((a + i*m)/d), only non-negative integers!
     int ans = 0;
-    ans += (n * (n - 1) / 2) * (mul / div);
-    mul %= div;
-    ans += n * (add / div);
-    add %= div;
-    int l = mul * n + add;
-    if (l >= div)
-        ans += floor_sum(l / div, mul, div, l % div);
+    ans += (n * (n - 1) / 2) * (m / d);
+    m %= d;
+    ans += n * (a / d);
+    a %= d;
+    int l = m * n + a;
+    if (l >= d)
+        ans += floor_sum(l / d, m, d, l % d);
     return ans;
+}
+\end{lstlisting}
+
+\subsection{berlekamp-massey-and-friends}
+\begin{lstlisting}[language=C++]
+int getkfps(vector<ll> p, vector<ll> q, ll k) {
+    // assert(q[0] != 0);
+    while (k) {
+        auto f = q;
+        for (int i = 1; i < (int) f.size(); i += 2) {
+            f[i] = (MOD - f[i] % MOD) % MOD;
+        }
+        auto p2 = (vector<ll>) convMod<MOD>(p, f);
+        auto q2 = (vector<ll>) convMod<MOD>(q, f);
+        p.clear(), q.clear();
+        for (int i = k % 2; i < (int) p2.size(); i += 2) {
+            p.pb(p2[i]);
+        }
+        for (int i = 0; i < (int) q2.size(); i += 2) {
+            q.pb(q2[i]);
+        }
+        k >>= 1;
+    }
+    return (int) ((p[0] * inverse(q[0])) % MOD);
+}
+
+// vals - initials values of reccurence, c - result of berlekamp on vals
+int getk(vector<ll> &vals, vector<ll> c, ll k) {
+    int d = (int) c.size() - 1;
+    c[0] = MOD - 1;
+    while (c.back() == 0) {
+        c.pop_back();
+    }
+    for (auto &el: c) {
+        el = (MOD - el % MOD) % MOD;
+    }
+    vector<ll> p(d);
+    copy(vals.begin(), vals.begin() + d, p.begin());
+    p = (vector<ll>) convMod<MOD>(p, c);
+    p.resize(d);
+    return getkfps(p, c, k);
+}
+
+vector<ll> mod_poly_slow(vector<ll> &p, vector<ll> &q) {
+    int n = (int) p.size(), m = (int) q.size();
+    if (n < m) {
+        return p;
+    }
+    vector<ll> r = p;
+    for (int i = n - 1; i >= m - 1; --i) {
+        int coef = (r[i] * 1ll * inverse(q[m - 1])) % MOD;
+        for (int j = 0; j < m; ++j) {
+            r[i - j] = (r[i - j] - coef * 1ll * q[m - 1 - j] % MOD + MOD) % MOD;
+        }
+    }
+    while (!r.empty() && r.back() == 0) {
+        r.pop_back();
+    }
+    return r;
+}
+
+int kth_term(vector<ll> &a, vector<ll> s, ll k) {
+    // a in 0-index, s in 1-index
+    int n = (int) s.size() - 1;
+    assert((int) a.size() >= n);
+    // a[0]..a[n-1] -- first values
+    // a[i] = a[i-1] \cdot s[1] + \ldots + a[i-n] \cdot s[n]
+    // find a[k]
+
+    // return getk(a, s, k);
+
+    vector<ll> f(n + 1);
+    for (int i = 1; i <= n; i++) {
+        f[n - i] = (MOD - s[i]) % MOD;
+    }
+    f[n] = 1;
+    vector<ll> res = {1}, w = {0, 1};
+    while (k) {
+        if (k % 2) {
+            res = (vector<ll>) convMod<MOD>(res, w); // mul
+            res = mod_poly_slow(res, f);
+        }
+        w = (vector<ll>) convMod<MOD>(w, w); // mul
+        w = mod_poly_slow(w, f);
+        k /= 2;
+    }
+    int ans = 0;
+    for (int i = 0; i < (int) res.size(); i++) {
+        ans = (ans + a[i] * 1ll * res[i] % MOD) % MOD;
+    }
+    return ans;
+}
+
+vector<ll> berlekamp_massey(vector<ll> a) {
+    // given a[0]...a[n], returns sequence s[1]..s[k] s.t a[i] = a[i-1] \cdot s[1] + \ldots + a[i-k] \cdot s[k]
+    vector<ll> ls, cur;
+    int lf = 0, d = 0;
+    for (int i = 0; i < a.size(); ++i) {
+        ll t = 0;
+        for (int j = 0; j < cur.size(); ++j) {
+            t = (t + 1ll * a[i - j - 1] * cur[j]) % MOD;
+        }
+        if ((t - a[i]) % MOD == 0)continue;
+        if (cur.empty()) {
+            cur.resize(i + 1);
+            lf = i;
+            d = (t - a[i]) % MOD;
+            continue;
+        }
+        ll k = -(a[i] - t) * inverse(d) % MOD;
+        vector<ll> c(i - lf - 1);
+        c.push_back(k);
+        for (auto &j: ls)
+            c.push_back(-j * k % MOD);
+        if (c.size() < cur.size())
+            c.resize(cur.size());
+        for (int j = 0; j < cur.size(); ++j) {
+            c[j] = (c[j] + cur[j]) % MOD;
+        }
+        if (i - lf + (int) ls.size() >= (int) cur.size()) {
+            tie(ls, lf, d) = make_tuple(cur, i, (t - a[i]) % MOD);
+        }
+        cur = c;
+    }
+    cur.insert(cur.begin(), 0); // fictive s[0] = 0
+    for (auto &i: cur)
+        i = (i % MOD + MOD) % MOD;
+    return cur;
+}
+\end{lstlisting}
+
+\subsection{convMod}
+\begin{lstlisting}[language=C++]
+typedef complex<double> comp;
+
+template<int M>
+vector<ll> convMod(const vector<ll> &a, const vector<ll> &b) {
+    if (a.empty() || b.empty()) return {};
+    vector<ll> res((int)a.size() + (int)b.size() - 1);
+    int lg = 32 - __builtin_clz((int)res.size()), n = 1 << lg, cut = int(sqrt(M));
+    vector<comp> L(n), R(n), outs(n), outl(n);
+    for (int i = 0; i < a.size(); i++) L[i] = comp((int) a[i] / cut, (int) a[i] % cut);
+    for (int i = 0; i < b.size(); i++) R[i] = comp((int) b[i] / cut, (int) b[i] % cut);
+    fft(L, lg), fft(R, lg);
+    for (int i = 0; i < n; i++) {
+        int j = -i & (n - 1);
+        outl[j] = (L[i] + conj(L[j])) * R[i] / (2.0 * n);
+        outs[j] = (L[i] - conj(L[j])) * R[i] / (2.0 * n) / 1i;
+    }
+    fft(outl, lg), fft(outs, lg);
+    for (int i = 0; i < res.size(); i++) {
+        ll av = ll(real(outl[i]) + .5), cv = ll(imag(outs[i]) + .5);
+        ll bv = ll(imag(outl[i]) + .5) + ll(real(outs[i]) + .5);
+        res[i] = ((av % M * cut + bv) % M * cut + cv) % M;
+    }
+    return res;
+}
+\end{lstlisting}
+
+\subsection{min25 sieve}
+\begin{lstlisting}[language=C++]
+ll min25_sieve(ll n) {
+    // given n, calculate prefix sums of some multiplicative function f
+    // at all points of type floor(n/k) in O(n^{3/4}/log(n)), n up to 1e11 is ok
+    // in particular you can find f(1) + ... + f(n)
+    // also, calculation can be done for primes only, i.e prefix sum of f(i)*I{i is prime}
+    // to do that, do not run last stage of algorithm
+
+    vector<ll> v;
+    v.reserve((int) sqrt(n) * 2 + 7);
+    ll sq = 0;
+    {
+        ll k = 1;
+        while (k * k <= n) {
+            v.push_back(k);
+            ++k;
+        }
+        --k;
+        sq = k;
+        if (k * k == n)--k;
+        while (k >= 1) {
+            v.push_back(n / k);
+            --k;
+        }
+    }
+    auto geti = [&](ll x) {
+        // returns i, such that v[i] = x
+        if (x <= sq) return x - 1;
+        return (int) v.size() - (n / x);
+    };
+    // OP1: f(ab) = f(a)f(b) for coprime a, b; f(p) = p^T; f(p^k) can be calculated in O(1); we denote f(p^k) = g(p, k) (p is prime) for all k
+    // OP2: f also can be any fully multiplicative function, f(ab) = f(a)f(b) for all a,b; you need to calc pref sum of f fast, so only prime case is useful
+
+    auto g = [&](ll p, int k) {
+        if (k == 1) {
+            return p - 1; // polynomial, for primes-only can be any fully multiplicative function
+        }
+        return p + k; // any function, g(p^k)
+    };
+
+    auto f = [&](ll x) {
+        return g(x, 1);
+    };
+
+    auto pref = [&](ll x) {
+        // return sum_{i=1..x} g(i, 1), i.e 1^T + 2^T + ... + x^T
+        return x * (x + 1) / 2;
+    };
+
+    vector<ll> s0(v.size()), s1(v.size()); // for all degrees separately
+    for (int i = 0; i < (int) v.size(); i++) {
+        s0[i] = v[i] % M;
+        s1[i] = (((v[i] % M) * ((v[i] + 1) % M) % M) * (((M + 1) / 2) % M)) % M; // pref for g(p,1), degrees separately
+        // s[i] = pref(v[i]) - 1  for primes
+    }
+
+    vector<ll> used_primes;
+    used_primes.reserve((int) sqrt(n) + 7);
+    for (ll p = 2; p * p <= n; ++p) {
+        if (s0[p - 1] == s0[p - 2]) continue;
+        // p is prime
+        used_primes.push_back(p);
+        for (int i = (int) v.size() - 1; i >= 0; --i) {
+            if (v[i] < p * p) break; // very important, dont remove!
+            s0[i] += M - ((s0[geti(v[i] / p)] + M - s0[p - 2]) % M * (1)) % M; // p^0
+            s0[i] %= M;
+            s1[i] += M - ((s1[geti(v[i] / p)] + M - s1[p - 2]) % M * (p)) % M; // p^1
+            s1[i] %= M;
+            // s[i] += M - ((s[geti(v[i] / p)] + M - s[p-2]) % M * f(p)) % M;
+        }
+    }
+
+    // PRIMES ONLY calculation is done
+    // desired answer for v[i] is in s[i]
+    // in particular \sum_{i=1}^n f(i)*I{i is prime} is in s.back()
+    // now last stage for default calculation
+
+    vector<ll> s(v.size());
+    for (int i = 0; i < v.size(); i++) {
+        s[i] = (M - s0[i] % M + s1[i]) % M; // combine polynomial by degrees with needed coeffs
+    }
+
+    vector<ll> r = s;
+
+    for (int ui = (int) used_primes.size() - 1; ui >= 0; --ui) { // ui >= 1, sum for odd numbers only
+        ll p = used_primes[ui];
+        for (int i = (int) v.size() - 1; i >= 0; --i) {
+            if (v[i] < p * p) break; // very important, dont remove!
+            for (ll c = 1, pc = p; pc * p <= v[i]; c++, pc *= p) { // pc = p^c
+                r[i] += g(p, c + 1) % M + ((g(p, c) % M) * ((M + r[geti(v[i] / pc)] - s[geti(p)]) % M)) % M;
+                r[i] %= M;
+            }
+        }
+    }
+
+    // done, answer for v[i] is r[i]+1 (f(1)=1)
+    // in particular \sum_{i=2}^n f(i) is in r.back()
+    // therefore \sum_{i=1}^n f(i) is r.back() + 1
+    return r.back() + 1 - g(1, 1); // since f(1)=1 for real, not g(1,1): 1 is not prime
 }
 \end{lstlisting}
 
@@ -2486,7 +2797,7 @@ bool cool_ext_gcd(int a, int b, int c, int &x, int &y) {
 
 \subsection{КТО}
 \begin{lstlisting}[language=C++]
-// x = a_i % p_i
+// ans % p_i = a_i
 vector<vector<int>> r(k, vector<int>(k));
 for (int i = 0; i < k; ++i)
   for (int j = 0; j < k; ++j)
@@ -2533,37 +2844,21 @@ for (int i = 2; i <= N; ++i) {
 
 \subsection{Миллер Рабин}
 \begin{lstlisting}[language=C++]
-// assuming '#define int long long' is ON (replace 'int' with 'long long' if not)
 // works for all n < 2^64
-const int MAGIC[7] = {2, 325, 9375, 28178, 450775, 9780504, 1795265022};
+const ll MAGIC[7] = {2, 325, 9375, 28178, 450775, 9780504, 1795265022};
 
-int bpow(__int128 a, int x, int mod) {
-  a %= mod;
-  __int128 ans = 1;
-  while (x) {
-    if (x % 2) {
-      ans *= a;
-      ans %= mod;
-    }
-    a *= a;
-    a %= mod;
-    x /= 2;
-  }
-  return (int) ans;
-}
-
-bool is_prime(int n) {
+bool is_prime(ll n) {
   if (n == 1) return false;
   if (n <= 3) return true;
   if (n % 2 == 0 || n % 3 == 0) return false;
-  int s = __builtin_ctzll(n - 1), d = n >> s; // $n-1 = 2^s \cdot d$
+  ll s = __builtin_ctzll(n - 1), d = n >> s; // $n-1 = 2^s \cdot d$
   for (auto a : MAGIC) {
     if (a % n == 0) {
       continue;
     }
-    int x = bpow(a, d, n);
+    ll x = binpow(a, d, n); // a -> __int128 in binpow
     for (int _ = 0; _ < s; _++) {
-      int y = bpow(x, 2, n);
+      ll y = binpow(x, 2, n);  // x -> __int128 in binpow
       if (y == 1 && x != 1 && x != n - 1) {
         return false;
       }
@@ -2574,6 +2869,15 @@ bool is_prime(int n) {
     }
   }
   return true;
+}
+\end{lstlisting}
+
+\subsection{Мёбиус}
+\begin{lstlisting}[language=C++]
+vector<int> mu(n + 1);
+mu[1] = 1;
+for (int x = 1; x <= n; x++) {
+  for (int y = x + x; y <= n; y += x) mu[y] -= mu[x];
 }
 \end{lstlisting}
 
@@ -2721,7 +3025,7 @@ void bfs() {
       }
       g[suf[v]].push_back(v);
     }
-    for (int c = 0; c < 26; c++) {
+    for (int c = 0; c < ALPH; c++) {
       if (go[v][c] == 0) {
         go[v][c] = go[suf[v]][c];
       } else {
@@ -2885,6 +3189,7 @@ signed main() {
 
 \subsection{Disjoint Sparse Table}
 \begin{lstlisting}[language=C++]
+// MAXN дополнить до степени двойки (или n*2)
 int tree[LOG][MAXN];
 int floorlog2[MAXN]; // i ? (31 - __builtin_clz(i)) : 0
 
@@ -2903,7 +3208,7 @@ void build(vector<int> &a) {
         lvl[i] = min(lvl[i - 1], a[i]);
     }
   }
-  for (int i = 2; i <= n; ++i)
+  for (int i = 2; i < MAXN; ++i)
     floorlog2[i] = floorlog2[i / 2] + 1;
 }
 
