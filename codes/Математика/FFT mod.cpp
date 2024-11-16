@@ -1,115 +1,209 @@
-const int MOD = 998244353; // $7 \cdot 17 \cdot 2^{23} + 1$
-const int GEN = 3;
+const int MOD = 998244353;
+const int G = 3;
 //const int MOD = 7340033; // $7 \cdot 2^{20} + 1$
-//const int GEN = 5;
+//const int G = 5;
 //const int MOD = 469762049; // $7 \cdot  2^{26} + 1$
-//const int GEN = 30;
+//const int G = 30;
+const int MAXLOG = 23;
+int W[1 << MAXLOG];
+bool nttinit = false;
+vector<int> pws;
 
-const int LOG = 20;
-const int MAXN = 1 << LOG;
-int tail[MAXN + 1];
-int OMEGA[MAXN + 1];
+// int add(), int sub(), int mul()
 
-int binpow(int x, int p) {
-  int res = 1;
-  while (p > 0) {
-    if (p & 1)
-      res = res * 1ll * x % MOD;
-    x = x * 1ll * x % MOD;
-    p >>= 1;
+int binpow(int a, int n) {
+  int ans = 1;
+  while (n) {
+    if (n & 1)
+      ans = mul(ans, a);
+    a = mul(a, a);
+    n >>= 1;
+  }
+  return ans;
+}
+
+int inv(int a) {
+  return binpow(a, MOD - 2);
+}
+
+void initNTT() {
+  assert((MOD - 1) % (1 << MAXLOG) == 0);
+  pws.push_back(binpow(G, (MOD - 1) / (1 << MAXLOG)));
+  for (int i = 0; i < MAXLOG - 1; ++i) {
+    pws.push_back(mul(pws.back(), pws.back()));
+  }
+  assert(pws.back() == MOD - 1);
+  W[0] = 1;
+  for (int i = 1; i < (1 << MAXLOG); ++i) {
+    W[i] = mul(W[i - 1], pws[0]);
+  }
+}
+
+void ntt(int n, vector<int> &a, bool rev) {
+  if (!nttinit) {
+    initNTT();
+    nttinit = 1;
+  }
+  int lg = log2(n);
+  vector<int> rv(n);
+  for (int i = 1; i < n; ++i) {
+    rv[i] = (rv[i >> 1] >> 1) ^ ((i & 1) << (lg - 1));
+    if (rv[i] > i) swap(a[i], a[rv[i]]);
+  }
+  int num = MAXLOG - 1;
+  for (int len = 1; len < n; len *= 2) {
+    for (int i = 0; i < n; i += 2 * len) {
+      for (int j = 0; j < len; ++j) {
+        int u = a[i + j], v = mul(W[j << num], a[i + j + len]);
+        a[i + j] = add(u, v);
+        a[i + j + len] = sub(u, v);
+      }
+    }
+    --num;
+  }
+  if (rev) {
+    int rev_n = binpow(n, MOD - 2);
+    for (int i = 0; i < n; ++i) a[i] = mul(a[i], rev_n);
+    reverse(a.begin() + 1, a.end());
+  }
+}
+
+vector<int> conv(vector<int> a, vector<int> b) {
+  int lg = 0;
+  while ((1 << lg) < a.size() + b.size() + 1)
+    ++lg;
+  int n = 1 << lg;
+  assert(a.size() + b.size() <= n + 1);
+  a.resize(n);
+  b.resize(n);
+  ntt(n, a, false);
+  ntt(n, b, false);
+  for (int i = 0; i < n; ++i) {
+    a[i] = mul(a[i], b[i]);
+  }
+  ntt(n, a, true);
+  while (a.size() > 1 && a.back() == 0) {
+    a.pop_back();
+  }
+  return a;
+}
+
+vector<int> add(vector<int> a, vector<int> b) {
+  a.resize(max(a.size(), b.size()));
+  for (int i = 0; i < (int) b.size(); ++i) {
+    a[i] = add(a[i], b[i]);
+  }
+  return a;
+}
+
+vector<int> sub(vector<int> a, vector<int> b) {
+  a.resize(max(a.size(), b.size()));
+  for (int i = 0; i < (int) b.size(); ++i) {
+    a[i] = sub(a[i], b[i]);
+  }
+  return a;
+}
+
+vector<int> inv(const vector<int> &a, int need) {
+  vector<int> b = {inv(a[0])};
+  while ((int) b.size() < need) {
+    vector<int> a1 = a;
+    int m = b.size();
+    a1.resize(min((int) a1.size(), 2 * m));
+    b = conv(b, sub({2}, conv(a1, b)));
+    b.resize(2 * m);
+  }
+  b.resize(need);
+  return b;
+}
+
+vector<int> div(vector<int> a, vector<int> b) {
+  if (count(all(a), 0) == a.size()) {
+    return {0};
+  }
+  assert(a.back() != 0 && b.back() != 0);
+  int n = a.size() - 1;
+  int m = b.size() - 1;
+  if (n < m) {
+    return {0};
+  }
+  reverse(all(a));
+  reverse(all(b));
+  a.resize(n - m + 1);
+  b.resize(n - m + 1);
+  vector<int> c = inv(b, b.size());
+  vector<int> q = conv(a, c);
+  q.resize(n - m + 1);
+  reverse(all(q));
+  return q;
+}
+
+vector<int> mod(vector<int> a, vector<int> b) {
+  auto res = sub(a, conv(b, div(a, b)));
+  while (res.size() > 1 && res.back() == 0) {
+    res.pop_back();
   }
   return res;
 }
 
-int omega(int n, int k) {
-  return OMEGA[MAXN / n * k];
-}
-
-int gettail(int x, int lg) {
-  return tail[x] >> (LOG - lg);
-}
-
-void calcomega() {
-  long long one = binpow(GEN, (MOD - 1) / MAXN);
-  OMEGA[0] = 1;
-  for (int i = 1; i < MAXN; ++i) {
-    OMEGA[i] = OMEGA[i - 1] * one % MOD;
-  }
-}
-
-void calctail() {
-  int n = MAXN;
-  for (int x = 0; x < n; ++x) {
-    int res = 0;
-    for (int i = 0; i < LOG; ++i) {
-      res += ((x >> i) & 1) << (LOG - i - 1);
-    }
-    tail[x] = res;
-  }
-}
-
-// Without precalc, tail[], OMEGA[]
-//
-//long long omega(int n, int k) {
-//    return binpow(GEN, (MOD - 1) / n * k);
-//}
-//
-//int gettail(int x, int lg) {
-//    int res = 0;
-//    for (int i = 0; i < lg; ++i)
-//        res += ((x >> i) & 1) << (lg - i - 1);
-//    return res;
-//}
-
-void fft(vector<int> &A, int lg) {
-  int n = 1 << lg;
+vector<int> multipoint(vector<int> a, vector<int> x) {
+  int n = x.size();
+  vector<vector<int>> tree(2 * n);
   for (int i = 0; i < n; ++i) {
-    int j = gettail(i, lg);
-    if (i < j)
-      swap(A[i], A[j]);
+    tree[i + n] = {x[i], MOD - 1};
   }
-  for (int len = 2; len <= n; len *= 2) {
-    for (int i = 0; i < n; i += len) {
-      for (int j = 0; j < len / 2; ++j) {
-        auto v = A[i + j];
-        auto u = A[i + j + len / 2] * 1ll * omega(len, j) % MOD;
-        A[i + j] = (v + u) % MOD;
-        A[i + j + len / 2] = (v - u + MOD) % MOD;
-      }
-    }
+  for (int i = n - 1; i; --i) {
+    tree[i] = conv(tree[2 * i], tree[2 * i + 1]);
   }
+  tree[1] = mod(a, tree[1]);
+  for (int i = 2; i < 2 * n; ++i) {
+    tree[i] = mod(tree[i >> 1], tree[i]);
+  }
+  vector<int> res(n);
+  for (int i = 0; i < n; ++i) {
+    res[i] = tree[i + n][0];
+  }
+  return res;
 }
 
-int inverse(int x) {
-  return binpow(x, MOD - 2);
+vector<int> deriv(vector<int> a) {
+  for (int i = 1; i < (int) a.size(); ++i) {
+    a[i - 1] = mul(i, a[i]);
+  }
+  a.back() = 0;
+  if (a.size() > 1) {
+    a.pop_back();
+  }
+  return a;
 }
 
-void invfft(vector<int> &A, int lg) {
-  int n = 1 << lg;
-  fft(A, lg);
-  for (auto &el : A)
-    el = el * 1ll * inverse(n % MOD) % MOD;
-  reverse(A.begin() + 1, A.end());
+vector<int> integ(vector<int> a) {
+  a.push_back(0);
+  for (int i = (int) a.size() - 1; i; --i) {
+    a[i] = mul(a[i - 1], inv(i));
+  }
+  a[0] = 0;
+  return a;
 }
 
-vector<int> mul(vector<int> A, vector<int> B) {
-  if (A.empty() || B.empty())
-    return {};
-  int lg = 32 - __builtin_clz(A.size() + B.size() - 1);
-  int n = 1 << lg;
-  A.resize(n, 0);
-  B.resize(n, 0);
-  fft(A, lg);
-  fft(B, lg);
-  for (int i = 0; i < n; ++i)
-    A[i] = A[i] * 1ll * B[i] % MOD;
-  invfft(A, lg);
-  return A;
+vector<int> log(vector<int> a, int n) {
+  assert(a[0] == 1);
+  auto res = integ(conv(deriv(a), inv(a, n)));
+  res.resize(n);
+  return res;
 }
 
-signed main() {
-  calctail(); // НЕ ЗАБЫТЬ
-  calcomega(); // НЕ ЗАБЫТЬ
-  // your code here
+vector<int> exp(vector<int> a, int need) {
+  assert(a[0] == 0);
+  vector<int> b = {1};
+  while ((int) b.size() < need) {
+    vector<int> a1 = a;
+    int m = b.size();
+    a1.resize(min((int) a1.size(), 2 * m));
+    a1[0] = add(a1[0], 1);
+    b = conv(b, sub(a1, log(b, 2 * m)));
+    b.resize(2 * m);
+  }
+  b.resize(need);
+  return b;
 }
-
