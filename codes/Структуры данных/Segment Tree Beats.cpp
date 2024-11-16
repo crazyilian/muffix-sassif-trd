@@ -2,12 +2,11 @@
 struct ST {
   vector<int> st, mx, mx_cnt, sec_mx;
 
-  ST(int n) {
-    st.resize(n * 4, 0);
-    mx.resize(n * 4, 0);
-    mx_cnt.resize(n * 4, 0);
-    sec_mx.resize(n * 4, 0);
-    build(0, 0, n);
+  ST(vector<int> &a) {
+    int n = a.size();
+    st.resize(n * 4), mx.resize(n * 4);
+    mx_cnt.resize(n * 4, 0), sec_mx.resize(n * 4, 0);
+    build(0, 0, n, a);
   }
 
   void upd_from_children(int v) {
@@ -27,16 +26,16 @@ struct ST {
     }
   }
 
-  void build(int i, int l, int r) {
+  void build(int i, int l, int r, vector<int> &a) {
     if (l + 1 == r) {
-      st[i] = mx[i] = 0;
+      st[i] = mx[i] = a[l];
       mx_cnt[i] = 1;
       sec_mx[i] = -INF;
       return;
     }
     int m = (r + l) / 2;
-    build(i * 2 + 1, l, m);
-    build(i * 2 + 2, m, r);
+    build(i * 2 + 1, l, m, a);
+    build(i * 2 + 2, m, r, a);
     upd_from_children(i);
   }
 
@@ -47,44 +46,37 @@ struct ST {
     }
   }
 
-  void push(int i) {
-    push_min_eq(i * 2 + 1, mx[i]);
-    push_min_eq(i * 2 + 2, mx[i]);
+  void push(int i, int l, int r) {
+    if (l + 1 < r) {
+      push_min_eq(i * 2 + 1, mx[i]);
+      push_min_eq(i * 2 + 2, mx[i]);
+    }
   }
 
   void update(int i, int l, int r, int ql, int qr, int val) {
-    if (mx[i] <= val) {
+    if (qr <= l || r <= ql || mx[i] <= val) {
       return;
     }
-    if (ql == l && qr == r && sec_mx[i] < val) {
+    if (ql <= l && r <= qr && sec_mx[i] < val) {
       push_min_eq(i, val);
       return;
     }
-    push(i);
-    int m = (r + l) / 2;
-    if (qr <= m) {
-      update(i * 2 + 1, l, m, ql, qr, val);
-    } else if (ql >= m) {
-      update(i * 2 + 2, m, r, ql, qr, val);
-    } else {
-      update(i * 2 + 1, l, m, ql, m, val);
-      update(i * 2 + 2, m, r, m, qr, val);
-    }
+    push(i, l, r);
+    int m = (l + r) / 2;
+    update(i * 2 + 1, l, m, ql, qr, val);
+    update(i * 2 + 2, m, r, ql, qr, val);
     upd_from_children(i);
   }
 
   int sum(int i, int l, int r, int ql, int qr) {
-    if (l == ql && r == qr) {
+    if (qr <= l || r <= ql) {
+      return 0;
+    }
+    push(i, l, r);
+    if (ql <= l && r <= qr) {
       return st[i];
     }
-    push(i);
-    int m = (r + l) / 2;
-    if (qr <= m) {
-      return sum(i * 2 + 1, l, m, ql, qr);
-    }
-    if (ql >= m) {
-      return sum(i * 2 + 2, m, r, ql, qr);
-    }
-    return sum(i * 2 + 1, l, m, ql, m) + sum(i * 2 + 2, m, r, m, qr);
+    int m = (l + r) / 2;
+    return sum(i * 2 + 1, l, m, ql, qr) + sum(i * 2 + 2, m, r, ql, qr);
   }
 };
