@@ -1,11 +1,11 @@
-const int MOD = 998244353;
+const int MOD = 998244353; // $7 \cdot 17 \cdot 2^{23} + 1$
 const int G = 3;
 //const int MOD = 7340033; // $7 \cdot 2^{20} + 1$
 //const int G = 5;
 //const int MOD = 469762049; // $7 \cdot  2^{26} + 1$
 //const int G = 30;
 const int MAXLOG = 23;
-int W[1 << MAXLOG];
+int W[(1 << MAXLOG) + 10];
 bool nttinit = false;
 vector<int> pws;
 
