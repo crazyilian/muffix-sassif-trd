@@ -1,3 +1,18 @@
+// %=, =, sum
+// mx[v], all_equal[v]
+// break: mx[v] < x
+// tag: all_equal[v] == true, запрос становится =mx[v]%x
+
+// min=, max=, =, +=, sum, mn, mx
+// также как и для min=, sum
+// для max= храним mn[v], sec_mn[v]
+
+// +=, gcd
+// храним gcd разностей какого-то остовного дерева
+// храним any_value[v] = любое значение на отрезке
+// gcd(l...r) = gcd(any_value[v], gcd[v])
+// при сливании добавляем к gcd значение |a_v[l] - a_v[r]|
+
 // min=, sum
 struct ST {
   vector<int> st, mx, mx_cnt, sec_mx;
