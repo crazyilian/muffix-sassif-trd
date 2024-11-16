@@ -1268,22 +1268,22 @@ signed main() {
 
 \subsection{Мосты}
 \begin{lstlisting}[language=C++]
-void dfs(int v, int par) {
+// graph[v][i] = {u, edge_i}
+void dfs(int v, int pi = -1) {
   vis[v] = 1;
   up[v] = tin[v] = timer++;
-  for (auto u : g[v]) {
+  for (auto [u, ei] : g[v]) {
     if (!vis[u]) {
       dfs(u, v);
       up[v] = min(up[v], up[u]);
-    } else if (u != par) {
+    } else if (ei != pi)
       up[v] = min(up[v], tin[u]);
-    }
     if (up[u] > tin[v]) {
       bridges.emplace_back(v, u);
+      is_bridge[ei] = 1;
     }
   }
 }
-
 \end{lstlisting}
 
 \subsection{Паросочетания}
@@ -1964,14 +1964,13 @@ struct Kek {
 // both are UB in gcc when pass 0
 struct custom_bitset {
   vector<uint64_t> bits;
-  int64_t b, n;
+  int b, n;
 
-  custom_bitset(int64_t _b = 0) {
+  custom_bitset(int _b = 0) {
     init(_b);
   }
-  void init(int64_t _b) {
-    b = _b;
-    n = (b + 63) / 64;
+  void init(int _b) {
+    b = _b, n = (b + 63) / 64;
     bits.assign(n, 0);
   }
   void clear() {
@@ -1986,58 +1985,68 @@ struct custom_bitset {
     if (b != 64 * n)
       bits.back() &= (1LLU << (b - 64 * (n - 1))) - 1;
   }
-  bool get(int64_t index) const {
-    return bits[index / 64] >> (index % 64) & 1;
+  bool get(int i) const {
+    return bits[i / 64] >> (i % 64) & 1;
   }
-  void set(int64_t index, bool value) {
-//    assert(0 <= index && index < b);
-    bits[index / 64] &= ~(1LLU << (index % 64));
-    bits[index / 64] |= uint64_t(value) << (index % 64);
+  void set(int i, bool value) {
+    // assert(0 <= i && i < b);
+    bits[i / 64] &= ~(1LLU << (i % 64));
+    bits[i / 64] |= uint64_t(value) << (i % 64);
   }
 
   // Simulates `bs |= bs << shift;`
-  // for `bs ? bs << shift` change all `|=` to `?`
-  // `?` can be `=`, `&=`, `^=`
-  void or_shift_left(int64_t shift) {
-    int64_t div = shift / 64, mod = shift % 64;
+  // `|=` can be replaced with `^=`, `&=`, `=`
+  void or_shift_left(int shift) {
+    int div = shift / 64, mod = shift % 64;
     if (mod == 0) {
-      for (int64_t i = n - 1; i >= div; i--)
-        bits[i] |= bits[i - div];
-      return;
+      for (int i = n - 1; i >= div; i--)
+        bits[i] &= bits[i - div];
+    } else {
+      for (int i = n - 1; i >= div + 1; i--)
+        bits[i] &= bits[i - (div + 1)] >> (64 - mod) | bits[i - div] << mod;
+      if (div < n)
+        bits[div] &= bits[0] << mod;
     }
-    for (int64_t i = n - 1; i >= div + 1; i--)
-      bits[i] |= bits[i - (div + 1)] >> (64 - mod) | bits[i - div] << mod;
-    if (div < n)
-      bits[div] |= bits[0] << mod;
+    // if `&=`, `=`
+    //fill(bits.begin(), bits.begin() + min(div, n), 0);
     _clean();
   }
 
   // Simulates `bs |= bs >> shift;`
-  // also `=`, `&=` and `^=` as in `or_shift_left`
-  void or_shift_right(int64_t shift) {
-    int64_t div = shift / 64, mod = shift % 64;
+  // `|=` can be replaced with `^=`, `&=`, `=`
+  void or_shift_right(int shift) {
+    int div = shift / 64, mod = shift % 64;
     if (mod == 0) {
-      for (int64_t i = div; i < n; i++)
+      for (int i = div; i < n; i++)
         bits[i - div] |= bits[i];
-      return;
+    } else {
+      for (int i = 0; i < n - (div + 1); i++)
+        bits[i] |= bits[i + (div + 1)] << (64 - mod) | bits[i + div] >> mod;
+      if (div < n)
+        bits[n - div - 1] |= bits[n - 1] >> mod;
     }
-    for (int64_t i = 0; i < n - (div + 1); i++)
-      bits[i] |= bits[i + (div + 1)] << (64 - mod) | bits[i + div] >> mod;
-    if (div < n)
-      bits[n - div - 1] |= bits[n - 1] >> mod;
+    // if `&=`, `=`
+    //fill(bits.end() - min(div, n), bits.end(), 0);
     _clean();
   }
 
-  int64_t find_first() const {
-    for (int i = 0; i < n; i++)
-      if (bits[i] != 0)
-        return 64 * i + __builtin_ctzll(bits[i]);
-    return -1;
+  // find min j, that j >= i and bs[j] = 1;
+  int find_next(int i) {
+    if (i >= b) return b;
+    int div = i / 64, mod = i % 64;
+    auto x = bits[div] >> mod;
+    if (x != 0)
+      return i + __builtin_ctzll(x);
+    for (auto k = div + 1; k < n; ++k) {
+      if (bits[k] != 0)
+        return 64 * k + __builtin_ctzll(bits[k]);
+    }
+    return b;
   }
 
-  // for operators `|=` and `^=`: change to `|=` and `^=`
-  custom_bitset &operator&=(const custom_bitset &other) {
-//    assert(b == other.b);
+  // `&=` can be replaced with `|=`, `^=`
+  custom_bitset &operator&=(const custom_bitset &other){
+    // assert(b == other.b);
     for (int i = 0; i < n; i++)
       bits[i] &= other.bits[i];
     return *this;
@@ -2160,120 +2169,214 @@ char compare(ll a, ll b, ll c, ll d) {
 \subsection{FFT mod}
 \begin{lstlisting}[language=C++]
 const int MOD = 998244353; // $7 \cdot 17 \cdot 2^{23} + 1$
-const int GEN = 3;
+const int G = 3;
 //const int MOD = 7340033; // $7 \cdot 2^{20} + 1$
-//const int GEN = 5;
+//const int G = 5;
 //const int MOD = 469762049; // $7 \cdot  2^{26} + 1$
-//const int GEN = 30;
+//const int G = 30;
+const int MAXLOG = 23;
+int W[(1 << MAXLOG) + 10];
+bool nttinit = false;
+vector<int> pws;
 
-const int LOG = 20;
-const int MAXN = 1 << LOG;
-int tail[MAXN + 1];
-int OMEGA[MAXN + 1];
+// int add(), int sub(), int mul()
 
-int binpow(int x, int p) {
-  int res = 1;
-  while (p > 0) {
-    if (p & 1)
-      res = res * 1ll * x % MOD;
-    x = x * 1ll * x % MOD;
-    p >>= 1;
+int binpow(int a, int n) {
+  int ans = 1;
+  while (n) {
+    if (n & 1)
+      ans = mul(ans, a);
+    a = mul(a, a);
+    n >>= 1;
+  }
+  return ans;
+}
+
+int inv(int a) {
+  return binpow(a, MOD - 2);
+}
+
+void initNTT() {
+  assert((MOD - 1) % (1 << MAXLOG) == 0);
+  pws.push_back(binpow(G, (MOD - 1) / (1 << MAXLOG)));
+  for (int i = 0; i < MAXLOG - 1; ++i) {
+    pws.push_back(mul(pws.back(), pws.back()));
+  }
+  assert(pws.back() == MOD - 1);
+  W[0] = 1;
+  for (int i = 1; i < (1 << MAXLOG); ++i) {
+    W[i] = mul(W[i - 1], pws[0]);
+  }
+}
+
+void ntt(int n, vector<int> &a, bool rev) {
+  if (!nttinit) {
+    initNTT();
+    nttinit = 1;
+  }
+  int lg = log2(n);
+  vector<int> rv(n);
+  for (int i = 1; i < n; ++i) {
+    rv[i] = (rv[i >> 1] >> 1) ^ ((i & 1) << (lg - 1));
+    if (rv[i] > i) swap(a[i], a[rv[i]]);
+  }
+  int num = MAXLOG - 1;
+  for (int len = 1; len < n; len *= 2) {
+    for (int i = 0; i < n; i += 2 * len) {
+      for (int j = 0; j < len; ++j) {
+        int u = a[i + j], v = mul(W[j << num], a[i + j + len]);
+        a[i + j] = add(u, v);
+        a[i + j + len] = sub(u, v);
+      }
+    }
+    --num;
+  }
+  if (rev) {
+    int rev_n = binpow(n, MOD - 2);
+    for (int i = 0; i < n; ++i) a[i] = mul(a[i], rev_n);
+    reverse(a.begin() + 1, a.end());
+  }
+}
+
+vector<int> conv(vector<int> a, vector<int> b) {
+  int lg = 0;
+  while ((1 << lg) < a.size() + b.size() + 1)
+    ++lg;
+  int n = 1 << lg;
+  assert(a.size() + b.size() <= n + 1);
+  a.resize(n);
+  b.resize(n);
+  ntt(n, a, false);
+  ntt(n, b, false);
+  for (int i = 0; i < n; ++i) {
+    a[i] = mul(a[i], b[i]);
+  }
+  ntt(n, a, true);
+  while (a.size() > 1 && a.back() == 0) {
+    a.pop_back();
+  }
+  return a;
+}
+
+vector<int> add(vector<int> a, vector<int> b) {
+  a.resize(max(a.size(), b.size()));
+  for (int i = 0; i < (int) b.size(); ++i) {
+    a[i] = add(a[i], b[i]);
+  }
+  return a;
+}
+
+vector<int> sub(vector<int> a, vector<int> b) {
+  a.resize(max(a.size(), b.size()));
+  for (int i = 0; i < (int) b.size(); ++i) {
+    a[i] = sub(a[i], b[i]);
+  }
+  return a;
+}
+
+vector<int> inv(const vector<int> &a, int need) {
+  vector<int> b = {inv(a[0])};
+  while ((int) b.size() < need) {
+    vector<int> a1 = a;
+    int m = b.size();
+    a1.resize(min((int) a1.size(), 2 * m));
+    b = conv(b, sub({2}, conv(a1, b)));
+    b.resize(2 * m);
+  }
+  b.resize(need);
+  return b;
+}
+
+vector<int> div(vector<int> a, vector<int> b) {
+  if (count(all(a), 0) == a.size()) {
+    return {0};
+  }
+  assert(a.back() != 0 && b.back() != 0);
+  int n = a.size() - 1;
+  int m = b.size() - 1;
+  if (n < m) {
+    return {0};
+  }
+  reverse(all(a));
+  reverse(all(b));
+  a.resize(n - m + 1);
+  b.resize(n - m + 1);
+  vector<int> c = inv(b, b.size());
+  vector<int> q = conv(a, c);
+  q.resize(n - m + 1);
+  reverse(all(q));
+  return q;
+}
+
+vector<int> mod(vector<int> a, vector<int> b) {
+  auto res = sub(a, conv(b, div(a, b)));
+  while (res.size() > 1 && res.back() == 0) {
+    res.pop_back();
   }
   return res;
 }
 
-int omega(int n, int k) {
-  return OMEGA[MAXN / n * k];
-}
-
-int gettail(int x, int lg) {
-  return tail[x] >> (LOG - lg);
-}
-
-void calcomega() {
-  long long one = binpow(GEN, (MOD - 1) / MAXN);
-  OMEGA[0] = 1;
-  for (int i = 1; i < MAXN; ++i) {
-    OMEGA[i] = OMEGA[i - 1] * one % MOD;
-  }
-}
-
-void calctail() {
-  int n = MAXN;
-  for (int x = 0; x < n; ++x) {
-    int res = 0;
-    for (int i = 0; i < LOG; ++i) {
-      res += ((x >> i) & 1) << (LOG - i - 1);
-    }
-    tail[x] = res;
-  }
-}
-
-// Without precalc, tail[], OMEGA[]
-//
-//long long omega(int n, int k) {
-//    return binpow(GEN, (MOD - 1) / n * k);
-//}
-//
-//int gettail(int x, int lg) {
-//    int res = 0;
-//    for (int i = 0; i < lg; ++i)
-//        res += ((x >> i) & 1) << (lg - i - 1);
-//    return res;
-//}
-
-void fft(vector<int> &A, int lg) {
-  int n = 1 << lg;
+vector<int> multipoint(vector<int> a, vector<int> x) {
+  int n = x.size();
+  vector<vector<int>> tree(2 * n);
   for (int i = 0; i < n; ++i) {
-    int j = gettail(i, lg);
-    if (i < j)
-      swap(A[i], A[j]);
+    tree[i + n] = {x[i], MOD - 1};
   }
-  for (int len = 2; len <= n; len *= 2) {
-    for (int i = 0; i < n; i += len) {
-      for (int j = 0; j < len / 2; ++j) {
-        auto v = A[i + j];
-        auto u = A[i + j + len / 2] * 1ll * omega(len, j) % MOD;
-        A[i + j] = (v + u) % MOD;
-        A[i + j + len / 2] = (v - u + MOD) % MOD;
-      }
-    }
+  for (int i = n - 1; i; --i) {
+    tree[i] = conv(tree[2 * i], tree[2 * i + 1]);
   }
+  tree[1] = mod(a, tree[1]);
+  for (int i = 2; i < 2 * n; ++i) {
+    tree[i] = mod(tree[i >> 1], tree[i]);
+  }
+  vector<int> res(n);
+  for (int i = 0; i < n; ++i) {
+    res[i] = tree[i + n][0];
+  }
+  return res;
 }
 
-int inverse(int x) {
-  return binpow(x, MOD - 2);
+vector<int> deriv(vector<int> a) {
+  for (int i = 1; i < (int) a.size(); ++i) {
+    a[i - 1] = mul(i, a[i]);
+  }
+  a.back() = 0;
+  if (a.size() > 1) {
+    a.pop_back();
+  }
+  return a;
 }
 
-void invfft(vector<int> &A, int lg) {
-  int n = 1 << lg;
-  fft(A, lg);
-  for (auto &el : A)
-    el = el * 1ll * inverse(n % MOD) % MOD;
-  reverse(A.begin() + 1, A.end());
+vector<int> integ(vector<int> a) {
+  a.push_back(0);
+  for (int i = (int) a.size() - 1; i; --i) {
+    a[i] = mul(a[i - 1], inv(i));
+  }
+  a[0] = 0;
+  return a;
 }
 
-vector<int> mul(vector<int> A, vector<int> B) {
-  if (A.empty() || B.empty())
-    return {};
-  int lg = 32 - __builtin_clz(A.size() + B.size() - 1);
-  int n = 1 << lg;
-  A.resize(n, 0);
-  B.resize(n, 0);
-  fft(A, lg);
-  fft(B, lg);
-  for (int i = 0; i < n; ++i)
-    A[i] = A[i] * 1ll * B[i] % MOD;
-  invfft(A, lg);
-  return A;
+vector<int> log(vector<int> a, int n) {
+  assert(a[0] == 1);
+  auto res = integ(conv(deriv(a), inv(a, n)));
+  res.resize(n);
+  return res;
 }
 
-signed main() {
-  calctail(); // НЕ ЗАБЫТЬ
-  calcomega(); // НЕ ЗАБЫТЬ
-  // your code here
+vector<int> exp(vector<int> a, int need) {
+  assert(a[0] == 0);
+  vector<int> b = {1};
+  while ((int) b.size() < need) {
+    vector<int> a1 = a;
+    int m = b.size();
+    a1.resize(min((int) a1.size(), 2 * m));
+    a1[0] = add(a1[0], 1);
+    b = conv(b, sub(a1, log(b, 2 * m)));
+    b.resize(2 * m);
+  }
+  b.resize(need);
+  return b;
 }
-
 \end{lstlisting}
 
 \subsection{FFT}
@@ -2666,6 +2769,37 @@ ll min25_sieve(ll n) {
     // therefore \sum_{i=1}^n f(i) is r.back() + 1
     return r.back() + 1 - g(1, 1); // since f(1)=1 for real, not g(1,1): 1 is not prime
 }
+\end{lstlisting}
+
+\subsection{sqrt mod}
+\begin{lstlisting}[language=C++]
+// -1 if no solution
+// x=sqrt(a, p) => x^2=a and (-x)^2=a;
+// should be changed if const p
+ll sqrt(ll a, ll p) {
+  a %= p;
+  if (a < 0) a += p;
+  if (a == 0) return 0;
+  if (binpow(a, (p - 1) / 2, p) != 1)
+    return -1; // no solution
+  if (p % 4 == 3) return binpow(a, (p + 1) / 4, p);
+  ll s = p - 1, n = 2;
+  int r = 0, m;
+  while (s % 2 == 0) ++r, s /= 2;
+  while (binpow(n, (p - 1) / 2, p) != p - 1) ++n;
+  ll x = binpow(a, (s + 1) / 2, p);
+  ll b = binpow(a, s, p), g = binpow(n, s, p);
+  for (;; r = m) {
+    ll t = b;
+    for (m = 0; m < r && t != 1; ++m) t = t * t % p;
+    if (m == 0) return x;
+    ll gs = binpow(g, 1LL << (r - m - 1), p);
+    g = gs * gs % p;
+    x = x * gs % p;
+    b = b * g % p;
+  }
+}
+
 \end{lstlisting}
 
 \subsection{Гаусс}
@@ -3227,12 +3361,11 @@ int get(int l, int r) {
 struct ST {
   vector<int> st, mx, mx_cnt, sec_mx;
 
-  ST(int n) {
-    st.resize(n * 4, 0);
-    mx.resize(n * 4, 0);
-    mx_cnt.resize(n * 4, 0);
-    sec_mx.resize(n * 4, 0);
-    build(0, 0, n);
+  ST(vector<int> &a) {
+    int n = a.size();
+    st.resize(n * 4), mx.resize(n * 4);
+    mx_cnt.resize(n * 4, 0), sec_mx.resize(n * 4, 0);
+    build(0, 0, n, a);
   }
 
   void upd_from_children(int v) {
@@ -3252,16 +3385,16 @@ struct ST {
     }
   }
 
-  void build(int i, int l, int r) {
+  void build(int i, int l, int r, vector<int> &a) {
     if (l + 1 == r) {
-      st[i] = mx[i] = 0;
+      st[i] = mx[i] = a[l];
       mx_cnt[i] = 1;
       sec_mx[i] = -INF;
       return;
     }
     int m = (r + l) / 2;
-    build(i * 2 + 1, l, m);
-    build(i * 2 + 2, m, r);
+    build(i * 2 + 1, l, m, a);
+    build(i * 2 + 2, m, r, a);
     upd_from_children(i);
   }
 
@@ -3272,45 +3405,38 @@ struct ST {
     }
   }
 
-  void push(int i) {
-    push_min_eq(i * 2 + 1, mx[i]);
-    push_min_eq(i * 2 + 2, mx[i]);
+  void push(int i, int l, int r) {
+    if (l + 1 < r) {
+      push_min_eq(i * 2 + 1, mx[i]);
+      push_min_eq(i * 2 + 2, mx[i]);
+    }
   }
 
   void update(int i, int l, int r, int ql, int qr, int val) {
-    if (mx[i] <= val) {
+    if (qr <= l || r <= ql || mx[i] <= val) {
       return;
     }
-    if (ql == l && qr == r && sec_mx[i] < val) {
+    if (ql <= l && r <= qr && sec_mx[i] < val) {
       push_min_eq(i, val);
       return;
     }
-    push(i);
-    int m = (r + l) / 2;
-    if (qr <= m) {
-      update(i * 2 + 1, l, m, ql, qr, val);
-    } else if (ql >= m) {
-      update(i * 2 + 2, m, r, ql, qr, val);
-    } else {
-      update(i * 2 + 1, l, m, ql, m, val);
-      update(i * 2 + 2, m, r, m, qr, val);
-    }
+    push(i, l, r);
+    int m = (l + r) / 2;
+    update(i * 2 + 1, l, m, ql, qr, val);
+    update(i * 2 + 2, m, r, ql, qr, val);
     upd_from_children(i);
   }
 
   int sum(int i, int l, int r, int ql, int qr) {
-    if (l == ql && r == qr) {
+    if (qr <= l || r <= ql) {
+      return 0;
+    }
+    push(i, l, r);
+    if (ql <= l && r <= qr) {
       return st[i];
     }
-    push(i);
-    int m = (r + l) / 2;
-    if (qr <= m) {
-      return sum(i * 2 + 1, l, m, ql, qr);
-    }
-    if (ql >= m) {
-      return sum(i * 2 + 2, m, r, ql, qr);
-    }
-    return sum(i * 2 + 1, l, m, ql, m) + sum(i * 2 + 2, m, r, m, qr);
+    int m = (l + r) / 2;
+    return sum(i * 2 + 1, l, m, ql, qr) + sum(i * 2 + 2, m, r, ql, qr);
   }
 };
 \end{lstlisting}
