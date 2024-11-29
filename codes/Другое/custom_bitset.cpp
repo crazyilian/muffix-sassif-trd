@@ -39,12 +39,12 @@ struct custom_bitset {
     int div = shift / 64, mod = shift % 64;
     if (mod == 0) {
       for (int i = n - 1; i >= div; i--)
-        bits[i] &= bits[i - div];
+        bits[i] |= bits[i - div];
     } else {
       for (int i = n - 1; i >= div + 1; i--)
-        bits[i] &= bits[i - (div + 1)] >> (64 - mod) | bits[i - div] << mod;
+        bits[i] |= bits[i - (div + 1)] >> (64 - mod) | bits[i - div] << mod;
       if (div < n)
-        bits[div] &= bits[0] << mod;
+        bits[div] |= bits[0] << mod;
     }
     // if `&=`, `=`
     //fill(bits.begin(), bits.begin() + min(div, n), 0);
@@ -83,11 +83,11 @@ struct custom_bitset {
     return b;
   }
 
-  // `&=` can be replaced with `|=`, `^=`
-  custom_bitset &operator&=(const custom_bitset &other){
+  // `|=` can be replaced with `&=`, `^=`
+  custom_bitset &operator|=(const custom_bitset &other){
     // assert(b == other.b);
     for (int i = 0; i < n; i++)
-      bits[i] &= other.bits[i];
+      bits[i] |= other.bits[i];
     return *this;
   }
 };
