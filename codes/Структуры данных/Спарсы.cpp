@@ -9,7 +9,7 @@ void build(vector<int> &a) {
     for (int j = 0; j + len < n; ++j)
       tree[i][j] = min(tree[i - 1][j], tree[i - 1][j + len]);
   }
-  for (int i = 2; i <= n; ++i)
+  for (int i = 2; i < MAXN; ++i)
     floorlog2[i] = floorlog2[i / 2] + 1;
 }
 
