@@ -17,7 +17,7 @@ void build(vector<int> &a) {
         lvl[i] = min(lvl[i - 1], a[i]);
     }
   }
-  for (int i = 2; i < MAXN; ++i)
+  for (int i = 2; i < min(MAXN, n * 2); ++i)
     floorlog2[i] = floorlog2[i / 2] + 1;
 }
 
