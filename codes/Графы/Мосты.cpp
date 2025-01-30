@@ -4,7 +4,7 @@ void dfs(int v, int pi = -1) {
   up[v] = tin[v] = timer++;
   for (auto [u, ei] : g[v]) {
     if (!vis[u]) {
-      dfs(u, v);
+      dfs(u, ei);
       up[v] = min(up[v], up[u]);
     } else if (ei != pi)
       up[v] = min(up[v], tin[u]);
