@@ -309,7 +309,7 @@ Plane plane_perp(Pt p, Pt v) {
 }
 \end{lstlisting}
 
-\subsection{База 1: вектор}
+\subsection{База 1 - вектор}
 \begin{lstlisting}[language=C++]
 char sign(dbl x) {
   return x < -EPS ? -1 : x > EPS;
@@ -363,7 +363,7 @@ vctr rotate_ccw_90(const vctr &a) {
 
 \end{lstlisting}
 
-\subsection{База 2: прямая}
+\subsection{База 2 - прямая}
 \begin{lstlisting}[language=C++]
 struct line {
   dbl a, b, c;
@@ -410,7 +410,7 @@ line bisection(const vctr A, const vctr B) {
 
 \end{lstlisting}
 
-\subsection{База 3: окружность}
+\subsection{База 3 - окружность}
 \begin{lstlisting}[language=C++]
 struct circle {
   vctr C;
@@ -602,6 +602,31 @@ dbl distSegSeg(vctr s1a, vctr s1b, vctr s2a, vctr s2b) {
              distSegRay(s1a, s1b, s2b, s2a));
 }
 
+\end{lstlisting}
+
+\subsection{Калиперы}
+\begin{lstlisting}[language=C++]
+// Диаметр выпуклого многоугольника
+int calipers(vector<vctr> &pts) {
+  int n = pts.size();
+  int a = 0, b = 0;
+  for (int i = 1; i < n; ++i) {
+    auto &v = pts[i];
+    if (tie(v.y, v.x) < tie(pts[a].y, pts[a].x))
+      a = i;
+    if (tie(v.y, v.x) > tie(pts[b].y, pts[b].x))
+      b = i;
+  }
+  int aa = (a + 1) % n, bb = (b + 1) % n;
+  int dist2 = 0;
+  for (int i = 0; i < n; ++i) {
+    while (sign((pts[aa] - pts[a]) * (pts[bb] - pts[b])) > 0)
+      b = bb, bb = (b + 1) % n;
+    dist2 = max(dist2, (pts[a] - pts[b]).dist2());
+    a = aa, aa = (a + 1) % n;
+  }
+  return dist2;
+}
 \end{lstlisting}
 
 \subsection{Касательные из точки}
@@ -1328,34 +1353,38 @@ void use_example() {
 
 \subsection{КСС}
 \begin{lstlisting}[language=C++]
-void dfs1(int v, vector<int> &topsort) {
+void dfs1(int v, vector<char> &used, vector<int> &topsort) {
   used[v] = 1;
   for (auto u : g[v]) {
-    if (!used[u]) {
-      dfs1(u, topsort);
-    }
+    if (!used[u])
+      dfs1(u, used, topsort);
   }
   topsort.push_back(v);
 }
 
-void dfs2(int v, int col) {
+void dfs2(int v, int col, vector<int> &comp) {
   comp[v] = col;
   for (auto u : rg[v]) {
-    if (!comp[u]) {
-      dfs2(u, col);
-    }
+    if (comp[u] == -1)
+      dfs2(u, col, comp);
   }
 }
 
 signed main() {
   vector<int> topsort;
-  for (int v = 1; v <= n; ++v)
+  topsort.reserve(n);
+  vector<char> used(n, 0);
+  for (int v = 0; v < n; ++v) {
     if (!used[v])
-      dfs1(v, topsort);
+      dfs1(v, used, topsort);
+  }
   reverse(all(topsort));
-  for (int j = 1; j <= n; ++j)
-    if (!comp[topsort[j - 1]])
-      dfs2(topsort[j - 1], j);
+  int cc = 0;
+  vector<int> comp(n, -1);
+  for (int i = 0; i < n; ++i) {
+    if (comp[topsort[i]] == -1)
+      dfs2(topsort[i], cc++, comp);
+  }
 }
 \end{lstlisting}
 
@@ -1492,7 +1521,7 @@ void dfs(int v, int pi = -1) {
   up[v] = tin[v] = timer++;
   for (auto [u, ei] : g[v]) {
     if (!vis[u]) {
-      dfs(u, v);
+      dfs(u, ei);
       up[v] = min(up[v], up[u]);
     } else if (ei != pi)
       up[v] = min(up[v], tin[u]);
@@ -2127,18 +2156,18 @@ int main() {
 
 \subsection{Fast mod}
 \begin{lstlisting}[language=C++]
-// Быстрое взятие по НЕ константному модулю (в 1.5-1.9 раза быстрее)
+// Быстрое взятие по НЕ константному модулю (в 2-4 раза быстрее)
 struct FastMod {
   ull b, m;
   FastMod(ull b) : b(b), m(-1ULL / b) {}
-  ull reduce(ull a) const {
+  ull mod(ull a) const {
       ull r = a - (ull)((__uint128_t(m) * a) >> 64) * b;
-      return r;  // r in [0, 2b) // x1.9 speed
-      return r >= b ? r - b : r; // x1.5 speed
+      return r;  // r in [0, 2b) // $\approx$ x3.5 speed
+      return r >= b ? r - b : r; // $\approx$ x3 speed
   }
 }; // Usage:
 // FastMod F(m);
-// ull x_mod_m = F.reduce(x);
+// ull x_mod_m = F.mod(x);
 \end{lstlisting}
 
 \subsection{Slope trick}
@@ -2218,12 +2247,12 @@ struct custom_bitset {
     int div = shift / 64, mod = shift % 64;
     if (mod == 0) {
       for (int i = n - 1; i >= div; i--)
-        bits[i] &= bits[i - div];
+        bits[i] |= bits[i - div];
     } else {
       for (int i = n - 1; i >= div + 1; i--)
-        bits[i] &= bits[i - (div + 1)] >> (64 - mod) | bits[i - div] << mod;
+        bits[i] |= bits[i - (div + 1)] >> (64 - mod) | bits[i - div] << mod;
       if (div < n)
-        bits[div] &= bits[0] << mod;
+        bits[div] |= bits[0] << mod;
     }
     // if `&=`, `=`
     //fill(bits.begin(), bits.begin() + min(div, n), 0);
@@ -2262,11 +2291,11 @@ struct custom_bitset {
     return b;
   }
 
-  // `&=` can be replaced with `|=`, `^=`
-  custom_bitset &operator&=(const custom_bitset &other){
+  // `|=` can be replaced with `&=`, `^=`
+  custom_bitset &operator|=(const custom_bitset &other){
     // assert(b == other.b);
     for (int i = 0; i < n; i++)
-      bits[i] &= other.bits[i];
+      bits[i] |= other.bits[i];
     return *this;
   }
 };
@@ -2363,7 +2392,7 @@ void make_change() {
 
 \section{Математика}
 
-\subsection{A:B cmp C:D}
+\subsection{AdivB cmp CdivD}
 \begin{lstlisting}[language=C++]
 char sign(ll x) {
   return x < 0 ? -1 : x > 0;
@@ -2991,8 +3020,10 @@ ll min25_sieve(ll n) {
 
 \subsection{sqrt mod}
 \begin{lstlisting}[language=C++]
+// p is prime
 // -1 if no solution
-// x=sqrt(a, p) => x^2=a and (-x)^2=a;
+// $x=\text{sqrt}(a, p) \implies x^2=a$ and $(-x)^2=a$
+// $O(\log n)$ if $p \equiv 3 \mod 4$ else $O(\log^2 n)$
 // should be changed if const p
 ll sqrt(ll a, ll p) {
   a %= p;
@@ -3110,40 +3141,29 @@ pair<int, int> ext_gcd(int a, int b) {
   int x1 = 1, y1 = 0, x2 = 0, y2 = 1;
   while (b) {
     int k = a / b;
-    x1 = x1 - x2 * k;
-    y1 = y1 - y2 * k;
-    swap(x1, x2);
-    swap(y1, y2);
+    x1 -= x2 * k;
+    y1 -= y2 * k;
     a %= b;
-    swap(a, b);
+    swap(x1, x2), swap(y1, y2), swap(a, b);
   }
   return {x1, y1};
 }
 
+// solve $ax+by=c$ with minimum $x \geq 0$
 bool cool_ext_gcd(int a, int b, int c, int &x, int &y) {
-  if (b == 0) {
-    y = 0;
-    if (a == 0) {
-      x = 0;
-      return c == 0;
-    } else {
-      x = c / a;
-      return c % a == 0;
+    if (b == 0) {
+        y = 0;
+        if (a == 0)
+            return x = 0, c == 0;
+        return x = c / a, c % a == 0;
     }
-  }
-  auto [x0, y0] = ext_gcd(a, b);
-  int g = x0 * a + y0 * b;
-  if (c % g != 0)
-    return false;
-  x0 *= c / g;
-  y0 *= c / g;
-  int t = b / g;
-  int k = (-x0) / t;
-  if (x0 + t * k < 0)
-    k += t / abs(t);
-  x = x0 + t * k;
-  y = y0 - (a / g) * k;
-  return true;
+    auto [x0, y0] = ext_gcd(a, b);
+    int g = (ll)x0 * a + (ll)y0 * b;
+    if (c % g != 0) return false;
+    x = (ll)x0 * (c / g) % (b / g);
+    if (x < 0) x += abs(b / g);
+    y = (c - (ll)a * x) / b;
+    return true;
 }
 \end{lstlisting}
 
@@ -3560,7 +3580,7 @@ void build(vector<int> &a) {
         lvl[i] = min(lvl[i - 1], a[i]);
     }
   }
-  for (int i = 2; i < MAXN; ++i)
+  for (int i = 2; i < min(MAXN, n * 2); ++i)
     floorlog2[i] = floorlog2[i / 2] + 1;
 }
 

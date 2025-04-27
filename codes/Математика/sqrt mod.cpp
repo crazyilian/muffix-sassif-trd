@@ -1,5 +1,7 @@
+// p is prime
 // -1 if no solution
-// x=sqrt(a, p) => x^2=a and (-x)^2=a;
+// $x=\text{sqrt}(a, p) \implies x^2=a$ and $(-x)^2=a$
+// $O(\log n)$ if $p \equiv 3 \mod 4$ else $O(\log^2 n)$
 // should be changed if const p
 ll sqrt(ll a, ll p) {
   a %= p;
