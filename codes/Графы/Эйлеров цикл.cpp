@@ -9,7 +9,7 @@ vector<int> eulerpath1(int s, vector<vector<int>> &graph, vector<pair<int, int>>
     while (start[v] < graph[v].size() && used[graph[v][start[v]]])
       start[v]++;
     if (start[v] == graph[v].size()) {
-      if (ei != -1) res.push_back(ei);
+      if (ei != -1) res.push_back(ei ^ 1);
       st.pop_back();
     } else {
       int ej = graph[v][start[v]++];
