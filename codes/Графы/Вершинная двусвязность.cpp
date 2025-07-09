@@ -1,67 +1,36 @@
-struct edge {
-  int u, ind;
+vector<pair<int, int>> graph[MAX_V];
+bitset<MAX_V> vis;
+int st[MAX_E], col[MAX_E], tin[MAX_V], up[MAX_V];
+int sti = 0, cc = 0, tt = 0;
 
-  bool operator<(const edge &other) const {
-    return u < other.u;
-  }
-};
-
-vector<int> stack_;
-
-void paint(int v, int pr = -1) {
-  used[v] = pr;
-  up[v] = tin[v] = ++timer;
-  for (auto e: g[v]) {
-    if (e.u == pr) {
-      continue;
-    }
-    if (!used[e.u]) {
-      stack_.push_back(e.ind);
-      paint(e.u, v);
-      if (up[e.u] >= tin[v]) {
-        ++mx_col;
-        while (true) {
-          int cur_edge = stack_.back();
-          col[cur_edge] = mx_col;
-          stack_.pop_back();
-          if (cur_edge == e.ind) {
-            break;
-          }
-        }
+void dfs(int v, int pei) {
+  vis[v] = true;
+  int upv = tin[v] = tt++;
+  for (auto [u, ei] : graph[v]) {
+    if (ei == pei) continue;
+    if (!vis[u]) {
+      int pt = sti;
+      st[sti++] = ei;
+      dfs(u, ei);
+      upv = min(upv, up[u]);
+      if (up[u] >= tin[v]) {
+        while (sti > pt)
+          col[st[--sti]] = cc;
+        cc++;
       }
-      up[v] = min(up[v], up[e.u]);
-    } else if (tin[e.u] < tin[v]) {
-      stack_.push_back(e.ind);
-      up[v] = min(up[v], tin[e.u]);
-    } else if (up[v] > tin[e.u]) {
-      up[v] = up[e.u];
+    } else if (tin[u] <= tin[v]) {
+      st[sti++] = ei;
+      upv = min(upv, tin[u]);
     }
   }
+  up[v] = upv;
 }
 
-signed main() {
-  int n, m;
-  cin >> n >> m;
-  for (int i = 0; i < m; ++i) {
-    int u, v;
-    cin >> u >> v;
-    g[u].push_back({v, i});
-    g[v].push_back({u, i});
-  }
-  for (int v = 1; v <= n; ++v) {
-    sort(all(g[v]));
-  }
-  for (int v = 1; v <= n; ++v) {
-    if (!used[v]) {
-      paint(v);
-    }
-  }
-  for (int v = 1; v <= n; ++v) {
-    int len = g[v].size();
-    for (int i = 1; i < len; ++i) {
-      if (col[g[v][i].ind] == 0) {
-        col[g[v][i].ind] = col[g[v][i - 1].ind];
-      }
-    }
-  }
+// graph[v].emplace_back(u, i);
+// graph[u].emplace_back(v, i);
+fill(col, col + m, -1);
+for (int v = 0; v < n; ++v) {
+  if (!vis[v])
+    dfs(v, -1);
 }
+// col[i] - цвет i-го ребра
