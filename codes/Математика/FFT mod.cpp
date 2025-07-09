@@ -34,7 +34,7 @@ void ntt(int n, vector<int> &a, bool rev) {
     if (rv[i] > i) swap(a[i], a[rv[i]]);
   }
   int num = MAXLOG - 1;
-  for (int len = 1; len < n; len *= 2) {
+  for (int len = 1; len < n; len *= 2, --num) {
     for (int i = 0; i < n; i += 2 * len) {
       for (int j = 0; j < len; ++j) {
         int u = a[i + j];
@@ -43,7 +43,6 @@ void ntt(int n, vector<int> &a, bool rev) {
         a[i + j + len] = sub(u, v);
       }
     }
-    --num;
   }
   if (rev) {
     int invn = binpow(n, MOD - 2);
