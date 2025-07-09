@@ -13,8 +13,7 @@ vector<int> pws;
 // int binpow(), int inv()
 
 void initNTT() {
-  if (nttinit)
-    return;
+  if (nttinit) return;
   nttinit = true;
   assert((MOD - 1) % (1 << MAXLOG) == 0);
   pws.push_back(binpow(G, (MOD - 1) / (1 << MAXLOG)));
