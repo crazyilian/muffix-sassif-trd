@@ -65,6 +65,7 @@ vector<vctr> intersection_half_planes(vector<line> &ls) {
          || sign(pts.back().y - P.y) != 0)
       pts.push_back(P);
   }
+  // pts против часовой стрелки, но pts[0] != minvctr
   return pts;
 }
 
