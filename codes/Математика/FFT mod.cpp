@@ -9,42 +9,26 @@ int W[(1 << MAXLOG) + 10];
 bool nttinit = false;
 vector<int> pws;
 
-// int add(), int sub(), int mul()
-
-int binpow(int a, int n) {
-  int ans = 1;
-  while (n) {
-    if (n & 1)
-      ans = mul(ans, a);
-    a = mul(a, a);
-    n >>= 1;
-  }
-  return ans;
-}
-
-int inv(int a) {
-  return binpow(a, MOD - 2);
-}
+// int add(), int sub(), int mul(),
+// int binpow(), int inv()
 
 void initNTT() {
+  if (nttinit)
+    return;
+  nttinit = true;
   assert((MOD - 1) % (1 << MAXLOG) == 0);
   pws.push_back(binpow(G, (MOD - 1) / (1 << MAXLOG)));
-  for (int i = 0; i < MAXLOG - 1; ++i) {
+  for (int i = 0; i < MAXLOG - 1; ++i)
     pws.push_back(mul(pws.back(), pws.back()));
-  }
   assert(pws.back() == MOD - 1);
   W[0] = 1;
-  for (int i = 1; i < (1 << MAXLOG); ++i) {
+  for (int i = 1; i < (1 << MAXLOG); ++i)
     W[i] = mul(W[i - 1], pws[0]);
-  }
 }
 
 void ntt(int n, vector<int> &a, bool rev) {
-  if (!nttinit) {
-    initNTT();
-    nttinit = 1;
-  }
-  int lg = log2(n);
+  initNTT();
+  int lg = 31 - __builtin_clz(n);
   vector<int> rv(n);
   for (int i = 1; i < n; ++i) {
     rv[i] = (rv[i >> 1] >> 1) ^ ((i & 1) << (lg - 1));
@@ -54,7 +38,8 @@ void ntt(int n, vector<int> &a, bool rev) {
   for (int len = 1; len < n; len *= 2) {
     for (int i = 0; i < n; i += 2 * len) {
       for (int j = 0; j < len; ++j) {
-        int u = a[i + j], v = mul(W[j << num], a[i + j + len]);
+        int u = a[i + j];
+        int v = mul(W[j << num], a[i + j + len]);
         a[i + j] = add(u, v);
         a[i + j + len] = sub(u, v);
       }
@@ -62,45 +47,40 @@ void ntt(int n, vector<int> &a, bool rev) {
     --num;
   }
   if (rev) {
-    int rev_n = binpow(n, MOD - 2);
-    for (int i = 0; i < n; ++i) a[i] = mul(a[i], rev_n);
+    int invn = binpow(n, MOD - 2);
+    for (int i = 0; i < n; ++i) a[i] = mul(a[i], invn);
     reverse(a.begin() + 1, a.end());
   }
 }
 
 vector<int> conv(vector<int> a, vector<int> b) {
-  int lg = 0;
-  while ((1 << lg) < a.size() + b.size() + 1)
-    ++lg;
+  if (a.empty() || b.empty())
+    return {};
+  int lg = 32 - __builtin_clz(a.size() + b.size() - 1);
   int n = 1 << lg;
-  assert(a.size() + b.size() <= n + 1);
   a.resize(n);
   b.resize(n);
   ntt(n, a, false);
   ntt(n, b, false);
-  for (int i = 0; i < n; ++i) {
+  for (int i = 0; i < n; ++i)
     a[i] = mul(a[i], b[i]);
-  }
   ntt(n, a, true);
-  while (a.size() > 1 && a.back() == 0) {
+  while (a.size() > 1 && a.back() == 0)
     a.pop_back();
-  }
   return a;
 }
 
 vector<int> add(vector<int> a, vector<int> b) {
   a.resize(max(a.size(), b.size()));
-  for (int i = 0; i < (int) b.size(); ++i) {
+  for (int i = 0; i < (int) b.size(); ++i)
     a[i] = add(a[i], b[i]);
-  }
   return a;
 }
 
 vector<int> sub(vector<int> a, vector<int> b) {
   a.resize(max(a.size(), b.size()));
-  for (int i = 0; i < (int) b.size(); ++i) {
+  for (int i = 0; i < (int) b.size(); ++i)
     a[i] = sub(a[i], b[i]);
-  }
   return a;
 }
 
@@ -118,15 +98,13 @@ vector<int> inv(const vector<int> &a, int need) {
 }
 
 vector<int> div(vector<int> a, vector<int> b) {
-  if (count(all(a), 0) == a.size()) {
+  if (count(all(a), 0) == a.size())
     return {0};
-  }
   assert(a.back() != 0 && b.back() != 0);
   int n = a.size() - 1;
   int m = b.size() - 1;
-  if (n < m) {
+  if (n < m)
     return {0};
-  }
   reverse(all(a));
   reverse(all(b));
   a.resize(n - m + 1);
@@ -140,48 +118,40 @@ vector<int> div(vector<int> a, vector<int> b) {
 
 vector<int> mod(vector<int> a, vector<int> b) {
   auto res = sub(a, conv(b, div(a, b)));
-  while (res.size() > 1 && res.back() == 0) {
+  while (res.size() > 1 && res.back() == 0)
     res.pop_back();
-  }
   return res;
 }
 
 vector<int> multipoint(vector<int> a, vector<int> x) {
   int n = x.size();
   vector<vector<int>> tree(2 * n);
-  for (int i = 0; i < n; ++i) {
+  for (int i = 0; i < n; ++i)
     tree[i + n] = {x[i], MOD - 1};
-  }
-  for (int i = n - 1; i; --i) {
+  for (int i = n - 1; i; --i)
     tree[i] = conv(tree[2 * i], tree[2 * i + 1]);
-  }
   tree[1] = mod(a, tree[1]);
-  for (int i = 2; i < 2 * n; ++i) {
+  for (int i = 2; i < 2 * n; ++i)
     tree[i] = mod(tree[i >> 1], tree[i]);
-  }
   vector<int> res(n);
-  for (int i = 0; i < n; ++i) {
+  for (int i = 0; i < n; ++i)
     res[i] = tree[i + n][0];
-  }
   return res;
 }
 
 vector<int> deriv(vector<int> a) {
-  for (int i = 1; i < (int) a.size(); ++i) {
+  for (int i = 1; i < (int) a.size(); ++i)
     a[i - 1] = mul(i, a[i]);
-  }
   a.back() = 0;
-  if (a.size() > 1) {
+  if (a.size() > 1)
     a.pop_back();
-  }
   return a;
 }
 
 vector<int> integ(vector<int> a) {
   a.push_back(0);
-  for (int i = (int) a.size() - 1; i; --i) {
+  for (int i = (int) a.size() - 1; i; --i)
     a[i] = mul(a[i - 1], inv(i));
-  }
   a[0] = 0;
   return a;
 }
