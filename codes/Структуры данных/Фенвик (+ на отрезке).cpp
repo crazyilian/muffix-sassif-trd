@@ -8,6 +8,6 @@ void update(int l, int r, int x) {
 
 // sum a[0..pos)
 int get(int i) {
-  return T1.get(i) * pos + T2.get(i);
+  return T1.get(i) * i + T2.get(i);
 }
 
