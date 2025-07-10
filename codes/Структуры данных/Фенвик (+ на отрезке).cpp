@@ -7,7 +7,7 @@ void update(int l, int r, int x) {
 }
 
 // sum a[0..pos)
-int get(int pos) {
-  return T1.get(pos) * pos + T2.get(pos);
+int get(int i) {
+  return T1.get(i) * pos + T2.get(i);
 }
 
