@@ -1,3 +1,4 @@
+// $ax+by = \pm gcd$ if $a<0$ or $b<0$
 pair<int, int> ext_gcd(int a, int b) {
   int x1 = 1, y1 = 0, x2 = 0, y2 = 1;
   while (b) {
