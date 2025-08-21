@@ -3,9 +3,8 @@ struct Edge { int u, f, c, r; };
 
 struct Dinic {
   vector<Edge> graph[MAXN];
-  // разные битсеты, чтобы легко найти разрез
-  bitset<MAXN> vis, visf;
-  int dist[MAXN], Q[MAXN];
+  bitset<MAXN> vis;
+  int inds[MAXN], dist[MAXN], Q[MAXN];
   int ql, qr, S, T, BIT;
   Dinic() {}
 
@@ -23,38 +22,44 @@ struct Dinic {
         vis[u] = true;
         dist[u] = dist[v] + 1;
         Q[qr++] = u;
-        // удаление ифа может ускорить,
-        // но скорее сильно замедлит
         if (u == T) return true;
       }
     }
-    return vis[T];
+    return false;
   }
 
-  int dfs(int v, int minC) {
-    if (v == T) return minC;
-    visf[v] = true;
+  int dfs(int v, int maxF) {
+    if (v == T) return maxF;
     int ans = 0;
-    for (auto &e : graph[v]) {
-      auto cc = min(minC - ans, e.c - e.f);
-      // удалить второе условие, если один битсет
-      if (dist[e.u] <= dist[v] || !vis[e.u] || visf[e.u] || cc < BIT)
+    for (int &i = inds[v]; i < graph[v].size(); ++i) {
+      auto &e = graph[v][i];
+      auto cc = min(maxF - ans, e.c - e.f);
+      if (dist[e.u] <= dist[v] || !vis[e.u] || inds[e.u] == graph[e.u].size() || cc < BIT)
         continue;
       auto f = dfs(e.u, cc);
       if (f != 0) {
         e.f += f, ans += f;
         graph[e.u][e.r].f -= f;
       }
+      // иногда быстрее один иф, иногда другой
+      if (maxF - ans < 1) break;
+      // if (maxF - ans < BIT) break;
     }
     return ans;
   }
 
   void run(int s, int t) {
     S = s, T = t;
+    assert(S != T);
     for (BIT = (1ll << LOG); BIT > 0; BIT >>= 1) {
       while (bfs()) {
-        visf.reset();
-        dfs(S, MAXC);
+        memset(inds, 0, sizeof inds);
+        for (auto &e : graph[S]) {
+          if (inds[e.u] == graph[e.u].size() || e.c - e.f < BIT)
+            continue;
+          int f = dfs(e.u, e.c - e.f);
+          e.f += f, graph[e.u][e.r].f -= f;
+        }
       }
     }
   }
