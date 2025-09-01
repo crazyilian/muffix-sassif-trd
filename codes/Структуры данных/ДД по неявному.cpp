@@ -1,58 +1,25 @@
-pair<Node *, Node *> split(Node *t, int k) {
-  if (!now)
-    return {nullptr, nullptr};
-  int szl = size(t->l);
+// потому что nds[0].sz == 0 и sz не изменяется в push
+int size(int t) { return nds[t].sz; }
+
+pair<int, int> split(int t, int k) {
+  if (!t) return {0, 0};
+  push(t);
+  int szl = size(nds[t].l);
   if (k <= szl) {
-    auto [l, r] = split(t->l, k);
-    t->l = r;
+    auto [l, r] = split(nds[t].l, k);
+    nds[t].l = r;
     pull(t);
     return {l, t};
   } else {
-    auto [l, r] = split(t->r, k - szl - 1);
-    t->r = l;
+    auto [l, r] = split(nds[r].r, k - szl - 1);
+    nds[t].r = l;
     pull(t);
     return {t, r};
   }
 }
 
-Node *merge(Node *l, Node *r) {
-  if (!l)
-    return r;
-  if (!r)
-    return l;
-  if (l->y < r->y) {
-    l->r = merge(l->r, r);
-    pull(l);
-    return l;
-  } else {
-    r->l = merge(l, r->l);
-    pull(r);
-    return r;
-  }
-}
-
-void insert(Node *&root, int pos, int val) {
-  Node *new_v = new Node(val);
-  auto [l, r] = split(root, pos);
-  root = merge(merge(l, new_v), r);
-}
-
-void erase(Node *&root, int pos) {
-  auto [lm, r] = split(root, pos + 1);
-  auto [l, m] = split(lm, pos);
-  root = merge(l, r);
-}
+// всё остальное ровно как в обычном ДД
+// не забыть обновлять sz в pull 
+// инициализация sz=0 в Node() и sz=1 в Node(...)
 
 
-int sum(Node *v) {
-  return v ? v->sm : 0;
-}
-
-// query [l, r)
-int query(Node *&root, int ql, int qr) {
-  auto [lm, r] = split(root, qr);
-  auto [l, m] = split(lm, ql);
-  int res = sum(m);
-  root = merge(merge(l, m), r);
-  return res;
-}
