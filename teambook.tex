@@ -3784,7 +3784,7 @@ pair<int, int> split(int t, int k) {
     pull(t);
     return {l, t};
   } else {
-    auto [l, r] = split(nds[r].r, k - szl - 1);
+    auto [l, r] = split(nds[t].r, k - szl - 1);
     nds[t].r = l;
     pull(t);
     return {t, r};
