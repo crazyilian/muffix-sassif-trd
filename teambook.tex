@@ -164,7 +164,7 @@
 \pagestyle{fancyplain}
 \fancyhf{}
 \fancyhead[R]{\fontsize{12}{12}\selectfont\bf{\thepage}}
-\fancyhead[L]{\fontsize{8}{8}\selectfont\bf{NRU HSE (Andrianov, Lepeshov, Shulyatev)}}
+\fancyhead[L]{\fontsize{8}{8}\selectfont\bf{Nizhny Novgorod Branch of HSE University (Andrianov, Lepeshov, Shulyatev)}}
 \renewcommand{\headrulewidth}{0pt}
 \renewcommand\headrule{\vspace{-0.2cm}\hspace{-0.4cm}\rule{\paperwidth}{0.4pt}\vspace{-0.8cm}}
 
@@ -676,15 +676,28 @@ int tangent_parallel_line(const vector<vctr> &p, line l, int sgn) {
 \begin{lstlisting}[language=C++]
 // Выпуклый многоугольник, P[0] = minvctr
 bool is_point_in_poly(vctr A, vector<vctr> &P) {
-  int n = P.size();
-  int ind = lower_bound(P.begin(), P.end(), A, cmp_convex_hull) - P.begin();
-  if (ind == n || ind == 0)
+  auto tmp = A - P[0];
+  if (sign(tmp.y) < 0 || (sign(tmp.y) == 0 && sign(tmp.x) < 0))
     return false;
-  if (ind == 0)
-    ind++;
+  if (sign(tmp.y) == 0 && sign(tmp.x) == 0)
+    return true;
+  int ind = lower_bound(P.begin(), P.end(), A, cmp_convex_hull) - P.begin();
+  assert(ind != 0);
+  if (ind == P.size())
+    return false;
   vctr B = A - P[ind - 1];
   vctr C = P[ind] - P[ind - 1];
   return sign(C * B) >= 0;
+}
+
+bool is_point_in_poly_strict(vctr A, vector<vctr> &P) {
+  if (sign(A.y - P[0].y) <= 0 || sign((A - P[0]) * (P.back() - P[0])) <= 0)
+      return false;
+  int ind = lower_bound(P.begin(), P.end(), A, cmp_convex_hull) - P.begin();
+  assert(ind != 0 && ind != P.size());
+  vctr B = A - P[ind - 1];
+  vctr C = P[ind] - P[ind - 1];
+  return sign(C * B) > 0;
 }
 
 \end{lstlisting}
@@ -799,6 +812,7 @@ vector<vctr> intersection_half_planes(vector<line> &ls) {
          || sign(pts.back().y - P.y) != 0)
       pts.push_back(P);
   }
+  // pts против часовой стрелки, но pts[0] != minvctr
   return pts;
 }
 
@@ -1189,73 +1203,43 @@ pair<int, vector<int>> venger(vector<vector<int>> a) {
 
 \subsection{Вершинная двусвязность}
 \begin{lstlisting}[language=C++]
-struct edge {
-  int u, ind;
+vector<pair<int, int>> graph[MAX_V];
+bitset<MAX_V> vis;
+int st[MAX_E], col[MAX_E], tin[MAX_V], up[MAX_V];
+int sti = 0, cc = 0, tt = 0;
 
-  bool operator<(const edge &other) const {
-    return u < other.u;
-  }
-};
-
-vector<int> stack_;
-
-void paint(int v, int pr = -1) {
-  used[v] = pr;
-  up[v] = tin[v] = ++timer;
-  for (auto e: g[v]) {
-    if (e.u == pr) {
-      continue;
-    }
-    if (!used[e.u]) {
-      stack_.push_back(e.ind);
-      paint(e.u, v);
-      if (up[e.u] >= tin[v]) {
-        ++mx_col;
-        while (true) {
-          int cur_edge = stack_.back();
-          col[cur_edge] = mx_col;
-          stack_.pop_back();
-          if (cur_edge == e.ind) {
-            break;
-          }
-        }
+void dfs(int v, int pei) {
+  vis[v] = true;
+  int upv = tin[v] = tt++;
+  for (auto [u, ei] : graph[v]) {
+    if (ei == pei) continue;
+    if (!vis[u]) {
+      int pt = sti;
+      st[sti++] = ei;
+      dfs(u, ei);
+      upv = min(upv, up[u]);
+      if (up[u] >= tin[v]) {
+        while (sti > pt)
+          col[st[--sti]] = cc;
+        cc++;
       }
-      up[v] = min(up[v], up[e.u]);
-    } else if (tin[e.u] < tin[v]) {
-      stack_.push_back(e.ind);
-      up[v] = min(up[v], tin[e.u]);
-    } else if (up[v] > tin[e.u]) {
-      up[v] = up[e.u];
+    } else if (tin[u] <= tin[v]) {
+      st[sti++] = ei;
+      upv = min(upv, tin[u]);
     }
   }
+  up[v] = upv;
 }
 
-signed main() {
-  int n, m;
-  cin >> n >> m;
-  for (int i = 0; i < m; ++i) {
-    int u, v;
-    cin >> u >> v;
-    g[u].push_back({v, i});
-    g[v].push_back({u, i});
-  }
-  for (int v = 1; v <= n; ++v) {
-    sort(all(g[v]));
-  }
-  for (int v = 1; v <= n; ++v) {
-    if (!used[v]) {
-      paint(v);
-    }
-  }
-  for (int v = 1; v <= n; ++v) {
-    int len = g[v].size();
-    for (int i = 1; i < len; ++i) {
-      if (col[g[v][i].ind] == 0) {
-        col[g[v][i].ind] = col[g[v][i - 1].ind];
-      }
-    }
-  }
+// graph[v].emplace_back(u, i);
+// graph[u].emplace_back(v, i);
+fill(col, col + m, -1);
+for (int v = 0; v < n; ++v) {
+  if (!vis[v])
+    dfs(v, -1);
 }
+// col[i] - компонента i-го ребра
+// cc - итоговое кол-во компонент
 \end{lstlisting}
 
 \subsection{Диниц}
@@ -1265,9 +1249,8 @@ struct Edge { int u, f, c, r; };
 
 struct Dinic {
   vector<Edge> graph[MAXN];
-  // разные битсеты, чтобы легко найти разрез
-  bitset<MAXN> vis, visf;
-  int dist[MAXN], Q[MAXN];
+  bitset<MAXN> vis;
+  int inds[MAXN], dist[MAXN], Q[MAXN];
   int ql, qr, S, T, BIT;
   Dinic() {}
 
@@ -1285,38 +1268,44 @@ struct Dinic {
         vis[u] = true;
         dist[u] = dist[v] + 1;
         Q[qr++] = u;
-        // удаление ифа может ускорить,
-        // но скорее сильно замедлит
         if (u == T) return true;
       }
     }
-    return vis[T];
+    return false;
   }
 
-  int dfs(int v, int minC) {
-    if (v == T) return minC;
-    visf[v] = true;
+  int dfs(int v, int maxF) {
+    if (v == T) return maxF;
     int ans = 0;
-    for (auto &e : graph[v]) {
-      auto cc = min(minC - ans, e.c - e.f);
-      // удалить второе условие, если один битсет
-      if (dist[e.u] <= dist[v] || !vis[e.u] || visf[e.u] || cc < BIT)
+    for (int &i = inds[v]; i < graph[v].size(); ++i) {
+      auto &e = graph[v][i];
+      auto cc = min(maxF - ans, e.c - e.f);
+      if (dist[e.u] <= dist[v] || !vis[e.u] || inds[e.u] == graph[e.u].size() || cc < BIT)
         continue;
       auto f = dfs(e.u, cc);
       if (f != 0) {
         e.f += f, ans += f;
         graph[e.u][e.r].f -= f;
       }
+      // иногда быстрее один иф, иногда другой
+      if (maxF - ans < 1) break;
+      // if (maxF - ans < BIT) break;
     }
     return ans;
   }
 
   void run(int s, int t) {
     S = s, T = t;
+    assert(S != T);
     for (BIT = (1ll << LOG); BIT > 0; BIT >>= 1) {
       while (bfs()) {
-        visf.reset();
-        dfs(S, MAXC);
+        memset(inds, 0, sizeof inds);
+        for (auto &e : graph[S]) {
+          if (inds[e.u] == graph[e.u].size() || e.c - e.f < BIT)
+            continue;
+          int f = dfs(e.u, e.c - e.f);
+          e.f += f, graph[e.u][e.r].f -= f;
+        }
       }
     }
   }
@@ -1655,7 +1644,7 @@ signed main() {
 
 \subsection{Эйлеров цикл}
 \begin{lstlisting}[language=C++]
-// Эйлеров путь/цикл в компоненте связности s. Возвращает индексы рёбер. Если пути/цикла нет, то алгос найдёт хуйню.
+// Эйлеров путь/цикл в компоненте связности s. Возвращает индексы рёбер. Если пути/цикла нет, то алгос найдёт фигню.
 // Если неориентированный граф, то edges[ei] и edges[ei ^ 1] - обратные друг к другу рёбра.
 // edges[graph[v][i]] = {v, u}
 vector<int> eulerpath1(int s, vector<vector<int>> &graph, vector<pair<int, int>> &edges, vector<char> &used, vector<int> &start) {
@@ -1675,6 +1664,7 @@ vector<int> eulerpath1(int s, vector<vector<int>> &graph, vector<pair<int, int>>
       st.emplace_back(ej, edges[ej].second);
     }
   }
+  reverse(all(res));
   return res;
 }
 
@@ -2426,98 +2416,76 @@ int W[(1 << MAXLOG) + 10];
 bool nttinit = false;
 vector<int> pws;
 
-// int add(), int sub(), int mul()
-
-int binpow(int a, int n) {
-  int ans = 1;
-  while (n) {
-    if (n & 1)
-      ans = mul(ans, a);
-    a = mul(a, a);
-    n >>= 1;
-  }
-  return ans;
-}
-
-int inv(int a) {
-  return binpow(a, MOD - 2);
-}
+// int add(), int sub(), int mul(),
+// int binpow(), int inv()
 
 void initNTT() {
+  if (nttinit) return;
+  nttinit = true;
   assert((MOD - 1) % (1 << MAXLOG) == 0);
   pws.push_back(binpow(G, (MOD - 1) / (1 << MAXLOG)));
-  for (int i = 0; i < MAXLOG - 1; ++i) {
+  for (int i = 0; i < MAXLOG - 1; ++i)
     pws.push_back(mul(pws.back(), pws.back()));
-  }
   assert(pws.back() == MOD - 1);
   W[0] = 1;
-  for (int i = 1; i < (1 << MAXLOG); ++i) {
+  for (int i = 1; i < (1 << MAXLOG); ++i)
     W[i] = mul(W[i - 1], pws[0]);
-  }
 }
 
 void ntt(int n, vector<int> &a, bool rev) {
-  if (!nttinit) {
-    initNTT();
-    nttinit = 1;
-  }
-  int lg = log2(n);
+  initNTT();
+  int lg = 31 - __builtin_clz(n);
   vector<int> rv(n);
   for (int i = 1; i < n; ++i) {
     rv[i] = (rv[i >> 1] >> 1) ^ ((i & 1) << (lg - 1));
     if (rv[i] > i) swap(a[i], a[rv[i]]);
   }
   int num = MAXLOG - 1;
-  for (int len = 1; len < n; len *= 2) {
+  for (int len = 1; len < n; len *= 2, --num) {
     for (int i = 0; i < n; i += 2 * len) {
       for (int j = 0; j < len; ++j) {
-        int u = a[i + j], v = mul(W[j << num], a[i + j + len]);
+        int u = a[i + j];
+        int v = mul(W[j << num], a[i + j + len]);
         a[i + j] = add(u, v);
         a[i + j + len] = sub(u, v);
       }
     }
-    --num;
   }
   if (rev) {
-    int rev_n = binpow(n, MOD - 2);
-    for (int i = 0; i < n; ++i) a[i] = mul(a[i], rev_n);
+    int invn = binpow(n, MOD - 2);
+    for (int i = 0; i < n; ++i) a[i] = mul(a[i], invn);
     reverse(a.begin() + 1, a.end());
   }
 }
 
 vector<int> conv(vector<int> a, vector<int> b) {
-  int lg = 0;
-  while ((1 << lg) < a.size() + b.size() + 1)
-    ++lg;
+  if (a.empty() || b.empty())
+    return {};
+  int lg = 32 - __builtin_clz(a.size() + b.size() - 1);
   int n = 1 << lg;
-  assert(a.size() + b.size() <= n + 1);
   a.resize(n);
   b.resize(n);
   ntt(n, a, false);
   ntt(n, b, false);
-  for (int i = 0; i < n; ++i) {
+  for (int i = 0; i < n; ++i)
     a[i] = mul(a[i], b[i]);
-  }
   ntt(n, a, true);
-  while (a.size() > 1 && a.back() == 0) {
+  while (a.size() > 1 && a.back() == 0)
     a.pop_back();
-  }
   return a;
 }
 
 vector<int> add(vector<int> a, vector<int> b) {
   a.resize(max(a.size(), b.size()));
-  for (int i = 0; i < (int) b.size(); ++i) {
+  for (int i = 0; i < (int) b.size(); ++i)
     a[i] = add(a[i], b[i]);
-  }
   return a;
 }
 
 vector<int> sub(vector<int> a, vector<int> b) {
   a.resize(max(a.size(), b.size()));
-  for (int i = 0; i < (int) b.size(); ++i) {
+  for (int i = 0; i < (int) b.size(); ++i)
     a[i] = sub(a[i], b[i]);
-  }
   return a;
 }
 
@@ -2535,15 +2503,13 @@ vector<int> inv(const vector<int> &a, int need) {
 }
 
 vector<int> div(vector<int> a, vector<int> b) {
-  if (count(all(a), 0) == a.size()) {
+  if (count(all(a), 0) == a.size())
     return {0};
-  }
   assert(a.back() != 0 && b.back() != 0);
   int n = a.size() - 1;
   int m = b.size() - 1;
-  if (n < m) {
+  if (n < m)
     return {0};
-  }
   reverse(all(a));
   reverse(all(b));
   a.resize(n - m + 1);
@@ -2557,48 +2523,40 @@ vector<int> div(vector<int> a, vector<int> b) {
 
 vector<int> mod(vector<int> a, vector<int> b) {
   auto res = sub(a, conv(b, div(a, b)));
-  while (res.size() > 1 && res.back() == 0) {
+  while (res.size() > 1 && res.back() == 0)
     res.pop_back();
-  }
   return res;
 }
 
 vector<int> multipoint(vector<int> a, vector<int> x) {
   int n = x.size();
   vector<vector<int>> tree(2 * n);
-  for (int i = 0; i < n; ++i) {
+  for (int i = 0; i < n; ++i)
     tree[i + n] = {x[i], MOD - 1};
-  }
-  for (int i = n - 1; i; --i) {
+  for (int i = n - 1; i; --i)
     tree[i] = conv(tree[2 * i], tree[2 * i + 1]);
-  }
   tree[1] = mod(a, tree[1]);
-  for (int i = 2; i < 2 * n; ++i) {
+  for (int i = 2; i < 2 * n; ++i)
     tree[i] = mod(tree[i >> 1], tree[i]);
-  }
   vector<int> res(n);
-  for (int i = 0; i < n; ++i) {
+  for (int i = 0; i < n; ++i)
     res[i] = tree[i + n][0];
-  }
   return res;
 }
 
 vector<int> deriv(vector<int> a) {
-  for (int i = 1; i < (int) a.size(); ++i) {
+  for (int i = 1; i < (int) a.size(); ++i)
     a[i - 1] = mul(i, a[i]);
-  }
   a.back() = 0;
-  if (a.size() > 1) {
+  if (a.size() > 1)
     a.pop_back();
-  }
   return a;
 }
 
 vector<int> integ(vector<int> a) {
   a.push_back(0);
-  for (int i = (int) a.size() - 1; i; --i) {
+  for (int i = (int) a.size() - 1; i; --i)
     a[i] = mul(a[i - 1], inv(i));
-  }
   a[0] = 0;
   return a;
 }
@@ -2756,6 +2714,80 @@ int floor_sum(int n, int d, int m, int a) {
     if (l >= d)
         ans += floor_sum(l / d, m, d, l % d);
     return ans;
+}
+\end{lstlisting}
+
+\subsection{OR XOR AND Свёртки}
+\begin{lstlisting}[language=C++]
+vector<int> or_conv(int n, vector<int> a, vector<int> b) { // $|a| = |b| = 2^n$
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < (1 << n); j++) {
+            if ((j >> i) & 1) {
+                a[j] = (a[j] + a[j ^ (1 << i)]) % MOD;
+                b[j] = (b[j] + b[j ^ (1 << i)]) % MOD;
+            }
+        }
+    }
+    vector<int> c(1 << n);
+    for (int i = 0; i < (1 << n); i++) {
+        c[i] = (a[i] * b[i]) % MOD;
+    }
+    for (int i = n - 1; i >= 0; i--) {
+        for (int j = (1 << n) - 1; j >= 0; j--) {
+            if ((j >> i) & 1) {
+                c[j] = (c[j] - c[j ^ (1 << i)] + MOD) % MOD;
+            }
+        }
+    }
+    return c;
+}
+
+vector<int> and_conv(int n, vector<int> a, vector<int> b) { // $|a| = |b| = 2^n$
+    for (int i = 1; i < (1 << n); i *= 2) {
+        for (int j = 0; j < (1 << n); j += i * 2) {
+            for (int k = 0; k < i; k++) {
+                a[j + k] = (a[j + k] + a[i + j + k]) % MOD;
+                b[j + k] = (b[j + k] + b[i + j + k]) % MOD;
+            }
+        }
+    }
+    vector<int> c(1 << n);
+    for (int i = 0; i < (1 << n); i++)
+        c[i] = (a[i] * b[i]) % MOD;
+    for (int i = 1; i < (1 << n); i *= 2) {
+        for (int j = 0; j < (1 << n); j += i * 2) {
+            for (int k = 0; k < i; k++) {
+                c[j + k] = (c[j + k] - c[i + j + k] + MOD) % MOD;
+            }
+        }
+    }
+    return c;
+}
+
+const int inv2 = (MOD + 1) / 2;
+vector<int> xor_conv(int n, vector<int> a, vector<int> b) { // $|a| = |b| = 2^n$
+    for (int i = 1; i < (1 << n); i *= 2) {
+        for (int j = 0; j < (1 << n); j++) {
+            if ((j & i) == 0) {
+                int x = a[j], y = a[j | i];
+                a[j] = (x + y) % MOD, a[j | i] = (x - y + MOD) % MOD;
+                x = b[j], y = b[j | i];
+                b[j] = (x + y) % MOD, b[j | i] = (x - y + MOD) % MOD;
+            }
+        }
+    }
+    vector<int> c(1 << n);
+    for (int i = 0; i < (1 << n); i++)
+        c[i] = (a[i] * b[i]) % MOD;
+    for (int i = 1; i < (1 << n); i *= 2) {
+        for (int j = 0; j < (1 << n); j++) {
+            if ((j & i) == 0) {
+                int x = c[j], y = c[j | i];
+                c[j] = (inv2 * (x + y)) % MOD, c[j | i] = (inv2 * (x - y + MOD)) % MOD;
+            }
+        }
+    }
+    return c;
 }
 \end{lstlisting}
 
@@ -3137,6 +3169,7 @@ vector<bitset<N>> gauss_bit(vector<bitset<N>> a, int m) {
 
 \subsection{Диофантовы уравнения}
 \begin{lstlisting}[language=C++]
+// $ax+by = \pm gcd$ if $a<0$ or $b<0$
 pair<int, int> ext_gcd(int a, int b) {
   int x1 = 1, y1 = 0, x2 = 0, y2 = 1;
   while (b) {
@@ -3250,6 +3283,48 @@ vector<int> mu(n + 1);
 mu[1] = 1;
 for (int x = 1; x <= n; x++) {
   for (int y = x + x; y <= n; y += x) mu[y] -= mu[x];
+}
+\end{lstlisting}
+
+\subsection{Подсчёт прогулок}
+\begin{lstlisting}[language=C++]
+int count_walks_1(int b1, int b2, int p, int q) {
+    // counting walks from (0, 0) to (p, q)
+    // each turn x += 1 or y += 1
+    // without touching y = x + b1 and y = x + b2
+    // b1 < 0 < b2 must hold
+    // O((p + q) / (b2 - b1))
+    if (min(p, q) < 0) return 0;
+    ll ans = C(p, p + q);
+    ar(2) F = {p, q}, S = {p, q};
+    int cf = mod - 1;
+    while (true) {
+        F[1] -= b1;
+        swap(F[0], F[1]);
+        F[1] += b1;
+        S[1] -= b2;
+        swap(S[0], S[1]);
+        S[1] += b2;
+        swap(F, S);
+        int wf = C(F[0], F[0] + F[1]);
+        int ws = C(S[0], S[0] + S[1]);
+        ans += (cf * (ll) ((wf + ws) % mod)) % mod;
+        if (wf == 0 && ws == 0) break;
+        cf = mod - cf;
+    }
+    ans %= mod;
+    return (int) ans;
+}
+
+int count_walks_2(int b1, int b2, int p, int q) {
+    // counting walks from (0, 0) to (p, q)
+    // each turn x += 1 and (y -= 1 or y += 1)
+    // without touching y = b1 and y = b2
+    // b1 < 0 < b2 must hold
+    // O(p / (b2 - b1))
+    if (abs(p) % 2 != abs(q) % 2) return 0;
+    int p0 = (p - q) / 2, q0 = (p + q) / 2;
+    return count_walks_1(b1, b2, p0, q0);
 }
 \end{lstlisting}
 
@@ -3696,204 +3771,210 @@ struct ST {
 
 \subsection{ДД по неявному}
 \begin{lstlisting}[language=C++]
-pair<Node *, Node *> split(Node *t, int k) {
-  if (!now)
-    return {nullptr, nullptr};
-  int szl = size(t->l);
+// потому что nds[0].sz == 0 и sz не изменяется в push
+int size(int t) { return nds[t].sz; }
+
+pair<int, int> split(int t, int k) {
+  if (!t) return {0, 0};
+  push(t);
+  int szl = size(nds[t].l);
   if (k <= szl) {
-    auto [l, r] = split(t->l, k);
-    t->l = r;
+    auto [l, r] = split(nds[t].l, k);
+    nds[t].l = r;
     pull(t);
     return {l, t};
   } else {
-    auto [l, r] = split(t->r, k - szl - 1);
-    t->r = l;
+    auto [l, r] = split(nds[r].r, k - szl - 1);
+    nds[t].r = l;
     pull(t);
     return {t, r};
   }
 }
 
-Node *merge(Node *l, Node *r) {
-  if (!l)
-    return r;
-  if (!r)
-    return l;
-  if (l->y < r->y) {
-    l->r = merge(l->r, r);
-    pull(l);
-    return l;
-  } else {
-    r->l = merge(l, r->l);
-    pull(r);
-    return r;
-  }
-}
-
-void insert(Node *&root, int pos, int val) {
-  Node *new_v = new Node(val);
-  auto [l, r] = split(root, pos);
-  root = merge(merge(l, new_v), r);
-}
-
-void erase(Node *&root, int pos) {
-  auto [lm, r] = split(root, pos + 1);
-  auto [l, m] = split(lm, pos);
-  root = merge(l, r);
-}
+// всё остальное ровно как в обычном ДД
+// не забыть обновлять sz в pull 
+// инициализация sz=0 в Node() и sz=1 в Node(...)
 
 
-int sum(Node *v) {
-  return v ? v->sm : 0;
-}
-
-// query [l, r)
-int query(Node *&root, int ql, int qr) {
-  auto [lm, r] = split(root, qr);
-  auto [l, m] = split(lm, ql);
-  int res = sum(m);
-  root = merge(merge(l, m), r);
-  return res;
-}
 \end{lstlisting}
 
 \subsection{ДД}
 \begin{lstlisting}[language=C++]
-pair<Node *, Node *> split(Node *t, int x) {
-  if (!t)
-    return {nullptr, nullptr};
-  if (x <= t->x) {
-    auto [l, r] = split(t->l, x);
-    t->l = r;
+// insert $(key,val)$, erase $key$, $\max(val)$ for $key\in[l,r)$, $val$+= for $key\in[l,r)$
+struct Node {
+  int l, r;
+  int x, y;
+  int val, mx, mod;
+
+  // value of empty set
+  Node() : val(-INF), mx(-INF) {
+    l = r = 0, mod = 0;
+  }
+  Node(int x, int val) : x(x), val(val), mx(val) {
+    l = r = 0, mod = 0, y = rnd();
+  }
+};
+
+Node nds[MAX];
+int ndsz = 1; // nds[0] means empty
+
+void push(int t) {
+  if (!t || nds[t].mod == 0) return;
+  nds[t].val += nds[t].mod;
+  nds[t].mx += nds[t].mod;
+  if (nds[t].l) nds[nds[t].l].mod += nds[t].mod;
+  if (nds[t].r) nds[nds[t].r].mod += nds[t].mod;
+  nds[t].mod = 0;
+}
+
+int getmx(int t) {
+  push(t); // delete if sure (faster)
+  return nds[t].mx;
+}
+
+void pull(int t) {
+  if (!t) return;
+  push(t), push(nds[t].l), push(nds[t].r); // must have
+  nds[t].mx = max(nds[t].val, max(getmx(nds[t].l), getmx(nds[t].r)));
+}
+
+pair<int, int> split(int t, int x) {
+  if (!t) return {0, 0};
+  push(t);
+  if (x <= nds[t].x) {
+    auto [l, r] = split(nds[t].l, x);
+    nds[t].l = r;
     pull(t);
     return {l, t};
   } else {
-    auto [l, r] = split(t->r, x);
-    t->r = l;
+    auto [l, r] = split(nds[t].r, x);
+    nds[t].r = l;
     pull(t);
     return {t, r};
   }
 }
 
-Node *merge(Node *l, Node *r) {
-  if (!l)
-    return r;
-  if (!r)
-    return l;
-  if (l->y < r->y) {
-    l->r = merge(l->r, r);
+int merge(int l, int r) {
+  push(l), push(r);
+  if (!l) return r;
+  if (!r) return l;
+  if (nds[l].y < nds[r].y) {
+    nds[l].r = merge(nds[l].r, r);
     pull(l);
     return l;
   } else {
-    r->l = merge(l, r->l);
+    nds[r].l = merge(l, nds[r].l);
     pull(r);
     return r;
   }
 }
 
-void insert(Node *&root, int val) {
-  Node *new_v = new Node(val);
-  auto [l, r] = split(root, val);
-  root = merge(merge(l, new_v), r);
+void insert(int &root, int x, int val) {
+  nds[ndsz++] = Node(x, val);
+  auto [l, r] = split(root, x);
+  root = merge(merge(l, ndsz - 1), r);
 }
 
-void erase(Node *&root, int val) {
-  auto [lm, r] = split(root, val + 1);
-  auto [l, m] = split(lm, val);
+// erase all equal to x
+void erase(int &root, int x) {
+  auto [lm, r] = split(root, x + 1);
+  auto [l, m] = split(lm, x);
   root = merge(l, r);
 }
 
-int sum(Node *v) {
-  return v ? v->sm : 0;
-}
-
 // query [l, r)
-int query(Node *&root, int ql, int qr) {
+int query(int &root, int ql, int qr) {
   auto [lm, r] = split(root, qr);
   auto [l, m] = split(lm, ql);
-  int res = sum(m);
+  int res = getmx(m);
   root = merge(merge(l, m), r);
   return res;
 }
+
+// update [l, r)
+void update(int &root, int ql, int qr, int qx) {
+  auto [lm, r] = split(root, qr);
+  auto [l, m] = split(lm, ql);
+  if (m) nds[m].mod += qx;
+  root = merge(merge(l, m), r);
+}
+
 \end{lstlisting}
 
 \subsection{Персистентное ДД по неявному}
 \begin{lstlisting}[language=C++]
-mt19937 rnd(228);
-
 struct Node;
-int size(Node *);
-int sum(Node *);
+int size(int);
+int sum(int);
 
 struct Node {
-  Node *l, *r;
+  int l, r;
   int val, sz, sm;
-
-  Node(int val) : val(val), sz(1), sm(val) {
-    l = r = nullptr;
-  }
-  Node(int val, Node *l, Node *r) : val(val), l(l), r(r) {
+    
+  Node() : val(0), sz(0), sm(0) {}
+  Node(int val, int l, int r) : val(val), l(l), r(r) {
     sz = 1 + size(l) + size(r);
     sm = val + sum(l) + sum(r);
   }
 };
 
-int size(Node *v) {
-  return v ? v->sz : 0;
+Node nds[MAX];
+int ndsz = 1;
+
+int size(int t) { return nds[t].sz; }
+int sum(int t) { return nds[t].sm; }
+
+int newNode(int val, int l, int r) {
+  nds[ndsz++] = newNode(val, l, r);
+  return ndsz - 1;
 }
 
-int sum(Node *v) {
-  return v ? v->sm : 0;
-}
-
-pair<Node *, Node *> split(Node *t, int x) {
-  if (!t)
-    return {nullptr, nullptr};
-  int lsz = size(t->l);
-  if (lsz >= x) {
-    auto [l, r] = split(t->l, x);
-    auto v = new Node(t->val, r, t->r);
+pair<int, int> split(int t, int x) {
+  if (!t) return {0, 0};
+  int szl = size(nds[t].l);
+  if (szl >= x) {
+    auto [l, r] = split(nds[t].l, x);
+    int v = newNode(nds[t].val, r, nds[t].r);
     return {l, v};
   } else {
-    auto [l, r] = split(t->r, x - lsz - 1);
-    auto v = new Node(t->val, t->l, l);
+    auto [l, r] = split(nds[t].r, x - szl - 1);
+    int v = newNode(nds[t].val, nds[t].l, l);
     return {v, r};
   }
 }
 
-bool chooseleft(int lsz, int rsz) {
-  return rnd() % (lsz + rsz) < lsz;
+bool chooseleft(int szl, int szr) {
+  return rnd() % (szl + szr) < szl;
 }
 
-Node *merge(Node *l, Node *r) {
-  if (!l)
-    return r;
-  if (!r)
-    return l;
-  if (chooseleft(l->sz, r->sz)) {
-    auto rr = merge(l->r, r);
-    auto v = new Node(l->val, l->l, rr);
+int merge(int l, int r) {
+  if (!l) return r;
+  if (!r) return l;
+  if (chooseleft(nds[l].sz, nds[r].sz)) {
+    int rr = merge(nds[l].r, r);
+    int v = newNode(nds[l].val, nds[l].l, rr);
     return v;
   } else {
-    auto ll = merge(l, r->l);
-    auto v = new Node(r->val, ll, r->r);
+    int ll = merge(l, nds[r].l);
+    int v = newNode(nds[r].val, ll, nds[r].r);
     return v;
   }
 }
 
-Node *insert(Node *root, int pos, int val) {
-  Node *new_v = new Node(val);
+int insert(int root, int ponds[t].s, int val) {
+  int new_v = newNode(val, 0, 0);
   auto [l, r] = split(root, pos);
   return merge(merge(l, new_v), r);
 }
 
-Node *erase(Node *root, int pos) {
+int erase(int root, int pos) {
   auto [lm, r] = split(root, pos + 1);
   auto [l, m] = split(lm, pos);
   return merge(l, r);
 }
 
 // query [l, r)
-pair<int, Node *> query(Node *root, int ql, int qr) {
+pair<int, int> query(int root, int ql, int qr) {
   auto [lm, r] = split(root, qr);
   auto [l, m] = split(lm, ql);
   int res = sum(m);
@@ -3905,31 +3986,33 @@ pair<int, Node *> query(Node *root, int ql, int qr) {
 
 \subsection{Персистентное ДО}
 \begin{lstlisting}[language=C++]
-// left: v ? v->l : nullptr (same for right)
-// sum: v ? v->sm : 0
+Node nds[MAX];
+int ndsz = 1;
+// nds[0] is default (empty) value
 
-// v can be nullptr. returns new root of subtree
-Node *update(Node *v, int l, int r, int qi, int qx) {
-  if (qi < l || r <= qi)
-    return v;
-  if (l + 1 == r)
-    return new Node(qx);
+int sum(int v) { return nds[v].sm; }
+
+// returns new root of subtree
+int update(int v, int l, int r, int qi, int qx) {
+  if (qi < l || r <= qi) return v;
+  if (l + 1 == r) {
+    nds[ndsz++] = Node(qx);
+    return ndsz - 1;
+  }
   int m = (l + r) / 2;
-  Node *u = new Node();
-  u->l = update(left(v), l, m, qi, qx);
-  u->r = update(right(v), m, r, qi, qx);
-  u->sm = sum(u->l) + sum(u->r);
+  int u = ndsz++;
+  nds[u].l = update(nds[v].l, l, m, qi, qx);
+  nds[u].r = update(nds[v].r, m, r, qi, qx);
+  nds[u].sm = sum(nds[u].l) + sum(nds[u].r);
   return u;
 }
 
-int get(Node *v, int l, int r, int ql, int qr) {
-  if (!v || qr <= l || r <= ql)
-    return 0;
-  if (ql <= l && r <= qr)
-    return v->sm;
+int get(int v, int l, int r, int ql, int qr) {
+  if (!v || qr <= l || r <= ql) return 0;
+  if (ql <= l && r <= qr) return nds[v].sm;
   int m = (l + r) / 2;
-  auto a = get(v->l, l, m, ql, qr);
-  auto b = get(v->r, m, r, ql, qr);
+  auto a = get(nds[v].l, l, m, ql, qr);
+  auto b = get(nds[v].r, m, r, ql, qr);
   return a + b;
 }
 
@@ -3970,14 +4053,9 @@ void update(int l, int r, int x) {
   T2.add(r, x * r);
 }
 
-// sum a[0..pos)
-int rsq(int pos) {
-  return T1.rsq(pos) * pos + T2.rsq(pos);
-}
-
-// sum a[l..r)
-int sum(int l, int r) {
-  return rsq(r) - rsq(l);
+// sum a[0..i)
+int get(int i) {
+  return T1.get(i) * i + T2.get(i);
 }
 
 \end{lstlisting}
