@@ -12,7 +12,7 @@ struct LowerBoundMinFlow {
         dinic.addedge(v, Tx, mincap);
     }
 
-    bool check() {
+    bool inner_check() {
         for (auto edge: dinic.graph[Sx]) {
             if (edge.f != edge.c) {
                 return false;
@@ -30,7 +30,7 @@ struct LowerBoundMinFlow {
     bool only_existence() {
         dinic.addedge(T, S, INF);
         dinic.run(Sx, Tx);
-        return check();
+        return inner_check();
     }
 
     bool with_flows() {
@@ -39,7 +39,7 @@ struct LowerBoundMinFlow {
         dinic.run(S, Tx);
         dinic.run(S, T);
         // real (v, u, mincap, maxcap) flow = flow on (v, u, maxcap - mincap) edge + mincap
-        return check();
+        return inner_check();
     }
 
 };
