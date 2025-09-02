@@ -1,9 +1,9 @@
-struct LowerBoundFlow {
+struct LRFlow {
     Dinic dinic;
     int S, T; // исток и сток
     int Sx, Tx; // вспомогательные вершины, любые неиспользуемые индексы
 
-    LowerBoundFlow(int S_, int T_, int Sx_, int Tx_) : S(S_), T(T_), Sx(Sx_), Tx(Tx_) {}
+    LRFlow(int S, int T, int Sx, int Tx) : S(S), T(T), Sx(Sx), Tx(Tx) {}
 
     void addedge(int v, int u, int mincap, int maxcap) {
         // все рёбра ориентированные
@@ -41,5 +41,4 @@ struct LowerBoundFlow {
         // real (v, u, mincap, maxcap) flow = flow on (v, u, maxcap - mincap) edge + mincap
         return inner_check();
     }
-
 };
