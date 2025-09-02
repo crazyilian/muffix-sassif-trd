@@ -1,9 +1,9 @@
-struct LowerBoundMinFlow {
+struct LowerBoundFlow {
     Dinic dinic;
     int S, T; // исток и сток
     int Sx, Tx; // вспомогательные вершины, любые неиспользуемые индексы
 
-    LowerBoundMinFlow(int S_, int T_, int Sx_, int Tx_) : S(S_), T(T_), Sx(Sx_), Tx(Tx_) {}
+    LowerBoundFlow(int S_, int T_, int Sx_, int Tx_) : S(S_), T(T_), Sx(Sx_), Tx(Tx_) {}
 
     void addedge(int v, int u, int mincap, int maxcap) {
         // все рёбра ориентированные
