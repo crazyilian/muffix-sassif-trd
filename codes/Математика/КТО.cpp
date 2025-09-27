@@ -3,7 +3,7 @@ vector<vector<int>> r(k, vector<int>(k));
 for (int i = 0; i < k; ++i)
   for (int j = 0; j < k; ++j)
     if (i != j)
-      r[i][j] = binpow(p[i] % p[j], p[j] - 2, p[j]);
+      r[i][j] = binpow(p[i] % p[j], p[j] - 2, p[j]); // [phi(p[j]) - 1] для не простого модуля
 vector<int> x(k);
 for (int i = 0; i < k; ++i) {
   x[i] = a[i];
