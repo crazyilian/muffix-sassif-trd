@@ -19,7 +19,7 @@ int getkfps(vector<ll> p, vector<ll> q, ll k) {
     return (int) ((p[0] * inverse(q[0])) % MOD);
 }
 
-// a - initials values of sequence, s - result of berlekamp on vals
+// a - initials values of sequence, s - result of berlekamp on a
 int kth_term(vector<ll> &a, vector<ll> s, ll k) {
     int d = ssize(s) - 1;
     s[0] = MOD - 1;
