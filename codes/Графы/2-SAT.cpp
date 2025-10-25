@@ -32,9 +32,8 @@ struct TwoSat {
     void dfs1(int v) {
         used[v] = 1;
         for (auto u: g[v]) {
-            if (!used[u]) {
+            if (!used[u])
                 dfs1(u);
-            }
         }
         topsort.push_back(v);
     }
