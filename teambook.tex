@@ -13,6 +13,7 @@
 \usepackage{geometry}
 \usepackage{multicol}
 \usepackage{graphicx}
+\usepackage{amssymb}
 
 \geometry{verbose,landscape,a4paper,tmargin=1.1cm,bmargin=0.7cm,lmargin=0.6cm,rmargin=0.6cm}
 
@@ -886,26 +887,128 @@ vector<vctr> minkowski_sum(const vector<vctr> &A, const vector<vctr> &B) {
 
 \subsection{2-SAT}
 \begin{lstlisting}[language=C++]
-for (int i = 1; i <= n; ++i) {
-  not_v[i] = i + n;
-  not_v[i + n] = i;
-}
-for (int i = 0; i < m; ++i) {
-  cin >> u >> v;
-  g[not_v[v]].push_back(u);
-  g[not_v[u]].push_back(v);
-  rg[u].push_back(not_v[v]);
-  rg[v].push_back(not_v[u]);
-}
-// делаем КСС, получаем comp
-for (int v = 1; v <= n; ++v) {
-  if (comp[v] == comp[not_v[v]]) {
-    cout << "UNSATISFIABLE\n";
-    return 0;
+struct TwoSat {
+  int n;
+  vector<vector<int>> g, rg;
+  vector<int> comp, topsort;
+  vector<char> used;
+
+  TwoSat(int n_) : n(n_) {
+    g.resize(2 * n);
+    rg.resize(2 * n);
+    comp.assign(2 * n, -1);
+    topsort.reserve(2 * n);
+    used.assign(2 * n, 0);
   }
-}
-for (int v = 1; v <= n; ++v)
-  cout << (comp[v] > comp[not_v[v]] ? v : not_v[v]);
+
+  int neg(int v) {
+    return 2 * n - 1 - v;
+  }
+
+  void add(int v, int u) {
+    g[v].pb(u);
+    rg[u].pb(v);
+  }
+
+  void add_OR(int v, int u) { // v | u
+    add(neg(v), u), add(neg(u), v);
+  }
+
+  void add_IMPL(int v, int u) { // v -> u
+    add_OR(neg(v), u);
+  }
+
+  void dfs1(int v) {
+    used[v] = 1;
+    for (auto u: g[v]) {
+      if (!used[u])
+        dfs1(u);
+    }
+    topsort.push_back(v);
+  }
+
+  void dfs2(int v, int col) {
+    comp[v] = col;
+    for (auto u: rg[v]) {
+      if (comp[u] == -1)
+        dfs2(u, col);
+    }
+  }
+
+  void SCC() {
+    for (int v = 0; v < 2 * n; ++v) {
+      if (!used[v])
+        dfs1(v);
+    }
+    reverse(all(topsort));
+    int cc = 0;
+    for (int i = 0; i < 2 * n; ++i) {
+      if (comp[topsort[i]] == -1)
+        dfs2(topsort[i], cc++);
+    }
+  }
+
+  vector<int> solution() {
+    SCC();
+    vector<int> ans(n);
+    for (int v = 0; v < n; ++v) {
+      if (comp[v] == comp[neg(v)]) {
+        return {-1}; // no solution
+      }
+      ans[v] = comp[v] > comp[neg(v)];
+    }
+    return ans;
+  }
+
+};
+\end{lstlisting}
+
+\subsection{L-R Flow}
+\begin{lstlisting}[language=C++]
+struct LRFlow {
+  Dinic dinic;
+  int S, T; // исток и сток
+  int Sx, Tx; // вспомогательные вершины, любые неиспользуемые индексы
+
+  LRFlow(int S, int T, int Sx, int Tx) : S(S), T(T), Sx(Sx), Tx(Tx) {}
+
+  void addedge(int v, int u, int mincap, int maxcap) {
+    // все рёбра ориентированные
+    dinic.addedge(v, u, maxcap - mincap);
+    dinic.addedge(Sx, u, mincap);
+    dinic.addedge(v, Tx, mincap);
+  }
+
+  bool inner_check() {
+    for (auto edge: dinic.graph[Sx]) {
+      if (edge.f != edge.c) {
+        return false;
+      }
+    }
+    for (auto edge: dinic.graph[Tx]) {
+      auto iedge = dinic.graph[edge.u][edge.r];
+      if (iedge.f != iedge.c) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool only_existence() {
+    dinic.addedge(T, S, INF);
+    dinic.run(Sx, Tx);
+    return inner_check();
+  }
+
+  bool with_flows() {
+    dinic.run(Sx, Tx);
+    dinic.run(Sx, T);
+    dinic.run(S, Tx);
+    dinic.run(S, T);
+    // real (v, u, mincap, maxcap) flow = flow on (v, u, maxcap - mincap) edge + mincap
+    return inner_check();
+  }
+};
 \end{lstlisting}
 
 \subsection{WeightedMatching}
@@ -1125,33 +1228,6 @@ namespace weighted_matching{
   }
 }
 \end{lstlisting}
-
-\subsection{l-r-capacity-maxflow}
-\noindent\rule{\linewidth}{0.15mm}
-\section*{Maximum flow problem with minimum capacities}
-
-We describe how to find the maximum flow from $S$ to $T$ when the edges also constrain the minimum bound of the flow amount (edges have ``minimum capacities''). It can be boiled down to an ordinary max-flow problem.
-
-Consider an edge from $u$ to $v$ whose capacity is $R$ and minimum capacity is $L$. To deal with the minimum capacity, create a new vertex $S'$ to $T'$, remove the original edge, and add edges with the following capacities:
-
-\begin{center}
-    \includegraphics[width=5cm]{/home/ilian/github/muffix-sassif-trd/assets/flow.png} \\
-    Flow network example with minimum capacities
-\end{center}
-
-Add such edges for all edges with the minimum capacities. On the resulting graph, accumulate maximum flow in the following order:
-
-\begin{itemize}
-    \item from $S'$ to $T'$
-    \item from $S'$ to $T$
-    \item from $S$ to $T'$
-    \item from $S$ to $T$
-\end{itemize}
-
-An $S$--$T$ flow that satisfies the minimum capacities exists if and only if, for all outgoing edges from $S'$ and incoming edges to $T'$, the flow and capacity are equal. (This can be understood by corresponding the flows from $S'$ and $T'$ to the original edges.)
-
-Alternatively, if you just want to know the existence of a flow satisfying the minimum capacities, one can add an edge from $T$ to $S$ with infinite capacity and consider the flow from $S'$ to $T'$ once, instead of accumulating flows four times.
-\noindent\rule{\linewidth}{0.15mm}
 
 \subsection{Венгерский алгоритм}
 \begin{lstlisting}[language=C++]
@@ -2165,21 +2241,21 @@ struct FastMod {
 // Дан массив $a_n$. Сделать минимальное кол-во $\pm 1$, чтобы $a_n$ стал неубывающим.
 
 void solve() {
-    int n;
-    cin >> n;
-    vector<int> a(n);
-    for (int i = 0; i < n; i++) {
-        cin >> a[i];
-    }
-    int ans = 0;
-    multiset<int> now;
-    for (int i = 0; i < n; i++) {
-        now.insert(a[i]);
-        ans += (*now.rbegin() - a[i]);
-        now.erase(now.find(*now.rbegin()));
-        now.insert(a[i]);
-    }
-    cout << ans << '\n';
+  int n;
+  cin >> n;
+  vector<int> a(n);
+  for (int i = 0; i < n; i++) {
+    cin >> a[i];
+  }
+  int ans = 0;
+  multiset<int> now;
+  for (int i = 0; i < n; i++) {
+    now.insert(a[i]);
+    ans += (*now.rbegin() - a[i]);
+    now.erase(now.find(*now.rbegin()));
+    now.insert(a[i]);
+  }
+  cout << ans << '\n';
 }
 \end{lstlisting}
 
@@ -2401,6 +2477,84 @@ char compare(ll a, ll b, ll c, ll d) {
   return compare(d, c, b, a) * sign(a) * sign(b) * sign(c) * sign(d);
 }
 
+\end{lstlisting}
+
+\subsection{Berlecamp}
+\begin{lstlisting}[language=C++]
+int getkfps(vector<ll> p, vector<ll> q, ll k) {
+  // assert(q[0] != 0);
+  while (k) {
+    auto f = q;
+    for (int i = 1; i < (int) f.size(); i += 2) {
+      f[i] = (MOD - f[i] % MOD) % MOD;
+    }
+    auto p2 = convMod(p, f);
+    auto q2 = convMod(q, f);
+    p.clear(), q.clear();
+    for (int i = k % 2; i < (int) p2.size(); i += 2) {
+      p.pb(p2[i]);
+    }
+    for (int i = 0; i < (int) q2.size(); i += 2) {
+      q.pb(q2[i]);
+    }
+    k >>= 1;
+  }
+  return (int) ((p[0] * inverse(q[0])) % MOD);
+}
+
+// a - initials values of sequence, s - result of berlekamp on a
+int kth_term(vector<ll> &a, vector<ll> s, ll k) {
+  int d = ssize(s) - 1;
+  s[0] = MOD - 1;
+  while (s.back() == 0) {
+    s.pop_back();
+  }
+  for (auto &el: s) {
+    el = (MOD - el % MOD) % MOD;
+  }
+  vector<ll> p(d);
+  copy(a.begin(), a.begin() + d, p.begin());
+  p = convMod(p, s);
+  p.resize(d);
+  return getkfps(p, s, k);
+}
+
+vector<ll> berlekamp_massey(vector<ll> a) {
+  // given a[0]...a[n], returns sequence s[1]..s[k] s.t a[i] = a[i-1] \cdot s[1] + \ldots + a[i-k] \cdot s[k]
+  vector <ll> ls, s;
+  int lf = 0, d = 0;
+  for (int i = 0; i < a.size(); ++i) {
+    ll t = 0;
+    for (int j = 0; j < s.size(); ++j) {
+      t = (t + 1ll * a[i - j - 1] * s[j]) % MOD;
+    }
+    if ((t - a[i]) % MOD == 0)continue;
+    if (s.empty()) {
+      s.resize(i + 1);
+      lf = i;
+      d = (t - a[i]) % MOD;
+      continue;
+    }
+    ll k = -(a[i] - t) * inverse(d) % MOD;
+    vector<ll> c(i - lf - 1);
+    c.push_back(k);
+    for (auto &j: ls)
+      c.push_back(-j * k % MOD);
+    if (c.size() < s.size())
+      c.resize(s.size());
+    for (int j = 0; j < s.size(); ++j) {
+      c[j] = (c[j] + s[j]) % MOD;
+    }
+    if (i - lf + (int) ls.size() >= (int) s.size()) {
+      tie(ls, lf, d) = make_tuple(s, i, (t - a[i]) % MOD);
+    }
+    s = c;
+  }
+  s.insert(s.begin(), 0); // fictive s[0] = 0
+  for (auto &i: s)
+    i = (i % MOD + MOD) % MOD;
+  return s;
+}
 \end{lstlisting}
 
 \subsection{FFT mod}
@@ -2704,349 +2858,266 @@ signed main() {
 \subsection{Floor Sum}
 \begin{lstlisting}[language=C++]
 int floor_sum(int n, int d, int m, int a) {
-    // sum_{i=0}^{n-1} floor((a + i*m)/d), only non-negative integers!
-    int ans = 0;
-    ans += (n * (n - 1) / 2) * (m / d);
-    m %= d;
-    ans += n * (a / d);
-    a %= d;
-    int l = m * n + a;
-    if (l >= d)
-        ans += floor_sum(l / d, m, d, l % d);
-    return ans;
+  // sum_{i=0}^{n-1} floor((a + i*m)/d), only non-negative integers!
+  int ans = 0;
+  ans += (n * (n - 1) / 2) * (m / d);
+  m %= d;
+  ans += n * (a / d);
+  a %= d;
+  int l = m * n + a;
+  if (l >= d)
+    ans += floor_sum(l / d, m, d, l % d);
+  return ans;
+}
+\end{lstlisting}
+
+\subsection{GCD LCM свёртки}
+\begin{lstlisting}[language=C++]
+vector<int> gcd_convolution(vector<int> a, vector<int> b) {
+  // a,b is 1-indexed array; a[0],b[0] doesnt matter
+  int n = ssize(a) - 1;
+  for (int p = 2; p <= n; ++p) {
+    if (!isprime[p]) continue; // alt: for (auto p : primes) if (p>n)break;
+    for (int i = n / p; i > 0; --i) {
+      a[i] += a[i * p];
+      if (a[i] >= mod) a[i] -= mod;
+      b[i] += b[i * p];
+      if (b[i] >= mod) b[i] -= mod;
+    }
+  }
+  for (int i = 1; i <= n; ++i) a[i] = (a[i] * b[i]) % mod;
+  for (int p = 2; p <= n; ++p) {
+    if (!isprime[p]) continue;
+    for (int i = 1; i * p <= n; ++i) {
+      a[i] += mod - a[i * p];
+      if (a[i] >= mod) a[i] -= mod;
+    }
+  }
+  return a;
+}
+
+vector<int> lcm_convolution(vector<int> a, vector<int> b) {
+  int n = ssize(a) - 1;
+  for (int p = 2; p <= n; ++p) {
+    if (!isprime[p]) continue;
+    for (int i = 1; i * p <= n; ++i) {
+      a[i * p] += a[i];
+      if (a[i * p] >= mod) a[i * p] -= mod;
+      b[i * p] += b[i];
+      if (b[i * p] >= mod) b[i * p] -= mod;
+    }
+  }
+  for (int i = 1; i <= n; ++i) a[i] = (a[i] * b[i]) % mod;
+  for (int p = 2; p <= n; ++p) {
+    if (!isprime[p]) continue;
+    for (int i = n / p; i > 0; --i) {
+      a[i * p] += mod - a[i];
+      if (a[i * p] >= mod) a[i * p] -= mod;
+    }
+  }
+  return a;
 }
 \end{lstlisting}
 
 \subsection{OR XOR AND Свёртки}
 \begin{lstlisting}[language=C++]
 vector<int> or_conv(int n, vector<int> a, vector<int> b) { // $|a| = |b| = 2^n$
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < (1 << n); j++) {
-            if ((j >> i) & 1) {
-                a[j] = (a[j] + a[j ^ (1 << i)]) % MOD;
-                b[j] = (b[j] + b[j ^ (1 << i)]) % MOD;
-            }
-        }
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < (1 << n); j++) {
+      if ((j >> i) & 1) {
+        a[j] = (a[j] + a[j ^ (1 << i)]) % MOD;
+        b[j] = (b[j] + b[j ^ (1 << i)]) % MOD;
+      }
     }
-    vector<int> c(1 << n);
-    for (int i = 0; i < (1 << n); i++) {
-        c[i] = (a[i] * b[i]) % MOD;
+  }
+  vector<int> c(1 << n);
+  for (int i = 0; i < (1 << n); i++) {
+    c[i] = (a[i] * b[i]) % MOD;
+  }
+  for (int i = n - 1; i >= 0; i--) {
+    for (int j = (1 << n) - 1; j >= 0; j--) {
+      if ((j >> i) & 1) {
+        c[j] = (c[j] - c[j ^ (1 << i)] + MOD) % MOD;
+      }
     }
-    for (int i = n - 1; i >= 0; i--) {
-        for (int j = (1 << n) - 1; j >= 0; j--) {
-            if ((j >> i) & 1) {
-                c[j] = (c[j] - c[j ^ (1 << i)] + MOD) % MOD;
-            }
-        }
-    }
-    return c;
+  }
+  return c;
 }
 
 vector<int> and_conv(int n, vector<int> a, vector<int> b) { // $|a| = |b| = 2^n$
-    for (int i = 1; i < (1 << n); i *= 2) {
-        for (int j = 0; j < (1 << n); j += i * 2) {
-            for (int k = 0; k < i; k++) {
-                a[j + k] = (a[j + k] + a[i + j + k]) % MOD;
-                b[j + k] = (b[j + k] + b[i + j + k]) % MOD;
-            }
-        }
+  for (int i = 1; i < (1 << n); i *= 2) {
+    for (int j = 0; j < (1 << n); j += i * 2) {
+      for (int k = 0; k < i; k++) {
+        a[j + k] = (a[j + k] + a[i + j + k]) % MOD;
+        b[j + k] = (b[j + k] + b[i + j + k]) % MOD;
+      }
     }
-    vector<int> c(1 << n);
-    for (int i = 0; i < (1 << n); i++)
-        c[i] = (a[i] * b[i]) % MOD;
-    for (int i = 1; i < (1 << n); i *= 2) {
-        for (int j = 0; j < (1 << n); j += i * 2) {
-            for (int k = 0; k < i; k++) {
-                c[j + k] = (c[j + k] - c[i + j + k] + MOD) % MOD;
-            }
-        }
+  }
+  vector<int> c(1 << n);
+  for (int i = 0; i < (1 << n); i++)
+    c[i] = (a[i] * b[i]) % MOD;
+  for (int i = 1; i < (1 << n); i *= 2) {
+    for (int j = 0; j < (1 << n); j += i * 2) {
+      for (int k = 0; k < i; k++) {
+        c[j + k] = (c[j + k] - c[i + j + k] + MOD) % MOD;
+      }
     }
-    return c;
+  }
+  return c;
 }
 
 const int inv2 = (MOD + 1) / 2;
 vector<int> xor_conv(int n, vector<int> a, vector<int> b) { // $|a| = |b| = 2^n$
-    for (int i = 1; i < (1 << n); i *= 2) {
-        for (int j = 0; j < (1 << n); j++) {
-            if ((j & i) == 0) {
-                int x = a[j], y = a[j | i];
-                a[j] = (x + y) % MOD, a[j | i] = (x - y + MOD) % MOD;
-                x = b[j], y = b[j | i];
-                b[j] = (x + y) % MOD, b[j | i] = (x - y + MOD) % MOD;
-            }
-        }
+  for (int i = 1; i < (1 << n); i *= 2) {
+    for (int j = 0; j < (1 << n); j++) {
+      if ((j & i) == 0) {
+        int x = a[j], y = a[j | i];
+        a[j] = (x + y) % MOD, a[j | i] = (x - y + MOD) % MOD;
+        x = b[j], y = b[j | i];
+        b[j] = (x + y) % MOD, b[j | i] = (x - y + MOD) % MOD;
+      }
     }
-    vector<int> c(1 << n);
-    for (int i = 0; i < (1 << n); i++)
-        c[i] = (a[i] * b[i]) % MOD;
-    for (int i = 1; i < (1 << n); i *= 2) {
-        for (int j = 0; j < (1 << n); j++) {
-            if ((j & i) == 0) {
-                int x = c[j], y = c[j | i];
-                c[j] = (inv2 * (x + y)) % MOD, c[j | i] = (inv2 * (x - y + MOD)) % MOD;
-            }
-        }
+  }
+  vector<int> c(1 << n);
+  for (int i = 0; i < (1 << n); i++)
+    c[i] = (a[i] * b[i]) % MOD;
+  for (int i = 1; i < (1 << n); i *= 2) {
+    for (int j = 0; j < (1 << n); j++) {
+      if ((j & i) == 0) {
+        int x = c[j], y = c[j | i];
+        c[j] = (inv2 * (x + y)) % MOD, c[j | i] = (inv2 * (x - y + MOD)) % MOD;
+      }
     }
-    return c;
-}
-\end{lstlisting}
-
-\subsection{berlekamp-massey-and-friends}
-\begin{lstlisting}[language=C++]
-int getkfps(vector<ll> p, vector<ll> q, ll k) {
-    // assert(q[0] != 0);
-    while (k) {
-        auto f = q;
-        for (int i = 1; i < (int) f.size(); i += 2) {
-            f[i] = (MOD - f[i] % MOD) % MOD;
-        }
-        auto p2 = (vector<ll>) convMod<MOD>(p, f);
-        auto q2 = (vector<ll>) convMod<MOD>(q, f);
-        p.clear(), q.clear();
-        for (int i = k % 2; i < (int) p2.size(); i += 2) {
-            p.pb(p2[i]);
-        }
-        for (int i = 0; i < (int) q2.size(); i += 2) {
-            q.pb(q2[i]);
-        }
-        k >>= 1;
-    }
-    return (int) ((p[0] * inverse(q[0])) % MOD);
-}
-
-// vals - initials values of reccurence, c - result of berlekamp on vals
-int getk(vector<ll> &vals, vector<ll> c, ll k) {
-    int d = (int) c.size() - 1;
-    c[0] = MOD - 1;
-    while (c.back() == 0) {
-        c.pop_back();
-    }
-    for (auto &el: c) {
-        el = (MOD - el % MOD) % MOD;
-    }
-    vector<ll> p(d);
-    copy(vals.begin(), vals.begin() + d, p.begin());
-    p = (vector<ll>) convMod<MOD>(p, c);
-    p.resize(d);
-    return getkfps(p, c, k);
-}
-
-vector<ll> mod_poly_slow(vector<ll> &p, vector<ll> &q) {
-    int n = (int) p.size(), m = (int) q.size();
-    if (n < m) {
-        return p;
-    }
-    vector<ll> r = p;
-    for (int i = n - 1; i >= m - 1; --i) {
-        int coef = (r[i] * 1ll * inverse(q[m - 1])) % MOD;
-        for (int j = 0; j < m; ++j) {
-            r[i - j] = (r[i - j] - coef * 1ll * q[m - 1 - j] % MOD + MOD) % MOD;
-        }
-    }
-    while (!r.empty() && r.back() == 0) {
-        r.pop_back();
-    }
-    return r;
-}
-
-int kth_term(vector<ll> &a, vector<ll> s, ll k) {
-    // a in 0-index, s in 1-index
-    int n = (int) s.size() - 1;
-    assert((int) a.size() >= n);
-    // a[0]..a[n-1] -- first values
-    // a[i] = a[i-1] \cdot s[1] + \ldots + a[i-n] \cdot s[n]
-    // find a[k]
-
-    // return getk(a, s, k);
-
-    vector<ll> f(n + 1);
-    for (int i = 1; i <= n; i++) {
-        f[n - i] = (MOD - s[i]) % MOD;
-    }
-    f[n] = 1;
-    vector<ll> res = {1}, w = {0, 1};
-    while (k) {
-        if (k % 2) {
-            res = (vector<ll>) convMod<MOD>(res, w); // mul
-            res = mod_poly_slow(res, f);
-        }
-        w = (vector<ll>) convMod<MOD>(w, w); // mul
-        w = mod_poly_slow(w, f);
-        k /= 2;
-    }
-    int ans = 0;
-    for (int i = 0; i < (int) res.size(); i++) {
-        ans = (ans + a[i] * 1ll * res[i] % MOD) % MOD;
-    }
-    return ans;
-}
-
-vector<ll> berlekamp_massey(vector<ll> a) {
-    // given a[0]...a[n], returns sequence s[1]..s[k] s.t a[i] = a[i-1] \cdot s[1] + \ldots + a[i-k] \cdot s[k]
-    vector<ll> ls, cur;
-    int lf = 0, d = 0;
-    for (int i = 0; i < a.size(); ++i) {
-        ll t = 0;
-        for (int j = 0; j < cur.size(); ++j) {
-            t = (t + 1ll * a[i - j - 1] * cur[j]) % MOD;
-        }
-        if ((t - a[i]) % MOD == 0)continue;
-        if (cur.empty()) {
-            cur.resize(i + 1);
-            lf = i;
-            d = (t - a[i]) % MOD;
-            continue;
-        }
-        ll k = -(a[i] - t) * inverse(d) % MOD;
-        vector<ll> c(i - lf - 1);
-        c.push_back(k);
-        for (auto &j: ls)
-            c.push_back(-j * k % MOD);
-        if (c.size() < cur.size())
-            c.resize(cur.size());
-        for (int j = 0; j < cur.size(); ++j) {
-            c[j] = (c[j] + cur[j]) % MOD;
-        }
-        if (i - lf + (int) ls.size() >= (int) cur.size()) {
-            tie(ls, lf, d) = make_tuple(cur, i, (t - a[i]) % MOD);
-        }
-        cur = c;
-    }
-    cur.insert(cur.begin(), 0); // fictive s[0] = 0
-    for (auto &i: cur)
-        i = (i % MOD + MOD) % MOD;
-    return cur;
+  }
+  return c;
 }
 \end{lstlisting}
 
 \subsection{convMod}
 \begin{lstlisting}[language=C++]
-typedef complex<double> comp;
-
-template<int M>
 vector<ll> convMod(const vector<ll> &a, const vector<ll> &b) {
-    if (a.empty() || b.empty()) return {};
-    vector<ll> res((int)a.size() + (int)b.size() - 1);
-    int lg = 32 - __builtin_clz((int)res.size()), n = 1 << lg, cut = int(sqrt(M));
-    vector<comp> L(n), R(n), outs(n), outl(n);
-    for (int i = 0; i < a.size(); i++) L[i] = comp((int) a[i] / cut, (int) a[i] % cut);
-    for (int i = 0; i < b.size(); i++) R[i] = comp((int) b[i] / cut, (int) b[i] % cut);
-    fft(L, lg), fft(R, lg);
-    for (int i = 0; i < n; i++) {
-        int j = -i & (n - 1);
-        outl[j] = (L[i] + conj(L[j])) * R[i] / (2.0 * n);
-        outs[j] = (L[i] - conj(L[j])) * R[i] / (2.0 * n) / 1i;
-    }
-    fft(outl, lg), fft(outs, lg);
-    for (int i = 0; i < res.size(); i++) {
-        ll av = ll(real(outl[i]) + .5), cv = ll(imag(outs[i]) + .5);
-        ll bv = ll(imag(outl[i]) + .5) + ll(real(outs[i]) + .5);
-        res[i] = ((av % M * cut + bv) % M * cut + cv) % M;
-    }
-    return res;
+  if (a.empty() || b.empty()) return {};
+  vector <ll> res((int) a.size() + (int) b.size() - 1);
+  int lg = 32 - __builtin_clz((int) res.size()), n = 1 << lg, cut = (int) (sqrt(MOD));
+  vector <comp> L(n), R(n), outs(n), outl(n);
+  for (int i = 0; i < a.size(); i++) L[i] = comp((int) a[i] / cut, (int) a[i] % cut);
+  for (int i = 0; i < b.size(); i++) R[i] = comp((int) b[i] / cut, (int) b[i] % cut);
+  fft(L, lg), fft(R, lg);
+  for (int i = 0; i < n; i++) {
+    int j = -i & (n - 1);
+    outl[j] = (L[i] + L[j].conj()) * R[i] / (2.0 * n);
+    outs[j] = (L[i] - L[j].conj()) * R[i] / (2.0 * n) * comp(0, 1) * -1;
+  }
+  fft(outl, lg), fft(outs, lg);
+  for (int i = 0; i < res.size(); i++) {
+    ll av = (ll)((outl[i]).x + .5), cv = (ll)((outs[i]).y + .5);
+    ll bv = (ll)((outl[i]).y + .5) + (ll)((outs[i]).x + .5);
+    res[i] = ((av % MOD * cut + bv) % MOD * cut + cv) % MOD;
+  }
+  return res;
 }
 \end{lstlisting}
 
 \subsection{min25 sieve}
 \begin{lstlisting}[language=C++]
 ll min25_sieve(ll n) {
-    // given n, calculate prefix sums of some multiplicative function f
-    // at all points of type floor(n/k) in O(n^{3/4}/log(n)), n up to 1e11 is ok
-    // in particular you can find f(1) + ... + f(n)
-    // also, calculation can be done for primes only, i.e prefix sum of f(i)*I{i is prime}
-    // to do that, do not run last stage of algorithm
+  // given n, calculate prefix sums of some multiplicative function f
+  // at all points of type floor(n/k) in O(n^{3/4}/log(n)), n up to 1e11 is ok
+  // in particular you can find f(1) + ... + f(n)
+  // also, calculation can be done for primes only, i.e prefix sum of f(i)*I{i is prime}
+  // to do that, do not run last stage of algorithm
 
-    vector<ll> v;
-    v.reserve((int) sqrt(n) * 2 + 7);
-    ll sq = 0;
-    {
-        ll k = 1;
-        while (k * k <= n) {
-            v.push_back(k);
-            ++k;
-        }
-        --k;
-        sq = k;
-        if (k * k == n)--k;
-        while (k >= 1) {
-            v.push_back(n / k);
-            --k;
-        }
+  vector<ll> v;
+  v.reserve((int) sqrt(n) * 2 + 7);
+  ll sq = 0;
+  {
+    ll k = 1;
+    while (k * k <= n) {
+      v.push_back(k);
+      ++k;
     }
-    auto geti = [&](ll x) {
-        // returns i, such that v[i] = x
-        if (x <= sq) return x - 1;
-        return (int) v.size() - (n / x);
-    };
-    // OP1: f(ab) = f(a)f(b) for coprime a, b; f(p) = p^T; f(p^k) can be calculated in O(1); we denote f(p^k) = g(p, k) (p is prime) for all k
-    // OP2: f also can be any fully multiplicative function, f(ab) = f(a)f(b) for all a,b; you need to calc pref sum of f fast, so only prime case is useful
-
-    auto g = [&](ll p, int k) {
-        if (k == 1) {
-            return p - 1; // polynomial, for primes-only can be any fully multiplicative function
-        }
-        return p + k; // any function, g(p^k)
-    };
-
-    auto f = [&](ll x) {
-        return g(x, 1);
-    };
-
-    auto pref = [&](ll x) {
-        // return sum_{i=1..x} g(i, 1), i.e 1^T + 2^T + ... + x^T
-        return x * (x + 1) / 2;
-    };
-
-    vector<ll> s0(v.size()), s1(v.size()); // for all degrees separately
-    for (int i = 0; i < (int) v.size(); i++) {
-        s0[i] = v[i] % M;
-        s1[i] = (((v[i] % M) * ((v[i] + 1) % M) % M) * (((M + 1) / 2) % M)) % M; // pref for g(p,1), degrees separately
-        // s[i] = pref(v[i]) - 1  for primes
+    --k;
+    sq = k;
+    if (k * k == n)--k;
+    while (k >= 1) {
+      v.push_back(n / k);
+      --k;
     }
+  }
+  auto geti = [&](ll x) {
+    // returns i, such that v[i] = x
+    if (x <= sq) return x - 1;
+    return (int) v.size() - (n / x);
+  };
+  // OP1: f(ab) = f(a)f(b) for coprime a, b; f(p) = p^T; f(p^k) can be calculated in O(1); we denote f(p^k) = g(p, k) (p is prime) for all k
+  // OP2: f also can be any fully multiplicative function, f(ab) = f(a)f(b) for all a,b; you need to calc pref sum of f fast, so only prime case is useful
 
-    vector<ll> used_primes;
-    used_primes.reserve((int) sqrt(n) + 7);
-    for (ll p = 2; p * p <= n; ++p) {
-        if (s0[p - 1] == s0[p - 2]) continue;
-        // p is prime
-        used_primes.push_back(p);
-        for (int i = (int) v.size() - 1; i >= 0; --i) {
-            if (v[i] < p * p) break; // very important, dont remove!
-            s0[i] += M - ((s0[geti(v[i] / p)] + M - s0[p - 2]) % M * (1)) % M; // p^0
-            s0[i] %= M;
-            s1[i] += M - ((s1[geti(v[i] / p)] + M - s1[p - 2]) % M * (p)) % M; // p^1
-            s1[i] %= M;
-            // s[i] += M - ((s[geti(v[i] / p)] + M - s[p-2]) % M * f(p)) % M;
-        }
+  auto g = [&](ll p, int k) {
+    if (k == 1) {
+      return p - 1; // polynomial, for primes-only can be any fully multiplicative function
     }
+    return p + k; // any function, g(p^k)
+  };
 
-    // PRIMES ONLY calculation is done
-    // desired answer for v[i] is in s[i]
-    // in particular \sum_{i=1}^n f(i)*I{i is prime} is in s.back()
-    // now last stage for default calculation
+  auto f = [&](ll x) {
+    return g(x, 1);
+  };
 
-    vector<ll> s(v.size());
-    for (int i = 0; i < v.size(); i++) {
-        s[i] = (M - s0[i] % M + s1[i]) % M; // combine polynomial by degrees with needed coeffs
+  auto pref = [&](ll x) {
+    // return sum_{i=1..x} g(i, 1), i.e 1^T + 2^T + ... + x^T
+    return x * (x + 1) / 2;
+  };
+
+  vector<ll> s0(v.size()), s1(v.size()); // for all degrees separately
+  for (int i = 0; i < (int) v.size(); i++) {
+    s0[i] = v[i] % M;
+    s1[i] = (((v[i] % M) * ((v[i] + 1) % M) % M) * (((M + 1) / 2) % M)) % M; // pref for g(p,1), degrees separately
+    // s[i] = pref(v[i]) - 1  for primes
+  }
+
+  vector<ll> used_primes;
+  used_primes.reserve((int) sqrt(n) + 7);
+  for (ll p = 2; p * p <= n; ++p) {
+    if (s0[p - 1] == s0[p - 2]) continue;
+    // p is prime
+    used_primes.push_back(p);
+    for (int i = (int) v.size() - 1; i >= 0; --i) {
+      if (v[i] < p * p) break; // very important, dont remove!
+      s0[i] += M - ((s0[geti(v[i] / p)] + M - s0[p - 2]) % M * (1)) % M; // p^0
+      s0[i] %= M;
+      s1[i] += M - ((s1[geti(v[i] / p)] + M - s1[p - 2]) % M * (p)) % M; // p^1
+      s1[i] %= M;
+      // s[i] += M - ((s[geti(v[i] / p)] + M - s[p-2]) % M * f(p)) % M;
     }
+  }
 
-    vector<ll> r = s;
+  // PRIMES ONLY calculation is done
+  // desired answer for v[i] is in s[i]
+  // in particular \sum_{i=1}^n f(i)*I{i is prime} is in s.back()
+  // now last stage for default calculation
 
-    for (int ui = (int) used_primes.size() - 1; ui >= 0; --ui) { // ui >= 1, sum for odd numbers only
-        ll p = used_primes[ui];
-        for (int i = (int) v.size() - 1; i >= 0; --i) {
-            if (v[i] < p * p) break; // very important, dont remove!
-            for (ll c = 1, pc = p; pc * p <= v[i]; c++, pc *= p) { // pc = p^c
-                r[i] += g(p, c + 1) % M + ((g(p, c) % M) * ((M + r[geti(v[i] / pc)] - s[geti(p)]) % M)) % M;
-                r[i] %= M;
-            }
-        }
+  vector<ll> s(v.size());
+  for (int i = 0; i < v.size(); i++) {
+    s[i] = (M - s0[i] % M + s1[i]) % M; // combine polynomial by degrees with needed coeffs
+  }
+
+  vector<ll> r = s;
+
+  for (int ui = (int) used_primes.size() - 1; ui >= 0; --ui) { // ui >= 1, sum for odd numbers only
+    ll p = used_primes[ui];
+    for (int i = (int) v.size() - 1; i >= 0; --i) {
+      if (v[i] < p * p) break; // very important, dont remove!
+      for (ll c = 1, pc = p; pc * p <= v[i]; c++, pc *= p) { // pc = p^c
+        r[i] += g(p, c + 1) % M + ((g(p, c) % M) * ((M + r[geti(v[i] / pc)] - s[geti(p)]) % M)) % M;
+        r[i] %= M;
+      }
     }
+  }
 
-    // done, answer for v[i] is r[i]+1 (f(1)=1)
-    // in particular \sum_{i=2}^n f(i) is in r.back()
-    // therefore \sum_{i=1}^n f(i) is r.back() + 1
-    return r.back() + 1 - g(1, 1); // since f(1)=1 for real, not g(1,1): 1 is not prime
+  // done, answer for v[i] is r[i]+1 (f(1)=1)
+  // in particular \sum_{i=2}^n f(i) is in r.back()
+  // therefore \sum_{i=1}^n f(i) is r.back() + 1
+  return r.back() + 1 - g(1, 1); // since f(1)=1 for real, not g(1,1): 1 is not prime
 }
 \end{lstlisting}
 
@@ -3207,7 +3278,7 @@ vector<vector<int>> r(k, vector<int>(k));
 for (int i = 0; i < k; ++i)
   for (int j = 0; j < k; ++j)
     if (i != j)
-      r[i][j] = binpow(p[i] % p[j], p[j] - 2, p[j]);
+      r[i][j] = binpow(p[i] % p[j], p[j] - 2, p[j]); // [phi(p[j]) - 1] для не простого модуля
 vector<int> x(k);
 for (int i = 0; i < k; ++i) {
   x[i] = a[i];
@@ -3289,42 +3360,42 @@ for (int x = 1; x <= n; x++) {
 \subsection{Подсчёт прогулок}
 \begin{lstlisting}[language=C++]
 int count_walks_1(int b1, int b2, int p, int q) {
-    // counting walks from (0, 0) to (p, q)
-    // each turn x += 1 or y += 1
-    // without touching y = x + b1 and y = x + b2
-    // b1 < 0 < b2 must hold
-    // O((p + q) / (b2 - b1))
-    if (min(p, q) < 0) return 0;
-    ll ans = C(p, p + q);
-    ar(2) F = {p, q}, S = {p, q};
-    int cf = mod - 1;
-    while (true) {
-        F[1] -= b1;
-        swap(F[0], F[1]);
-        F[1] += b1;
-        S[1] -= b2;
-        swap(S[0], S[1]);
-        S[1] += b2;
-        swap(F, S);
-        int wf = C(F[0], F[0] + F[1]);
-        int ws = C(S[0], S[0] + S[1]);
-        ans += (cf * (ll) ((wf + ws) % mod)) % mod;
-        if (wf == 0 && ws == 0) break;
-        cf = mod - cf;
-    }
-    ans %= mod;
-    return (int) ans;
+  // counting walks from (0, 0) to (p, q)
+  // each turn x += 1 or y += 1
+  // without touching y = x + b1 and y = x + b2
+  // b1 < 0 < b2 must hold
+  // O((p + q) / (b2 - b1))
+  if (min(p, q) < 0) return 0;
+  ll ans = C(p, p + q);
+  ar(2) F = {p, q}, S = {p, q};
+  int cf = mod - 1;
+  while (true) {
+    F[1] -= b1;
+    swap(F[0], F[1]);
+    F[1] += b1;
+    S[1] -= b2;
+    swap(S[0], S[1]);
+    S[1] += b2;
+    swap(F, S);
+    int wf = C(F[0], F[0] + F[1]);
+    int ws = C(S[0], S[0] + S[1]);
+    ans += (cf * (ll) ((wf + ws) % mod)) % mod;
+    if (wf == 0 && ws == 0) break;
+    cf = mod - cf;
+  }
+  ans %= mod;
+  return (int) ans;
 }
 
 int count_walks_2(int b1, int b2, int p, int q) {
-    // counting walks from (0, 0) to (p, q)
-    // each turn x += 1 and (y -= 1 or y += 1)
-    // without touching y = b1 and y = b2
-    // b1 < 0 < b2 must hold
-    // O(p / (b2 - b1))
-    if (abs(p) % 2 != abs(q) % 2) return 0;
-    int p0 = (p - q) / 2, q0 = (p + q) / 2;
-    return count_walks_1(b1, b2, p0, q0);
+  // counting walks from (0, 0) to (p, q)
+  // each turn x += 1 and (y -= 1 or y += 1)
+  // without touching y = b1 and y = b2
+  // b1 < 0 < b2 must hold
+  // O(p / (b2 - b1))
+  if (abs(p) % 2 != abs(q) % 2) return 0;
+  int p0 = (p - q) / 2, q0 = (p + q) / 2;
+  return count_walks_1(b1, b2, p0, q0);
 }
 \end{lstlisting}
 
@@ -3373,6 +3444,155 @@ void factor(int n, vector<int> &pr) {
   factor(d, pr);
 }
 \end{lstlisting}
+
+\subsection{Чудо Формулы}
+\noindent\rule{\linewidth}{0.15mm}
+
+\begingroup
+\small
+
+\begin{enumerate}
+\item % Число путей без соседних шагов:
+$\sum_{0\le k\le n}\binom{n-k}{k}=\mathrm{Fib}_{n+1}$
+
+\item % Альтернирующая сумма биномиалов:
+$\sum_{i=0}^{k}(-1)^i\binom{n}{i}=(-1)^k\binom{n-1}{k}$
+
+\item % Сумма верхних диагоналей треугольника Паскаля:
+$\sum_{i=0}^{k}\binom{n+i}{i}=\binom{n+k+1}{k}$
+
+\item % (Вандермонд) Свёртка биномиалов:
+$\sum_{k=0}^{r}\binom{m}{k}\binom{n}{r-k}=\binom{m+n}{r}$
+
+\item % «Хоккейная клюшка» (сумма биномиалов по строке):
+$\sum_{i=r}^{n}\binom{i}{r}=\binom{n+1}{r+1}$
+
+\item % (Куммер) Показатель простого $p$ в биномиале:
+Степень $p$ в $\binom{n}{m}$ равна числу переносов при сложении $m$ и $n-m$ в $p$-ичной системе.
+
+\item % Сумма отношений биномиалов:
+$\sum_{i=0}^{n}\frac{\binom{k}{i}}{\binom{n}{i}}
+=\frac{\binom{n+1}{\,n-k+1\,}}{\binom{n}{k}}$
+
+\item % Рекурсия для дерранжментов (фиксированная позиция):
+$d(n)=(n-1)\bigl(d(n-1)+d(n-2)\bigr),\  d(0)=1,\ d(1)=0$
+
+\item % Теорема Лукаса (по модулю простого $p$):
+$\binom{m}{n}\equiv\prod_i\binom{m_i}{n_i}\pmod p,$
+\quad где $m_i,n_i$ — цифры $m,n$ в $p$-ичной записи.
+
+\item % Стирлинг II рода в разложении степеней:
+$\sum_{i=0}^{n}\binom{n}{i}i^k
+=\sum_{j=0}^{k}S_2(k,j)\,\frac{n!}{(n-j)!}\,2^{\,n-j}$
+
+\item % Частичная сумма биномиалов с весом $x^i$:
+$\sum_{i=0}^{n-1}\binom{i}{j}x^i
+= x^j(1-x)^{-j-1}\!\Bigl(1-x^n\sum_{i=0}^j\binom{n}{i}x^{\,j-i}(1-x)^i\Bigr)$
+
+\item % Биномиальная инверсия (следствие):
+$P(n)=\sum_{k=0}^{n}\binom{n}{k}Q(k) \implies Q(n)=\sum_{k=0}^{n}(-1)^{\,n-k}\binom{n}{k}P(k)$
+
+\item % Инверсия со знаком (следствие):
+$P(n)=\sum_{k=0}^{n}(-1)^k\binom{n}{k}Q(k) \implies Q(n)=\sum_{k=0}^{n}(-1)^k\binom{n}{k}P(k)$
+
+\item % Стирлинговые числа первого рода (рекурсия):
+$S_1(n,k)$ — число перестановок длины $n$ с $k$ циклами,
+$S_1(n,k)=(n-1)S_1(n-1,k)+S_1(n-1,k-1),\ S_1(0,0)=1$
+
+\item % Стирлинговые числа второго рода (рекурсия и частные случаи):
+$S_2(n,k)$ — число разбиений $n$-множества на $k$ непустых блоков,
+$S_2(n,k)=kS_2(n-1,k)+S_2(n-1,k-1),\ S_2(0,0)=1$
+
+\item % Частные формулы для $S_2$:
+$S_2(n,2)=2^{\,n-1}-1$
+
+$S_2(n,3)=\tfrac{1}{2}\bigl(3^{\,n-1}-2^{\,n-1}\bigr)-\tfrac{1}{2}\bigl(3^{\,n-1}-1\bigr)$
+
+$S_2(n,4)=\tfrac{1}{2!}\Bigl[(4^{\,n-1}-3^{\,n-1})-(4^{\,n-1}-2^{\,n-1})+\tfrac{1}{3}(4^{\,n-1}-1)\Bigr]$
+
+$S_2(n,5)=\tfrac{1}{24}\,5^{\,n-1}-\tfrac{1}{6}\,4^{\,n-1}
++\tfrac{1}{4}\,3^{\,n-1}-\tfrac{1}{6}\,2^{\,n-1}+\tfrac{1}{24}$
+
+\item % Пониженные числа Стирлинга:
+$S_2^d(n,k)$ — число разбиений с расстоянием $\ge d$ внутри блока,
+$S_2^d(n,k)=S_2(n-d+1,k-d+1)$
+
+\item % Сумма $i a^i$:
+$\sum_{i=1}^n i a^i=\frac{a\bigl(n a^{n+1}-(n+1)a^n+1\bigr)}{(a-1)^2}$
+
+\item % Формула Эйлера—Пентовой (пентагональные числа):
+$\prod_{n=1}^\infty(1-x^n)=1+\sum_{k=1}^{\infty}(-1)^k\bigl(x^{\,k(3k-1)/2}+x^{\,k(3k+1)/2}\bigr)$
+
+\item % Критерий принадлежности к последовательности Фибоначчи:
+$n$ — член Фибоначчи $\iff$ хотя бы одно из чисел $5n^2\pm4$ — точный квадрат.
+
+\item % Периодичность Фибоначчи по модулю $n$:
+Период последовательности Фибоначчи по модулю $n$ не превышает $6n$.
+
+\item % Пифагоровы тройки (все целые решения $a^2+b^2=c^2$):
+Пифагоровы тройки: пусть $m>n>0,\ \gcd(m,n)=1,$ и не оба нечётные. Тогда
+$\;a=k(m^2-n^2),\ b=k(2mn),\ c=k(m^2+n^2)$
+
+
+\item % Число решений $a^2+b^2=n^2$ с фиксированной гипотенузой:
+$\displaystyle \#\{(a,b):a^2+b^2=n^2,a>0,b>0\}
+=\Big(\prod_{p^\alpha\parallel n,\ p = 4k+1}2\alpha+1\Big)-1$
+
+\item % Определения функций представления суммой квадратов:
+$r_4(n)=\#\{x_1^2+\cdots+x_4^2=n\},\ 
+r_8(n)=\#\{x_1^2+\cdots+x_8^2=n\}$
+
+\item % Формулы для $r_4$ и $r_8$:
+$r_4(n)=8\sum_{d\mid n, 4\nmid d}d,\ 
+r_8(n)=16\sum_{d\mid n}(-1)^{\,n+d}d^3$
+
+\item % Количество неотрицательных решений $ax+by=n$ и обратные:
+$\#\{ax+by=n,\ x,y\ge0\}=\frac{n}{ab}-\Bigl\{\tfrac{b'n}{a}\Bigr\}-\Bigl\{\tfrac{a'n}{b}\Bigr\}+1$,
+
+где $a'$ и $b'$ — обратные: $aa'\equiv1\pmod b,\; bb'\equiv1\pmod a$
+
+\item %Формула для $\varphi(mn)$ через $\gcd$:
+$\varphi(mn)=\varphi(m)\varphi(n)\frac{d}{\varphi(d)},\  d=\gcd(m,n)$
+
+\item % Сокращение показателя по $\varphi(m)$ при $x\ge\log_2 m$:
+$n^x\bmod m = n^{\varphi(m)+\bigl(x\bmod\varphi(m)\bigr)}\bmod m,\ x\ge\log_2 m$
+
+\item % Подсчёт квадратсвободных $\le N$ через функцию Мёбиуса:
+$\sum_{n=1}^N\mu^2(n)=\sum_{k=1}^{\lfloor\sqrt N\rfloor}\mu(k)\bigl\lfloor N/k^2\bigr\rfloor$
+
+\item % Инверсия Мёбиуса (аддитивная):
+$g(n)=\sum_{d\mid n}f(d) \implies f(n)=\sum_{d\mid n}\mu(d)\,g(n/d)$
+
+\item % Инверсия Мёбиуса (мультипликативная):
+$F(n)=\prod_{d\mid n}f(d) \implies f(n)=\prod_{d\mid n}F(n/d)^{\mu(d)}$
+
+\item % Связь $\gcd/\operatorname{lcm}$ №1:
+$\gcd\bigl(a,\operatorname{lcm}(b,c)\bigr)=\operatorname{lcm}\bigl(\gcd(a,b),\gcd(a,c)\bigr)$
+
+\item % Связь $\gcd/\operatorname{lcm}$ №2:
+$\operatorname{lcm}\bigl(a,\gcd(b,c)\bigr)=\gcd\bigl(\operatorname{lcm}(a,b),\operatorname{lcm}(a,c)\bigr)$
+
+\item % Симметрия для тройки:
+$\gcd\bigl(\operatorname{lcm}(a,b),\operatorname{lcm}(b,c),\operatorname{lcm}(a,c)\bigr)
+ =\\= \operatorname{lcm}\bigl(\gcd(a,b),\gcd(b,c),\gcd(a,c)\bigr)$
+
+\item % Сумма $\operatorname{lcm}$ по сетке $1\ldots n$:
+$\sum_{i,j=1}^n\operatorname{lcm}(i,j)
+=\sum_{l=1}^n\Bigl(\frac{(1+\lfloor n/l\rfloor)\lfloor n/l\rfloor}{2}\Bigr)^2\sum_{d\mid l}\mu(d)ld$
+
+\item % Сумма $\operatorname{lcm}(k,n)$ по $k$:
+$\sum_{i=1}^n\operatorname{lcm}(i,n)=\frac{n}{2}\Bigl(\sum_{d\mid n}\varphi(d)d+1\Bigr)$
+
+\item % Закон квадратичной взаимности (Лежандр):
+$\left(\tfrac{p}{q}\right)\left(\tfrac{q}{p}\right)=(-1)^{\frac{(p-1)(q-1)}{4}}$
+ для нечётных простых $p,q$
+
+\end{enumerate}
+
+\endgroup
+
+
+\noindent\rule{\linewidth}{0.15mm}
 
 \section{Строки}
 
