@@ -1,220 +1,145 @@
+
+\begingroup
 \small
-% (1) Число путей без соседних шагов = Fib_{n+1}
-\[
-\sum_{0\le k \le n} \binom{n-k}{k} = \mathrm{Fib}_{n+1}
-\]
 
-% (9) Альтернирующая сумма биномиалов
-\[
-\sum_{i=0}^{k} (-1)^i \binom{n}{i} = (-1)^k \binom{n-1}{k}
-\]
+\begin{enumerate}
+\item % Число путей без соседних шагов:
+$\sum_{0\le k\le n}\binom{n-k}{k}=\mathrm{Fib}_{n+1}$
 
-% (10) Сумма верхних диагоналей треугольника Паскаля
-\[
-\sum_{i=0}^{k} \binom{n+i}{i} = \binom{n+k+1}{k}
-\]
+\item % Альтернирующая сумма биномиалов:
+$\sum_{i=0}^{k}(-1)^i\binom{n}{i}=(-1)^k\binom{n-1}{k}$
 
-% (13) Вандермонд: свёртка биномиалов
-\[
-\sum_{k=0}^{r} \binom{m}{k}\binom{n}{r-k} = \binom{m+n}{r}
-\]
+\item % Сумма верхних диагоналей треугольника Паскаля:
+$\sum_{i=0}^{k}\binom{n+i}{i}=\binom{n+k+1}{k}$
 
-% (14) «Хоккейная клюшка»
-\[
-\sum_{i=r}^{n} \binom{i}{r} = \binom{n+1}{r+1}
-\]
+\item % (Вандермонд) Свёртка биномиалов:
+$\sum_{k=0}^{r}\binom{m}{k}\binom{n}{r-k}=\binom{m+n}{r}$
 
-% (25) Куммер: показатель простого p в биномиале
-Степень $p$ в $\binom{n}{m}$ = числу переносов при сложении $m$ и $n-m$ в $p$-СС
+\item % «Хоккейная клюшка» (сумма биномиалов по строке):
+$\sum_{i=r}^{n}\binom{i}{r}=\binom{n+1}{r+1}$
 
-% (32) Сумма отношений биномиалов
-\[
-\sum_{i=0}^{n} \frac{\binom{k}{i}}{\binom{n}{i}} = \frac{\binom{n+1}{\,n-k+1\,}}{\binom{n}{k}}
-\]
+\item % (Куммер) Показатель простого $p$ в биномиале:
+Степень $p$ в $\binom{n}{m}$ равна числу переносов при сложении $m$ и $n-m$ в $p$-ичной системе.
 
-% (33) Дерранжменты: рекурсия по фиксированной позиции
-\[
-d(n) = (n-1)(d(n-1)+d(n-2)),\quad d(0)=1,\ d(1)=0
-\]
+\item % Сумма отношений биномиалов:
+$\sum_{i=0}^{n}\frac{\binom{k}{i}}{\binom{n}{i}}
+=\frac{\binom{n+1}{\,n-k+1\,}}{\binom{n}{k}}$
 
-% (36) Теорема Лукаса
-\[
-\binom{m}{n} \equiv \prod_{i} \binom{m_i}{n_i} \pmod p,\quad
-\text{$m_i,n_i$ — цифры в $p$-СС}
-\]
+\item % Рекурсия для дерранжментов (фиксированная позиция):
+$d(n)=(n-1)\bigl(d(n-1)+d(n-2)\bigr),\  d(0)=1,\ d(1)=0$
 
-% (37) Стирлинг II рода в разложении степеней
-\[
-\sum_{i=0}^{n} \binom{n}{i} i^k
-=\sum_{j=0}^{k} S_2(k,j)\,\tfrac{n!}{(n-j)!}\,2^{\,n-j}
-\]
+\item % Теорема Лукаса (по модулю простого $p$):
+$\binom{m}{n}\equiv\prod_i\binom{m_i}{n_i}\pmod p,$
+\quad где $m_i,n_i$ — цифры $m,n$ в $p$-ичной записи.
 
-% (38) Частичная сумма биномиалов с весом $x^i$
-\[
-\sum_{i=0}^{n-1} \binom{i}{j} x^i
-= x^j(1-x)^{-j-1}\!\left(1-x^n\sum_{i=0}^j \binom{n}{i} x^{\,j-i}(1-x)^i\right)
-\]
+\item % Стирлинг II рода в разложении степеней:
+$\sum_{i=0}^{n}\binom{n}{i}i^k
+=\sum_{j=0}^{k}S_2(k,j)\,\frac{n!}{(n-j)!}\,2^{\,n-j}$
 
-% (40) Биномиальная инверсия (следствие)
-Если \(P(n)=\sum_{k=0}^{n}\binom{n}{k}Q(k)\), то
-\[
-Q(n)=\sum_{k=0}^{n}(-1)^{\,n-k}\binom{n}{k}P(k)
-\]
+\item % Частичная сумма биномиалов с весом $x^i$:
+$\sum_{i=0}^{n-1}\binom{i}{j}x^i
+= x^j(1-x)^{-j-1}\!\Bigl(1-x^n\sum_{i=0}^j\binom{n}{i}x^{\,j-i}(1-x)^i\Bigr)$
 
-% (41) Инверсия со знаком (следствие)
-Если \(P(n)=\sum_{k=0}^{n}(-1)^k\binom{n}{k}Q(k)\), то
-\[
-Q(n)=\sum_{k=0}^{n}(-1)^k\binom{n}{k}P(k)
-\]
+\item % Биномиальная инверсия (следствие):
+$P(n)=\sum_{k=0}^{n}\binom{n}{k}Q(k) \implies Q(n)=\sum_{k=0}^{n}(-1)^{\,n-k}\binom{n}{k}P(k)$
 
-% (55-56) S_1: число перестановок на k циклов
-$S_1(n,k)$ — число перестановок длины $n$ из $k$ циклов
-\[
-S_1(n,k)=(n-1)S_1(n-1,k)+S_1(n-1,k-1),\ S_1(0,0)=1
-\]
+\item % Инверсия со знаком (следствие):
+$P(n)=\sum_{k=0}^{n}(-1)^k\binom{n}{k}Q(k) \implies Q(n)=\sum_{k=0}^{n}(-1)^k\binom{n}{k}P(k)$
 
-% (60-62) S_2: число разбиений на k блоков
-$S_2(n,k)$ — число разбиений $n$-множества на $k$ непустых блоков
-\[
-S_2(n,k)=kS_2(n-1,k)+S_2(n-1,k-1),\ S_2(0,0)=1
-\]
-\[
-S_2(n,2)=2^{n-1}-1
-\]
-% S_2(3..5) — явные формулы
-\[
-S_2(n,3)=\tfrac{1}{2}(3^{n-1}-2^{n-1})-\tfrac{1}{2}(3^{n-1}-1)
-\]
-\[
-S_2(n,4)=\tfrac{1}{2!}\left[(4^{n-1}-3^{n-1})-(4^{n-1}-2^{n-1})+\tfrac{1}{3}(4^{n-1}-1)\right]
-\]
-\[
-S_2(n,5)=\tfrac{1}{24}\,5^{\,n-1}-\tfrac{1}{6}\,4^{\,n-1}
-+\tfrac{1}{4}\,3^{\,n-1}-\tfrac{1}{6}\,2^{\,n-1}
-+\tfrac{1}{24}
-\]
+\item % Стирлинговые числа первого рода (рекурсия):
+$S_1(n,k)$ — число перестановок длины $n$ с $k$ циклами,
+$S_1(n,k)=(n-1)S_1(n-1,k)+S_1(n-1,k-1),\ S_1(0,0)=1$
 
-% (65) Пониженные числа Стирлинга
-$S_2^d(n,k)$ — число разбиений $n$-множества на $k$ непустых блоков c расстоянием хотя бы $d$ между любыми двумя элементами одного блока
-\[
-S_2^d(n,k)=S_2(n-d+1,k-d+1)
-\]
+\item % Стирлинговые числа второго рода (рекурсия и частные случаи):
+$S_2(n,k)$ — число разбиений $n$-множества на $k$ непустых блоков,
+$S_2(n,k)=kS_2(n-1,k)+S_2(n-1,k-1),\ S_2(0,0)=1$
 
-% (80) Сумма $i a^i$
-\[
-\sum_{i=1}^n i a^i=\frac{a(n a^{n+1}-(n+1)a^n+1)}{(a-1)^2}
-\]
+\item % Частные формулы для $S_2$:
+$S_2(n,2)=2^{\,n-1}-1$
 
-% (84) Теорема о пятиугольных числах (как в оригинале Shohag)
-\[
-\prod_{n=1}^\infty(1-x^n)
-=
-1+\sum_{k=1}^{\infty}(-1)^k\!\left(x^{\,k(3k-1)/2}+x^{\,k(3k+1)/2}\right)
-\]
+$S_2(n,3)=\tfrac{1}{2}\bigl(3^{\,n-1}-2^{\,n-1}\bigr)-\tfrac{1}{2}\bigl(3^{\,n-1}-1\bigr)$
 
-% (94) Критерий принадлежности к Фибоначчи
-\[
-n \text{ — Фибоначчи} \iff 5n^2\pm4 \text{ — квадрат хотя бы один из } \pm
-\]
+$S_2(n,4)=\tfrac{1}{2!}\Bigl[(4^{\,n-1}-3^{\,n-1})-(4^{\,n-1}-2^{\,n-1})+\tfrac{1}{3}(4^{\,n-1}-1)\Bigr]$
 
-% (98) Периодичность Фибоначчи по модулю $n$
-\[
-\text{Период последовательности Фибоначчи по модулю } n \le 6n
-\]
+$S_2(n,5)=\tfrac{1}{24}\,5^{\,n-1}-\tfrac{1}{6}\,4^{\,n-1}
++\tfrac{1}{4}\,3^{\,n-1}-\tfrac{1}{6}\,2^{\,n-1}+\tfrac{1}{24}$
 
-% (101) Пифагоровы тройки: описание всех целых решений $a^2+b^2=c^2$
-\[
-\text{Пифагоровы тройки: } m>n>0,\ \gcd(m,n)=1,\ \text{не оба нечётные}
-\]
-\[
-a=k(m^2-n^2),\quad b=k(2mn),\quad c=k(m^2+n^2)
-\]
+\item % Пониженные числа Стирлинга:
+$S_2^d(n,k)$ — число разбиений с расстоянием $\ge d$ внутри блока,
+$S_2^d(n,k)=S_2(n-d+1,k-d+1)$
 
-% (102) Количество решений $a^2+b^2=n^2$ с фиксированной гипотенузой
-\[
-\#\{(a,b):a^2+b^2=n^2,a>0,b>0\}
-=\Big(\prod_{p^\alpha\parallel n \\ p = 4k+1}(2\alpha+1)-1\Big)
-\]
+\item % Сумма $i a^i$:
+$\sum_{i=1}^n i a^i=\frac{a\bigl(n a^{n+1}-(n+1)a^n+1\bigr)}{(a-1)^2}$
 
-% (104) Представления суммой квадратов: определения и формулы
-\[
-r_4(n)=\#\{x_1^2+\cdots+x_4^2=n\},\quad
-r_8(n)=\#\{x_1^2+\cdots+x_8^2=n\}
-\]
+\item % Формула Эйлера—Пентовой (пентагональные числа):
+$\prod_{n=1}^\infty(1-x^n)=1+\sum_{k=1}^{\infty}(-1)^k\bigl(x^{\,k(3k-1)/2}+x^{\,k(3k+1)/2}\bigr)$
 
-% (105) Представления суммой 4 и 8 квадратов
-\[
-r_4(n)=8\sum_{\substack{d\mid n\\4\not\mid d}}d,\qquad
-r_8(n)=16\sum_{d\mid n}(-1)^{n+d}d^3
-\]
+\item % Критерий принадлежности к последовательности Фибоначчи:
+$n$ — член Фибоначчи $\iff$ хотя бы одно из чисел $5n^2\pm4$ — точный квадрат.
 
-% (112) Кол-во неотрицательных решений $ax+by=n$ и что такое $a',b'$
-\[
-\#\{ax+by=n,\ x,y\ge0\}=\frac{n}{ab}-\left\{\tfrac{b'n}{a}\right\}-\left\{\tfrac{a'n}{b}\right\}+1
-\]
-\[
-a'\text{ и }b' \text{ — обратные: } aa'\equiv1\pmod b,\ bb'\equiv1\pmod a
-\]
+\item % Периодичность Фибоначчи по модулю $n$:
+Период последовательности Фибоначчи по модулю $n$ не превышает $6n$.
 
-% (131) Формула для $\varphi(mn)$ через $\gcd$
-\[
-\varphi(mn)=\varphi(m)\varphi(n)\tfrac{d}{\varphi(d)},\ d=\gcd(m,n)
-\]
+\item % Пифагоровы тройки (все целые решения $a^2+b^2=c^2$):
+Пифагоровы тройки: пусть $m>n>0,\ \gcd(m,n)=1,$ и не оба нечётные. Тогда
+$\;a=k(m^2-n^2),\ b=k(2mn),\ c=k(m^2+n^2)$
 
-% (139) Сокращение показателя по $\varphi(m)$ при $x\ge\log_2 m$
-\[
-n^x\bmod m = n^{\varphi(m)+x\bmod \varphi(m)}\bmod m,\quad x\ge\log_2 m
-\]
 
-% (149) Подсчёт квадратсвободных $\le N$ через функцию Мёбиуса
-\[
-\sum_{n=1}^N \mu^2(n)=\sum_{k=1}^{\lfloor\sqrt N\rfloor}\mu(k)\lfloor N/k^2\rfloor
-\]
+\item % Число решений $a^2+b^2=n^2$ с фиксированной гипотенузой:
+$\displaystyle \#\{(a,b):a^2+b^2=n^2,a>0,b>0\}
+=\Big(\prod_{p^\alpha\parallel n,\ p = 4k+1}2\alpha+1\Big)-1$
 
-% (150) Инверсия Мёбиуса (аддитивная)
-\[
-\Bigl(\,g(n)=\sum_{d\mid n} f(d)\,\Bigr)
-\;\;\Longrightarrow\;\;
-\Bigl(\,f(n)=\sum_{d\mid n}\mu(d)\,g(n/d)\,\Bigr)
-\]
+\item % Определения функций представления суммой квадратов:
+$r_4(n)=\#\{x_1^2+\cdots+x_4^2=n\},\ 
+r_8(n)=\#\{x_1^2+\cdots+x_8^2=n\}$
 
-% (151) Инверсия Мёбиуса (мультипликативная)
-\[
-\Bigl(\,F(n)=\prod_{d\mid n} f(d)\,\Bigr)
-\;\;\Longrightarrow\;\;
-\Bigl(\,f(n)=\prod_{d\mid n}F(n/d)^{\mu(d)}\,\Bigr)
-\]
+\item % Формулы для $r_4$ и $r_8$:
+$r_4(n)=8\sum_{d\mid n, 4\nmid d}d,\ 
+r_8(n)=16\sum_{d\mid n}(-1)^{\,n+d}d^3$
 
-% (160) Связь $\gcd/\operatorname{lcm}$ №1
-\[
-\gcd(a,\operatorname{lcm}(b,c))=\operatorname{lcm}(\gcd(a,b),\gcd(a,c))
-\]
+\item % Количество неотрицательных решений $ax+by=n$ и обратные:
+$\#\{ax+by=n,\ x,y\ge0\}=\frac{n}{ab}-\Bigl\{\tfrac{b'n}{a}\Bigr\}-\Bigl\{\tfrac{a'n}{b}\Bigr\}+1$,
 
-% (161) Связь $\gcd/\operatorname{lcm}$ №2
-\[
-\operatorname{lcm}(a,\gcd(b,c))=\gcd(\operatorname{lcm}(a,b),\operatorname{lcm}(a,c))
-\]
+где $a'$ и $b'$ — обратные: $aa'\equiv1\pmod b,\; bb'\equiv1\pmod a$
 
-% (174) Симметрия $\gcd/\operatorname{lcm}$ для тройки
-\[
-\gcd(\operatorname{lcm}(a,b),\operatorname{lcm}(b,c),\operatorname{lcm}(a,c))
-=\operatorname{lcm}(\gcd(a,b),\gcd(b,c),\gcd(a,c))
-\]
+\item %Формула для $\varphi(mn)$ через $\gcd$:
+$\varphi(mn)=\varphi(m)\varphi(n)\frac{d}{\varphi(d)},\  d=\gcd(m,n)$
 
-% (173) Сумма $\operatorname{lcm}$ по сетке $1..n$
-\[
-\sum_{i,j=1}^n \operatorname{lcm}(i,j)
-=\sum_{l=1}^n\left(\tfrac{(1+\lfloor n/l\rfloor)\lfloor n/l\rfloor}{2}\right)^2 \sum_{d\mid l}\mu(d)ld
-\]
+\item % Сокращение показателя по $\varphi(m)$ при $x\ge\log_2 m$:
+$n^x\bmod m = n^{\varphi(m)+\bigl(x\bmod\varphi(m)\bigr)}\bmod m,\ x\ge\log_2 m$
 
-% (176) Сумма $\operatorname{lcm}(k,n)$ по $k$
-\[
-\sum_{i=1}^n \operatorname{lcm}(i,n)=\tfrac{n}{2}\left(\sum_{d\mid n}\varphi(d)d+1\right)
-\]
+\item % Подсчёт квадратсвободных $\le N$ через функцию Мёбиуса:
+$\sum_{n=1}^N\mu^2(n)=\sum_{k=1}^{\lfloor\sqrt N\rfloor}\mu(k)\bigl\lfloor N/k^2\bigr\rfloor$
 
-% (Legendre reciprocity) Закон квадратичной взаимности
-\[
-\left(\tfrac{p}{q}\right)\left(\tfrac{q}{p}\right)=(-1)^{\frac{(p-1)(q-1)}{4}}
-\quad \text{Лежандр } p, q \text{ нечётные простые}
-\]
+\item % Инверсия Мёбиуса (аддитивная):
+$g(n)=\sum_{d\mid n}f(d) \implies f(n)=\sum_{d\mid n}\mu(d)\,g(n/d)$
+
+\item % Инверсия Мёбиуса (мультипликативная):
+$F(n)=\prod_{d\mid n}f(d) \implies f(n)=\prod_{d\mid n}F(n/d)^{\mu(d)}$
+
+\item % Связь $\gcd/\operatorname{lcm}$ №1:
+$\gcd\bigl(a,\operatorname{lcm}(b,c)\bigr)=\operatorname{lcm}\bigl(\gcd(a,b),\gcd(a,c)\bigr)$
+
+\item % Связь $\gcd/\operatorname{lcm}$ №2:
+$\operatorname{lcm}\bigl(a,\gcd(b,c)\bigr)=\gcd\bigl(\operatorname{lcm}(a,b),\operatorname{lcm}(a,c)\bigr)$
+
+\item % Симметрия для тройки:
+$\gcd\bigl(\operatorname{lcm}(a,b),\operatorname{lcm}(b,c),\operatorname{lcm}(a,c)\bigr)
+ =\\= \operatorname{lcm}\bigl(\gcd(a,b),\gcd(b,c),\gcd(a,c)\bigr)$
+
+\item % Сумма $\operatorname{lcm}$ по сетке $1\ldots n$:
+$\sum_{i,j=1}^n\operatorname{lcm}(i,j)
+=\sum_{l=1}^n\Bigl(\frac{(1+\lfloor n/l\rfloor)\lfloor n/l\rfloor}{2}\Bigr)^2\sum_{d\mid l}\mu(d)ld$
+
+\item % Сумма $\operatorname{lcm}(k,n)$ по $k$:
+$\sum_{i=1}^n\operatorname{lcm}(i,n)=\frac{n}{2}\Bigl(\sum_{d\mid n}\varphi(d)d+1\Bigr)$
+
+\item % Закон квадратичной взаимности (Лежандр):
+$\left(\tfrac{p}{q}\right)\left(\tfrac{q}{p}\right)=(-1)^{\frac{(p-1)(q-1)}{4}}$
+ для нечётных простых $p,q$
+
+\end{enumerate}
+
+\endgroup
+
 
