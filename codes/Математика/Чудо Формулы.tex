@@ -18,6 +18,9 @@ $\sum_{k=0}^{r}\binom{m}{k}\binom{n}{r-k}=\binom{m+n}{r}$
 \item % «Хоккейная клюшка» (сумма биномиалов по строке):
 $\sum_{i=r}^{n}\binom{i}{r}=\binom{n+1}{r+1}$
 
+\item % Rolling range sum of binominals
+$2B(l,r,n) = \binom{n}{l} + \binom{n}{r} - \binom{n+1}{l} + B(l, r, n+1)$, где $B(l, r, n) = \sum_{i=l}^r \binom{n}{i}$
+
 \item % (Куммер) Показатель простого $p$ в биномиале:
 Степень $p$ в $\binom{n}{m}$ равна числу переносов при сложении $m$ и $n-m$ в $p$-ичной системе.
 
@@ -140,5 +143,6 @@ $\left(\tfrac{p}{q}\right)\left(\tfrac{q}{p}\right)=(-1)^{\frac{(p-1)(q-1)}{4}}$
 \end{enumerate}
 
 \endgroup
+
 
 
