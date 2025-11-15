@@ -4,7 +4,7 @@ struct TwoSat {
   vector<int> comp, topsort;
   vector<char> used;
 
-  TwoSat(int n_) : n(n_) {
+  TwoSat(int n) : n(n) {
     g.resize(2 * n);
     rg.resize(2 * n);
     comp.assign(2 * n, -1);
@@ -59,16 +59,15 @@ struct TwoSat {
     }
   }
 
-  vector<int> solution() {
+  vector<char> solution() {
+    assert(n > 0); // returns {} if ans exists AND not
     SCC();
-    vector<int> ans(n);
+    vector<char> ans(n);
     for (int v = 0; v < n; ++v) {
-      if (comp[v] == comp[neg(v)]) {
-        return {-1}; // no solution
-      }
+      if (comp[v] == comp[neg(v)])
+        return {}; // no solution
       ans[v] = comp[v] > comp[neg(v)];
     }
     return ans;
   }
-
 };
