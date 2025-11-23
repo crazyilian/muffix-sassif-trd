@@ -2,14 +2,14 @@ const int LOG = 29; // масштабирование, =0 если не нужн
 struct Edge { int u, f, c, r; };
 
 struct Dinic {
-  vector<Edge> graph[MAXN];
-  bitset<MAXN> vis;
-  int inds[MAXN], dist[MAXN], Q[MAXN];
+  vector<vector<Edge>> graph;
+  vector<char> vis;
+  vector<int> inds, dist, Q;
   int ql, qr, S, T, BIT;
-  Dinic() {}
+  Dinic(int n) : graph(n), vis(n), inds(n), dist(n), Q(n) {}
 
   bool bfs() {
-    vis.reset();
+    memset(vis.data(), 0, vis.size());
     ql = 0, qr = 0;
     dist[S] = 0, vis[S] = true;
     Q[qr++] = S;
@@ -53,7 +53,7 @@ struct Dinic {
     assert(S != T);
     for (BIT = (1ll << LOG); BIT > 0; BIT >>= 1) {
       while (bfs()) {
-        memset(inds, 0, sizeof inds);
+        memset(inds.data(), 0, inds.size() * sizeof(int));
         for (auto &e : graph[S]) {
           if (inds[e.u] == graph[e.u].size() || e.c - e.f < BIT)
             continue;
