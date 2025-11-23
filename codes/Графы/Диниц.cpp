@@ -72,7 +72,7 @@ struct Dinic {
 };
 
 void use_example() {
-  Dinic dinic;
+  Dinic dinic(n);
   for (int i = 0; i < m; ++i) {
     int v, u, c;
     cin >> v >> u >> c;
