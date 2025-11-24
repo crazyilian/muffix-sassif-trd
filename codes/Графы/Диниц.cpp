@@ -66,8 +66,8 @@ struct Dinic {
 
   void addedge(int v, int u, int c) {
     graph[v].push_back({u, 0, c, (int)graph[u].size()});
-    // если ориентированно, то обратная capacity = 0
-    graph[u].push_back({v, 0, c, (int)graph[v].size() - 1});
+    // если не ориентированно, то обратная capacity = c
+    graph[u].push_back({v, 0, 0, (int)graph[v].size() - 1});
   }
 };
 
@@ -81,7 +81,7 @@ void use_example() {
   }
   dinic.run(s, t);
 
-  long long maxflow = 0;
+  ll maxflow = 0;
   for (auto &e : dinic.graph[s])
     maxflow += e.f;
 
