@@ -893,7 +893,7 @@ struct TwoSat {
   vector<int> comp, topsort;
   vector<char> used;
 
-  TwoSat(int n_) : n(n_) {
+  TwoSat(int n) : n(n) {
     g.resize(2 * n);
     rg.resize(2 * n);
     comp.assign(2 * n, -1);
@@ -948,18 +948,17 @@ struct TwoSat {
     }
   }
 
-  vector<int> solution() {
+  vector<char> solution() {
+    assert(n > 0); // returns {} if ans exists AND not
     SCC();
-    vector<int> ans(n);
+    vector<char> ans(n);
     for (int v = 0; v < n; ++v) {
-      if (comp[v] == comp[neg(v)]) {
-        return {-1}; // no solution
-      }
+      if (comp[v] == comp[neg(v)])
+        return {}; // no solution
       ans[v] = comp[v] > comp[neg(v)];
     }
     return ans;
   }
-
 };
 \end{lstlisting}
 
@@ -969,44 +968,44 @@ struct LRFlow {
   Dinic dinic;
   int S, T; // исток и сток
   int Sx, Tx; // вспомогательные вершины, любые неиспользуемые индексы
+  vector<ll> dem;
 
-  LRFlow(int S, int T, int Sx, int Tx) : S(S), T(T), Sx(Sx), Tx(Tx) {}
+  LRFlow(int n, int S, int T, int Sx, int Tx) : S(S), T(T), Sx(Sx), Tx(Tx), dinic(n), dem(n) {}
 
-  void addedge(int v, int u, int mincap, int maxcap) {
-    // все рёбра ориентированные
-    dinic.addedge(v, u, maxcap - mincap);
-    dinic.addedge(Sx, u, mincap);
-    dinic.addedge(v, Tx, mincap);
+  void addedge(int v, int u, int mincap, int maxcap, int i) {
+    // i - any number, can be used for flow restoring. Just store it inside Edge.
+    dinic.addedge(v, u, maxcap - mincap, i);
+    dem[v] -= mincap;
+    dem[u] += mincap;
   }
 
-  bool inner_check() {
-    for (auto edge: dinic.graph[Sx]) {
-      if (edge.f != edge.c) {
-        return false;
-      }
+  // returns size of lr-flow (-1 if not exists)
+  // edge.real_flow = edge.flow + edge.mincap
+  ll run() {
+    dinic.addedge(T, S, INF, -1); // INF >= sum maxcap-mincap
+    ll totaldem = 0;
+    for (int v = 0; v < dem.size(); ++v) {
+      if (dem[v] > 0) {
+        totaldem += dem[v];
+        // here capacity could potentially be long long (sum of v's mincaps)
+        dinic.addedge(Sx, v, dem[v], -1);
+      } else if (dem[v] < 0)
+        dinic.addedge(v, Tx, -dem[v], -1);
     }
-    for (auto edge: dinic.graph[Tx]) {
-      auto iedge = dinic.graph[edge.u][edge.r];
-      if (iedge.f != iedge.c) {
-        return false;
-      }
+    dinic.run(Sx, Tx);
+    ll flow = 0;
+    for (auto &e : dinic.graph[Sx]) flow += e.f;
+    if (flow != totaldem) return -1;
+    for (int v = 0; v < dem.size(); ++v) {
+      if (dem[v]) dinic.graph[v].pop_back();
     }
-    return true;
-  }
-
-  bool only_existence() {
-    dinic.addedge(T, S, INF);
-    dinic.run(Sx, Tx);
-    return inner_check();
-  }
-
-  bool with_flows() {
-    dinic.run(Sx, Tx);
-    dinic.run(Sx, T);
-    dinic.run(S, Tx);
-    dinic.run(S, T);
-    // real (v, u, mincap, maxcap) flow = flow on (v, u, maxcap - mincap) edge + mincap
-    return inner_check();
+    dinic.graph[Sx].clear();
+    dinic.graph[Tx].clear();
+    dinic.graph[S].pop_back();
+    dinic.graph[T].pop_back();
+    // dinic.run(S, T); // if we want max lr-flow (not any lr-flow)
+    for (auto &e : dinic.graph[S]) flow += e.f;
+    return flow;
   }
 };
 \end{lstlisting}
@@ -1324,14 +1323,14 @@ const int LOG = 29; // масштабирование, =0 если не нужн
 struct Edge { int u, f, c, r; };
 
 struct Dinic {
-  vector<Edge> graph[MAXN];
-  bitset<MAXN> vis;
-  int inds[MAXN], dist[MAXN], Q[MAXN];
+  vector<vector<Edge>> graph;
+  vector<char> vis;
+  vector<int> inds, dist, Q;
   int ql, qr, S, T, BIT;
-  Dinic() {}
+  Dinic(int n) : graph(n), vis(n), inds(n), dist(n), Q(n) {}
 
   bool bfs() {
-    vis.reset();
+    memset(vis.data(), 0, vis.size());
     ql = 0, qr = 0;
     dist[S] = 0, vis[S] = true;
     Q[qr++] = S;
@@ -1375,7 +1374,7 @@ struct Dinic {
     assert(S != T);
     for (BIT = (1ll << LOG); BIT > 0; BIT >>= 1) {
       while (bfs()) {
-        memset(inds, 0, sizeof inds);
+        memset(inds.data(), 0, inds.size() * sizeof(int));
         for (auto &e : graph[S]) {
           if (inds[e.u] == graph[e.u].size() || e.c - e.f < BIT)
             continue;
@@ -1388,13 +1387,13 @@ struct Dinic {
 
   void addedge(int v, int u, int c) {
     graph[v].push_back({u, 0, c, (int)graph[u].size()});
-    // если ориентированно, то обратная capacity = 0
-    graph[u].push_back({v, 0, c, (int)graph[v].size() - 1});
+    // если не ориентированно, то обратная capacity = c
+    graph[u].push_back({v, 0, 0, (int)graph[v].size() - 1});
   }
 };
 
 void use_example() {
-  Dinic dinic;
+  Dinic dinic(n);
   for (int i = 0; i < m; ++i) {
     int v, u, c;
     cin >> v >> u >> c;
@@ -1403,7 +1402,7 @@ void use_example() {
   }
   dinic.run(s, t);
 
-  long long maxflow = 0;
+  ll maxflow = 0;
   for (auto &e : dinic.graph[s])
     maxflow += e.f;
 
@@ -3467,6 +3466,9 @@ $\sum_{k=0}^{r}\binom{m}{k}\binom{n}{r-k}=\binom{m+n}{r}$
 \item % «Хоккейная клюшка» (сумма биномиалов по строке):
 $\sum_{i=r}^{n}\binom{i}{r}=\binom{n+1}{r+1}$
 
+\item % Rolling range sum of binominals
+$2B(l,r,n) = \binom{n}{l} + \binom{n}{r} - \binom{n+1}{l} + B(l, r, n+1)$, где $B(l, r, n) = \sum_{i=l}^r \binom{n}{i}$
+
 \item % (Куммер) Показатель простого $p$ в биномиале:
 Степень $p$ в $\binom{n}{m}$ равна числу переносов при сложении $m$ и $n-m$ в $p$-ичной системе.
 
@@ -3589,6 +3591,7 @@ $\left(\tfrac{p}{q}\right)\left(\tfrac{q}{p}\right)=(-1)^{\frac{(p-1)(q-1)}{4}}$
 \end{enumerate}
 
 \endgroup
+
 
 
 \noindent\rule{\linewidth}{0.15mm}

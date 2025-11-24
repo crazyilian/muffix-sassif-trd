@@ -2,43 +2,43 @@ struct LRFlow {
   Dinic dinic;
   int S, T; // исток и сток
   int Sx, Tx; // вспомогательные вершины, любые неиспользуемые индексы
+  vector<ll> dem;
 
-  LRFlow(int S, int T, int Sx, int Tx) : S(S), T(T), Sx(Sx), Tx(Tx) {}
+  LRFlow(int n, int S, int T, int Sx, int Tx) : S(S), T(T), Sx(Sx), Tx(Tx), dinic(n), dem(n) {}
 
-  void addedge(int v, int u, int mincap, int maxcap) {
-    // все рёбра ориентированные
-    dinic.addedge(v, u, maxcap - mincap);
-    dinic.addedge(Sx, u, mincap);
-    dinic.addedge(v, Tx, mincap);
+  void addedge(int v, int u, int mincap, int maxcap, int i) {
+    // i - any number, can be used for flow restoring. Just store it inside Edge.
+    dinic.addedge(v, u, maxcap - mincap, i);
+    dem[v] -= mincap;
+    dem[u] += mincap;
   }
 
-  bool inner_check() {
-    for (auto edge: dinic.graph[Sx]) {
-      if (edge.f != edge.c) {
-        return false;
-      }
+  // returns size of lr-flow (-1 if not exists)
+  // edge.real_flow = edge.flow + edge.mincap
+  ll run() {
+    dinic.addedge(T, S, INF, -1); // INF >= sum maxcap-mincap
+    ll totaldem = 0;
+    for (int v = 0; v < dem.size(); ++v) {
+      if (dem[v] > 0) {
+        totaldem += dem[v];
+        // here capacity could potentially be long long (sum of v's mincaps)
+        dinic.addedge(Sx, v, dem[v], -1);
+      } else if (dem[v] < 0)
+        dinic.addedge(v, Tx, -dem[v], -1);
     }
-    for (auto edge: dinic.graph[Tx]) {
-      auto iedge = dinic.graph[edge.u][edge.r];
-      if (iedge.f != iedge.c) {
-        return false;
-      }
+    dinic.run(Sx, Tx);
+    ll flow = 0;
+    for (auto &e : dinic.graph[Sx]) flow += e.f;
+    if (flow != totaldem) return -1;
+    for (int v = 0; v < dem.size(); ++v) {
+      if (dem[v]) dinic.graph[v].pop_back();
     }
-    return true;
-  }
-
-  bool only_existence() {
-    dinic.addedge(T, S, INF);
-    dinic.run(Sx, Tx);
-    return inner_check();
-  }
-
-  bool with_flows() {
-    dinic.run(Sx, Tx);
-    dinic.run(Sx, T);
-    dinic.run(S, Tx);
-    dinic.run(S, T);
-    // real (v, u, mincap, maxcap) flow = flow on (v, u, maxcap - mincap) edge + mincap
-    return inner_check();
+    dinic.graph[Sx].clear();
+    dinic.graph[Tx].clear();
+    dinic.graph[S].pop_back();
+    dinic.graph[T].pop_back();
+    // dinic.run(S, T); // if we want max lr-flow (not any lr-flow)
+    for (auto &e : dinic.graph[S]) flow += e.f;
+    return flow;
   }
 };
