@@ -1,4 +1,4 @@
-int dfs(int v, int c) {
+bool dfs(int v, int c) {
   if (used[v] == c) return 0;
   used[v] = c;
   for (auto u : g[v]) {
@@ -19,7 +19,8 @@ int dfs(int v, int c) {
 signed main() {
   // n - в левой доле, m - в правой
   fill(res, res + m, -1);
+  int ans = 0;
   for (int i = 0; i < n; ++i) {
-    ans += dfs(i, i + 1);
+    ans += dfs(i, ans + 1);
   }
 }
