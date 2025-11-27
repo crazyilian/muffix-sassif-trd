@@ -17,6 +17,7 @@ vector<vctr> minkowski_sum(const vector<vctr> &A, const vector<vctr> &B) {
   C[0] = A[0] + B[0];
   for (int i = 0; i + 1 < C.size(); ++i)
     C[i + 1] = C[i] + edgC[i];
+  // могут быть точки на сторонах
   return C;
 }
 
