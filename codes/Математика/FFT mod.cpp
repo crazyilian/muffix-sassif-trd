@@ -28,6 +28,9 @@ void initNTT() {
 void ntt(int n, vector<int> &a, bool rev) {
   initNTT();
   int lg = 31 - __builtin_clz(n);
+  for (auto &el : a) {
+    el = (el % MOD + MOD) % MOD;
+  }
   vector<int> rv(n);
   for (int i = 1; i < n; ++i) {
     rv[i] = (rv[i >> 1] >> 1) ^ ((i & 1) << (lg - 1));
