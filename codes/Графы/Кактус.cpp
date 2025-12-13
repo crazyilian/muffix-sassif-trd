@@ -4,11 +4,11 @@ void cactus_dfs(int v, int pei, vector<vector<int>> &c2vs, vector<int> &e2c, vec
   used[v] = 1;
   for (auto [u, ei] : g[v]) {
     if (ei == pei || e2c[ei] != -1)
-      continue;
+        continue;
     if (used[u]) {
       int с = c2vs.size();
       c2vs.emplace_back();
-      for (int j = st.size() - 1; st[j].first != u; --j) {
+      for (int j = st.size()-1; st[j].first != u; --j) {
         c2vs[с].pb(st[j].first);
         e2c[st[j].second] = с;
       }
@@ -27,7 +27,7 @@ signed main() {
   // c2vs[c] = список вершин цикла c (в порядке обхода)
   vector<int> e2c(m, -1); 
   vector<vector<int>> c2vs;
-  c2vs.reserve(m - n + 1); // кол-во циклов = m-n+1
+  c2vs.reserve(m - n + 1); // m - n + #комп.связ.
   {
     vector<char> used(n, 0);
     vector<pair<int, int>> st;
