@@ -867,6 +867,7 @@ vector<vctr> minkowski_sum(const vector<vctr> &A, const vector<vctr> &B) {
   C[0] = A[0] + B[0];
   for (int i = 0; i + 1 < C.size(); ++i)
     C[i + 1] = C[i] + edgC[i];
+  // могут быть точки на сторонах
   return C;
 }
 
@@ -1452,6 +1453,64 @@ signed main() {
 }
 \end{lstlisting}
 
+\subsection{Кактус}
+\begin{lstlisting}[language=C++]
+// кратные рёбра можно, петли нельзя
+void cactus_dfs(int v, int pei, vector<vector<int>> &c2vs, vector<int> &e2c, vector<vector<pair<int, int>>> &g, vector<char> &used, vector<pair<int, int>> &st) {
+  st.pb({v, pei});
+  used[v] = 1;
+  for (auto [u, ei] : g[v]) {
+    if (ei == pei || e2c[ei] != -1)
+      continue;
+    if (used[u]) {
+      int с = c2vs.size();
+      c2vs.emplace_back();
+      for (int j = st.size() - 1; st[j].first != u; --j) {
+        c2vs[с].pb(st[j].first);
+        e2c[st[j].second] = с;
+      }
+      c2vs[с].pb(u);
+      e2c[ei] = с;
+      continue;
+    }
+    cactus_dfs(u, ei, c2vs, e2c, g, used, st);
+  }
+  st.pop_back();
+}
+
+signed main() {
+  // g[v][i] = {u, ei}, граф
+  // e2c[ei] = номер цикла ребра ei (либо -1)
+  // c2vs[c] = список вершин цикла c (в порядке обхода)
+  vector<int> e2c(m, -1); 
+  vector<vector<int>> c2vs;
+  c2vs.reserve(m - n + 1); // кол-во циклов = m-n+1
+  {
+    vector<char> used(n, 0);
+    vector<pair<int, int>> st;
+    st.reserve(n);
+    for (int v = 0; v < n; ++v) {
+      if (!used[v])
+        cactus_dfs(v, -1, c2vs, e2c, g, used, st);
+    }
+  }
+  // создание дерева по кактусу
+  vector<vector<int>> ngraph(n + c2vs.size());
+  for (int v = 0; v < n; ++v) {
+    for (auto [u, ei] : g[v]) {
+      if (e2c[ei] == -1)
+        ngraph[v].pb(u);
+    }
+  }
+  for (int c = 0; c < c2vs.size(); ++c) {
+    for (int v : c2vs[c]) {
+      ngraph[n + c].pb(v);
+      ngraph[v].pb(n + c);
+    }
+  }
+}
+\end{lstlisting}
+
 \subsection{Минкост (Джонсон)}
 \begin{lstlisting}[language=C++]
 
@@ -1599,7 +1658,7 @@ void dfs(int v, int pi = -1) {
 
 \subsection{Паросочетания}
 \begin{lstlisting}[language=C++]
-int dfs(int v, int c) {
+bool dfs(int v, int c) {
   if (used[v] == c) return 0;
   used[v] = c;
   for (auto u : g[v]) {
@@ -1620,35 +1679,33 @@ int dfs(int v, int c) {
 signed main() {
   // n - в левой доле, m - в правой
   fill(res, res + m, -1);
+  int ans = 0;
   for (int i = 0; i < n; ++i) {
-    ans += dfs(i, i + 1);
+    ans += dfs(i, ans + 1);
   }
 }
 \end{lstlisting}
 
 \subsection{Точки сочленения}
 \begin{lstlisting}[language=C++]
-void dfs(int v, int par) {
+void dfs(int v, int p = -1) {
   vis[v] = 1;
   up[v] = tin[v] = timer++;
+  bool is_artic = false;
   int child = 0;
   for (auto u : g[v]) {
     if (!vis[u]) {
+      child++;
       dfs(u, v);
       up[v] = min(up[v], up[u]);
-      if (up[u] >= tin[v] && par != -1) {
-        points.insert(v);
-      }
-      child++;
-    } else if (u != par) {
+      is_artic |= p != -1 && up[u] >= tin[v];
+    } else
       up[v] = min(up[v], tin[u]);
-    }
   }
-  if (par == -1 && child >= 2) {
-    points.insert(v);
-  }
+  is_artic |= p == -1 && child >= 2;
+  if (is_artic)
+    articulation_points.insert(v);
 }
-
 \end{lstlisting}
 
 \subsection{Эдмондс-Карп}
@@ -2588,6 +2645,9 @@ void initNTT() {
 void ntt(int n, vector<int> &a, bool rev) {
   initNTT();
   int lg = 31 - __builtin_clz(n);
+  for (auto &el : a) {
+    el = (el % MOD + MOD) % MOD;
+  }
   vector<int> rv(n);
   for (int i = 1; i < n; ++i) {
     rv[i] = (rv[i >> 1] >> 1) ^ ((i & 1) << (lg - 1));
@@ -2918,7 +2978,88 @@ vector<int> lcm_convolution(vector<int> a, vector<int> b) {
 }
 \end{lstlisting}
 
-\subsection{OR XOR AND Свёртки}
+\subsection{Interpolation}
+\begin{lstlisting}[language=C++]
+struct poly {
+  int n = 0;
+  vector<ll> a = {0};
+  poly() = default;
+  poly(vector<ll> a) : a(a), n((int)a.size()-1) {}
+  poly(int n) : n(n), a(n+1, 0) {}
+
+  ll evaluate(int x) {
+    ll val = 0, y = 1;
+    for (int i = 0; i <= n; i++) {
+      val = (val + a[i] * y) % MOD;
+      y = (y * x) % MOD;
+    }
+    return val;
+  }
+};
+
+poly mul(poly &P, poly &Q) {
+  poly R(P.n + Q.n);
+  for (int i = 0; i <= P.n; i++) {
+    for (int j = 0; j <= Q.n; j++) {
+      R.a[i + j] = (R.a[i + j] + P.a[i] * Q.a[j]) % MOD;
+    }
+  }
+  return R;
+}
+
+poly multiply_many(vector<poly> a) {
+  if (a.empty()) return poly((vector<ll>){1ll});
+  if (a.size() == 1) return a[0];
+  vector<poly> b;
+  int n = a.size();
+  for (int i = n / 2; i < n; i++) {
+    b.push_back(a[i]);
+  }
+  a.resize(n / 2);
+  poly P = multiply_many(a), Q = multiply_many(b);
+  return mul(P, Q);
+}
+
+poly divide(poly &res, int c) {
+  poly ans(res.n - 1);
+  ll val = 0;
+  for (int i = res.n; i >= 1; i--) {
+    val = (val * c + res.a[i]) % MOD;
+    ans.a[i - 1] = val;
+  }
+  return ans;
+}
+
+poly interpolate(int deg, vector<int> x, vector<int> y) {
+  assert(x.size() >= deg + 1 && y.size() >= deg + 1);
+  x.resize(deg + 1), y.resize(deg + 1);
+  vector<poly> fm;
+  for (int j = 0; j <= deg; j++) {
+    fm.push_back(poly({(MOD - x[j]) % MOD, 1}));
+  }
+  poly res = multiply_many(fm);
+  poly ans(deg);
+  for (int i = 0; i <= deg; i++) {
+    ll denom = 1;
+    for (int j = 0; j <= deg; j++) {
+      if (j != i) {
+        denom = denom * ((x[i] - x[j] + MOD) % MOD) % MOD;
+      }
+    }
+    poly res_divided = divide(res, x[i]);
+    denom = inv(denom);
+    denom = denom * y[i] % MOD;
+    for (int j = 0; j <= deg; j++) {
+      ll el = res_divided.a[j];
+      el = (el * denom) % MOD;
+      ans.a[j] = (ans.a[j] + el) % MOD;
+    }
+  }
+  return ans;
+}
+\end{lstlisting}
+
+\subsection{OR XOR AND свёртки}
 \begin{lstlisting}[language=C++]
 vector<int> or_conv(int n, vector<int> a, vector<int> b) { // $|a| = |b| = 2^n$
   for (int i = 0; i < n; i++) {
@@ -3497,6 +3638,10 @@ $P(n)=\sum_{k=0}^{n}\binom{n}{k}Q(k) \implies Q(n)=\sum_{k=0}^{n}(-1)^{\,n-k}\bi
 \item % Инверсия со знаком (следствие):
 $P(n)=\sum_{k=0}^{n}(-1)^k\binom{n}{k}Q(k) \implies Q(n)=\sum_{k=0}^{n}(-1)^k\binom{n}{k}P(k)$
 
+\item % Число ПСП длины 2n с 2k блоками скобок
+$N(n, k)$ — число ПСП длины 2n с 2k блоками
+$N(n,k) = \binom{n}{k-1} * \binom{n}{k} / n$
+
 \item % Стирлинговые числа первого рода (рекурсия):
 $S_1(n,k)$ — число перестановок длины $n$ с $k$ циклами,
 $S_1(n,k)=(n-1)S_1(n-1,k)+S_1(n-1,k-1),\ S_1(0,0)=1$
@@ -3588,9 +3733,14 @@ $\sum_{i=1}^n\operatorname{lcm}(i,n)=\frac{n}{2}\Bigl(\sum_{d\mid n}\varphi(d)d+
 $\left(\tfrac{p}{q}\right)\left(\tfrac{q}{p}\right)=(-1)^{\frac{(p-1)(q-1)}{4}}$
  для нечётных простых $p,q$
 
+\item
+$\varphi(m+1)$~--- кол-во бинарных строк с $m$ различными подпоследовательностями.
+
 \end{enumerate}
 
 \endgroup
+
+
 
 
 
