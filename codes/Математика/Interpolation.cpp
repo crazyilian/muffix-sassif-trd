@@ -1,20 +1,12 @@
 struct poly {
   int n = 0;
   vector<ll> a = {0};
-
   poly() = default;
-
-  poly(vector<ll> a_) : a(a_) {
-    n = (int)a.size() - 1;
-  }
-
-  poly(int n_) : n(n_) {
-    a.assign(n + 1, 0);
-  }
+  poly(vector<ll> a) : a(a), n((int)a.size()-1) {}
+  poly(int n) : n(n), a(n+1, 0) {}
 
   ll evaluate(int x) {
-    ll val = 0;
-    ll y = 1;
+    ll val = 0, y = 1;
     for (int i = 0; i <= n; i++) {
       val = (val + a[i] * y) % MOD;
       y = (y * x) % MOD;
