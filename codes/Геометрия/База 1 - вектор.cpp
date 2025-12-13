@@ -1,12 +1,8 @@
-char sign(dbl x) {
-  return x < -EPS ? -1 : x > EPS;
-}
-
+char sign(dbl x) { return x < -EPS ? -1 : x > EPS; }
 struct vctr {
   dbl x, y;
   vctr() {}
   vctr(dbl x, dbl y) : x(x), y(y) {}
-
   dbl operator%(const vctr &o) const { return x * o.x + y * o.y; }
   dbl operator*(const vctr &o) const { return x * o.y - y * o.x; }
   vctr operator+(const vctr &o) const { return {x + o.x, y + o.y}; }
@@ -19,6 +15,7 @@ struct vctr {
   dbl dist2() const { return x * x + y * y; }
   dbl dist() const { return sqrtl(dist2()); }
   vctr norm() const { return *this / dist(); }
+  vctr rotate_ccw_90() const {  return {-y, x}; }
 };
 
 dbl angle_between(const vctr &a, const vctr &b) {
@@ -42,9 +39,5 @@ vctr rotate_ccw(const vctr &a, dbl phi) {
   dbl cs = cos(phi);
   dbl sn = sin(phi);
   return {a.x * cs - a.y * sn, a.y * cs + a.x * sn};
-}
-
-vctr rotate_ccw_90(const vctr &a) {
-  return {-a.y, a.x};
 }
 

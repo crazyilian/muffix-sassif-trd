@@ -1,9 +1,7 @@
 struct Pt {
   dbl x, y, z;
-
   Pt() : x(0), y(0), z(0) {}
-  Pt(dbl x_, dbl y_, dbl z_) : x(x_), y(y_), z(z_) {}
-
+  Pt(dbl x, dbl y, dbl z) : x(x), y(y), z(z) {}
   Pt operator-(const Pt& o) const {
     return {x - o.x, y - o.y, z - o.z};
   }
@@ -35,7 +33,6 @@ struct Pt {
 
 struct Plane {
   dbl a, b, c, d;
-
   Plane(dbl a_, dbl b_, dbl c_, dbl d_) : a(a_), b(b_), c(c_), d(d_) {
     dbl z = sqrtl(a * a + b * b + c * c);
     if (z < EPS) return;
@@ -78,9 +75,8 @@ pair<pair<dbl, dbl>, pair<dbl, dbl>> get_xy(dbl a, dbl b, dbl c) {
 }
 
 pair<Pt, Pt> intersect(Plane pl1, Plane pl2) {
-  if (abs(pl2.a) < EPS && abs(pl2.b) < EPS && abs(pl2.c) < EPS) {
+  if (abs(pl2.a) < EPS && abs(pl2.b) < EPS && abs(pl2.c) < EPS)
     assert(false);
-  }
   if (abs(pl2.a) > EPS) {
     dbl nd = pl1.d - pl1.a * pl2.d / pl2.a;
     dbl nc = pl1.c - pl1.a * pl2.c / pl2.a;

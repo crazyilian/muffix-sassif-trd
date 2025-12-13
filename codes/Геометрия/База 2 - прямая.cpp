@@ -1,6 +1,5 @@
 struct line {
   dbl a, b, c;
-
   line() {}
   line(dbl a, dbl b, dbl c) : a(a), b(b), c(c) {}
   line(const vctr A, const vctr B) {

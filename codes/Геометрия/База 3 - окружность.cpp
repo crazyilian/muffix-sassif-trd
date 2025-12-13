@@ -1,7 +1,6 @@
 struct circle {
   vctr C;
   dbl r;
-
   circle() {}
   circle(dbl x, dbl y, dbl r) : C(x, y), r(r) {}
   circle(vctr C, dbl r) : C(C), r(r) {}
@@ -15,7 +14,6 @@ struct circle {
     C = intersection(l1, l2);
     r = (C - A).dist();
   }
-
   bool isin(const vctr P) const {
     return sign((C - P).dist2() - r * r) <= 0;
   }
@@ -44,8 +42,7 @@ vector<vctr> intersection_circ_circ(circle A, circle B) {
          B.r * B.r - A.r * A.r
              + (a.x * a.x + a.y * a.y)
              - (b.x * b.x + b.y * b.y));
-  if (sign(l.a) == 0 && sign(l.b) == 0)
-    return {};
+  if (sign(l.a) == 0 && sign(l.b) == 0) return {};
   return intersection_line_circ(l, A);
 }
 

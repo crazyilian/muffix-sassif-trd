@@ -190,10 +190,8 @@
 \begin{lstlisting}[language=C++]
 struct Pt {
   dbl x, y, z;
-
   Pt() : x(0), y(0), z(0) {}
-  Pt(dbl x_, dbl y_, dbl z_) : x(x_), y(y_), z(z_) {}
-
+  Pt(dbl x, dbl y, dbl z) : x(x), y(y), z(z) {}
   Pt operator-(const Pt& o) const {
     return {x - o.x, y - o.y, z - o.z};
   }
@@ -225,7 +223,6 @@ struct Pt {
 
 struct Plane {
   dbl a, b, c, d;
-
   Plane(dbl a_, dbl b_, dbl c_, dbl d_) : a(a_), b(b_), c(c_), d(d_) {
     dbl z = sqrtl(a * a + b * b + c * c);
     if (z < EPS) return;
@@ -268,9 +265,8 @@ pair<pair<dbl, dbl>, pair<dbl, dbl>> get_xy(dbl a, dbl b, dbl c) {
 }
 
 pair<Pt, Pt> intersect(Plane pl1, Plane pl2) {
-  if (abs(pl2.a) < EPS && abs(pl2.b) < EPS && abs(pl2.c) < EPS) {
+  if (abs(pl2.a) < EPS && abs(pl2.b) < EPS && abs(pl2.c) < EPS)
     assert(false);
-  }
   if (abs(pl2.a) > EPS) {
     dbl nd = pl1.d - pl1.a * pl2.d / pl2.a;
     dbl nc = pl1.c - pl1.a * pl2.c / pl2.a;
@@ -312,15 +308,11 @@ Plane plane_perp(Pt p, Pt v) {
 
 \subsection{База 1 - вектор}
 \begin{lstlisting}[language=C++]
-char sign(dbl x) {
-  return x < -EPS ? -1 : x > EPS;
-}
-
+char sign(dbl x) { return x < -EPS ? -1 : x > EPS; }
 struct vctr {
   dbl x, y;
   vctr() {}
   vctr(dbl x, dbl y) : x(x), y(y) {}
-
   dbl operator%(const vctr &o) const { return x * o.x + y * o.y; }
   dbl operator*(const vctr &o) const { return x * o.y - y * o.x; }
   vctr operator+(const vctr &o) const { return {x + o.x, y + o.y}; }
@@ -333,6 +325,7 @@ struct vctr {
   dbl dist2() const { return x * x + y * y; }
   dbl dist() const { return sqrtl(dist2()); }
   vctr norm() const { return *this / dist(); }
+  vctr rotate_ccw_90() const {  return {-y, x}; }
 };
 
 dbl angle_between(const vctr &a, const vctr &b) {
@@ -358,17 +351,12 @@ vctr rotate_ccw(const vctr &a, dbl phi) {
   return {a.x * cs - a.y * sn, a.y * cs + a.x * sn};
 }
 
-vctr rotate_ccw_90(const vctr &a) {
-  return {-a.y, a.x};
-}
-
 \end{lstlisting}
 
 \subsection{База 2 - прямая}
 \begin{lstlisting}[language=C++]
 struct line {
   dbl a, b, c;
-
   line() {}
   line(dbl a, dbl b, dbl c) : a(a), b(b), c(c) {}
   line(const vctr A, const vctr B) {
@@ -416,7 +404,6 @@ line bisection(const vctr A, const vctr B) {
 struct circle {
   vctr C;
   dbl r;
-
   circle() {}
   circle(dbl x, dbl y, dbl r) : C(x, y), r(r) {}
   circle(vctr C, dbl r) : C(C), r(r) {}
@@ -430,7 +417,6 @@ struct circle {
     C = intersection(l1, l2);
     r = (C - A).dist();
   }
-
   bool isin(const vctr P) const {
     return sign((C - P).dist2() - r * r) <= 0;
   }
@@ -459,8 +445,7 @@ vector<vctr> intersection_circ_circ(circle A, circle B) {
          B.r * B.r - A.r * A.r
              + (a.x * a.x + a.y * a.y)
              - (b.x * b.x + b.y * b.y));
-  if (sign(l.a) == 0 && sign(l.b) == 0)
-    return {};
+  if (sign(l.a) == 0 && sign(l.b) == 0) return {};
   return intersection_line_circ(l, A);
 }
 
@@ -640,10 +625,8 @@ pair<int, int> tangents_from_point(vector<vctr> &p, vctr &a) {
     for (int k = logn; k >= 0; --k) {
       int i1 = (i - (1 << k) + n) % n;
       int i2 = (i + (1 << k)) % n;
-      if (sign((p[i1] - a) * (p[i] - a)) == sgn)
-        i = i1;
-      if (sign((p[i2] - a) * (p[i] - a)) == sgn)
-        i = i2;
+      if (sign((p[i1] - a) * (p[i] - a)) == sgn) i = i1;
+      if (sign((p[i2] - a) * (p[i] - a)) == sgn) i = i2;
     }
     return i;
   };
@@ -663,10 +646,8 @@ int tangent_parallel_line(const vector<vctr> &p, line l, int sgn) {
   for (int k = logn; k >= 0; --k) {
     int i1 = (i - (1 << k) + n) % n;
     int i2 = (i + (1 << k)) % n;
-    if (l.get(p[i1]) > l.get(p[i]))
-      i = i1;
-    if (l.get(p[i2]) > l.get(p[i]))
-      i = i2;
+    if (l.get(p[i1]) > l.get(p[i])) i = i1;
+    if (l.get(p[i2]) > l.get(p[i])) i = i2;
   }
   return i;
 }
@@ -680,17 +661,14 @@ bool is_point_in_poly(vctr A, vector<vctr> &P) {
   auto tmp = A - P[0];
   if (sign(tmp.y) < 0 || (sign(tmp.y) == 0 && sign(tmp.x) < 0))
     return false;
-  if (sign(tmp.y) == 0 && sign(tmp.x) == 0)
-    return true;
+  if (sign(tmp.y) == 0 && sign(tmp.x) == 0) return true;
   int ind = lower_bound(P.begin(), P.end(), A, cmp_convex_hull) - P.begin();
   assert(ind != 0);
-  if (ind == P.size())
-    return false;
+  if (ind == P.size()) return false;
   vctr B = A - P[ind - 1];
   vctr C = P[ind] - P[ind - 1];
   return sign(C * B) >= 0;
 }
-
 bool is_point_in_poly_strict(vctr A, vector<vctr> &P) {
   if (sign(A.y - P[0].y) <= 0 || sign((A - P[0]) * (P.back() - P[0])) <= 0)
       return false;
@@ -705,38 +683,30 @@ bool is_point_in_poly_strict(vctr A, vector<vctr> &P) {
 
 \subsection{Минимальная покрывающая окружность}
 \begin{lstlisting}[language=C++]
-mt19937 rnd(179);
-
 circle MinDisk2(vector<vctr> &p, vctr A, vctr B, int sz) {
   circle w(A, B);
   for (int i = 0; i < sz; ++i) {
-    if (w.isin(p[i]))
-      continue;
+    if (w.isin(p[i])) continue;
     w = circle(A, B, p[i]);
   }
   return w;
 }
-
 circle MinDisk1(vector<vctr> &p, vctr A, int sz) {
   shuffle(p.begin(), p.begin() + sz, rnd);
   circle w(A, p[0]);
   for (int i = 1; i < sz; ++i) {
-    if (w.isin(p[i]))
-      continue;
+    if (w.isin(p[i])) continue;
     w = MinDisk2(p, A, p[i], i);
   }
   return w;
 }
-
 circle MinDisk(vector<vctr> &p) {
   int sz = p.size();
-  if (sz == 1)
-    return circle(p[0], 0);
+  if (sz == 1) return circle(p[0], 0);
   shuffle(p.begin(), p.end(), rnd);
   circle w(p[0], p[1]);
   for (int i = 2; i < sz; ++i) {
-    if (w.isin(p[i]))
-      continue;
+    if (w.isin(p[i])) continue;
     w = MinDisk1(p, p[i], i);
   }
   return w;
@@ -872,17 +842,6 @@ vector<vctr> minkowski_sum(const vector<vctr> &A, const vector<vctr> &B) {
 }
 
 \end{lstlisting}
-
-\subsection{Формула Эйлера}
-\noindent\rule{\linewidth}{0.15mm}
-\begin{itemize}
-    \item $V$ -- число вершин выпуклого многогранника (планарного графа)
-    \item $E$ -- число рёбер
-    \item $F$ -- число граней (если планарный граф, то включая внешнюю)
-\end{itemize}
-Тогда $V-E+F=2$
-
-\noindent\rule{\linewidth}{0.15mm}
 
 \section{Графы}
 
@@ -1988,43 +1947,6 @@ vector<int> lis(vector<int> a) {
 }
 \end{lstlisting}
 
-\subsection{НОВП}
-\begin{lstlisting}[language=C++]
-// 1-indexation ({$0, a_1, ..., a_n$}, {$0, b_1, ..., b_m$})
-vector<int> lcis(vector<int> a, vector<int> b) {
-  int n = (int) a.size() - 1, m = (int) b.size() - 1;
-  vector<int> dp(m + 1), dp2(m + 1), par(m + 1);
-  for (int i = 1; i <= n; i++) {
-    int best = 0, best_idx = 0;
-    for (int j = 1; j <= m; j++) {
-      dp2[j] = dp[j];
-      if (a[i] == b[j]) {
-        dp2[j] = max(dp2[j], best + 1);
-        par[j] = best_idx;
-      }
-      if (a[i] > b[j] && best < dp[j]) {
-        best = dp[j];
-        best_idx = j;
-      }
-    }
-    swap(dp, dp2);
-  }
-  int pj = 0;
-  for (int j = 1; j <= m; j++) {
-    if (dp[pj] < dp[j]) {
-      pj = j;
-    }
-  }
-  vector<int> ans; // exact values
-  while (pj > 0) {
-    ans.push_back(b[pj]);
-    pj = par[pj];
-  }
-  reverse(ans.begin(), ans.end());
-  return ans;
-}
-\end{lstlisting}
-
 \section{Деревья}
 
 \subsection{Centroid}
@@ -2290,29 +2212,6 @@ struct FastMod {
 }; // Usage:
 // FastMod F(m);
 // ull x_mod_m = F.mod(x);
-\end{lstlisting}
-
-\subsection{Slope trick}
-\begin{lstlisting}[language=C++]
-// Дан массив $a_n$. Сделать минимальное кол-во $\pm 1$, чтобы $a_n$ стал неубывающим.
-
-void solve() {
-  int n;
-  cin >> n;
-  vector<int> a(n);
-  for (int i = 0; i < n; i++) {
-    cin >> a[i];
-  }
-  int ans = 0;
-  multiset<int> now;
-  for (int i = 0; i < n; i++) {
-    now.insert(a[i]);
-    ans += (*now.rbegin() - a[i]);
-    now.erase(now.find(*now.rbegin()));
-    now.insert(a[i]);
-  }
-  cout << ans << '\n';
-}
 \end{lstlisting}
 
 \subsection{attribute\_packed}
