@@ -1,5 +1,6 @@
 // 2^pow > maxcoord
 ll gilbertOrder(int x, int y, int pow=21, int rotate=0) {
+  if (pow == 0) return 0;
   int h = 1 << (pow - 1);
   int seg = (x < h ? (y < h ? 0 : 3) : (y < h ? 1 : 2));
   seg = (seg + rotate) & 3;
