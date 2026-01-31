@@ -25,7 +25,7 @@ vector<int> prefix_func(const string &s) {
 array<vector<int>, 2> manacher(const string &s) {
   int n = s.size();
   array<vector<int>, 2> d;
-  for (int z = 0; z <= 1; ++z) {
+  for (int z = 0; z <= 1; ++z) { //0=odd,1=even (!)
     d[z].resize(n - z);
     int l = 0, r = -1;
     for (int i = z; i < n; ++i) {
