@@ -1,4 +1,4 @@
-#define bback(x) x[size(x)-2]
+#define bback(x) (x)[size(x)-2]
 struct line {
   int k, b;
   int eval(int x) { return k * x + b; }
