@@ -1,24 +1,18 @@
 // Нумерация с 0
-
 struct Fenwick {
   int n;
   vector<int> f;
- 
-  Fenwick(int n) : n(n) {
-    f.resize(n + 1);
-  }
+  Fenwick(int n) : n(n), f(n+1) {}
  
   // a[i] += x
   void add(int i, int x) {
-    for (++i; i <= n; i += i & -i)
-      f[i] += x;
+    for (++i; i <= n; i += i & -i) f[i] += x;
   }
  
   // sum a[0..i)
   int get(int i) {
     int ans = 0;
-    for (; i > 0; i -= i & -i)
-      ans += f[i];
+    for (; i > 0; i -= i & -i) ans += f[i];
     return ans;
   }
  
@@ -44,3 +38,16 @@ int sum_3d(int x1, int x2, int y1, int y2, int z1, int z2) {
   ans -= get(x1, y1, z1);
   return ans;
 }
+
+// a[l..r) += x
+void update(int l, int r, int x) {
+  T1.add(l, x);
+  T1.add(r, -x);
+  T2.add(l, -x * l);
+  T2.add(r, x * r);
+}
+// sum a[0..i)
+int get(int i) {
+  return T1.get(i) * i + T2.get(i);
+}
+
