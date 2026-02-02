@@ -31,11 +31,11 @@ struct Fenwick {
 };
 
 // sum a[x1..x2)[y1..y2)[z1..x2)
-int sum_3d(int x1, int x2, int y1, int y2, int z1, int z2) {
+int sum_3d(int x1,int x2,int y1,int y2,int z1,int z2) {
   int ans = get(x2, y2, z2);
-  ans -= get(x1, y2, z2) + get(x2, y1, z2) + get(x2, y2, z1);
-  ans += get(x1, y1, z2) + get(x1, y2, z1) + get(x2, y1, z1);
-  ans -= get(x1, y1, z1);
+  ans -= get(x1,y2,z2) + get(x2,y1,z2) + get(x2,y2,z1);
+  ans += get(x1,y1,z2) + get(x1,y2,z1) + get(x2,y1,z1);
+  ans -= get(x1,y1,z1);
   return ans;
 }
 

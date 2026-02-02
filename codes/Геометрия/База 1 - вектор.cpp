@@ -3,13 +3,13 @@ struct vctr {
   dbl x, y;
   vctr() {}
   vctr(dbl x, dbl y) : x(x), y(y) {}
-  dbl operator%(const vctr &o) const { return x * o.x + y * o.y; }
-  dbl operator*(const vctr &o) const { return x * o.y - y * o.x; }
-  vctr operator+(const vctr &o) const { return {x + o.x, y + o.y}; }
-  vctr operator-(const vctr &o) const { return {x - o.x, y - o.y}; }
+  dbl operator%(const vctr &o)const{return x*o.x+y*o.y;}
+  dbl operator*(const vctr &o)const{return x*o.y-y*o.x;}
+vctr operator+(const vctr &o)const{return{x+o.x,y+o.y};}
+vctr operator-(const vctr &o)const{return{x-o.x,y-o.y};}
   vctr operator-() const { return {-x, -y}; }
-  vctr operator*(const dbl d) const { return {x * d, y * d}; }
-  vctr operator/(const dbl d) const { return {x / d, y / d}; }
+  vctr operator*(const dbl d)const{return{x*d,y*d};}
+  vctr operator/(const dbl d)const{return{x/d,y/d};}
   void operator+=(const vctr &o) { x += o.x, y += o.y; }
   void operator-=(const vctr &o) { x -= o.x, y -= o.y; }
   dbl dist2() const { return x * x + y * y; }
@@ -24,7 +24,7 @@ dbl angle_between(const vctr &a, const vctr &b) {
 
 // y > 0 ? 0 : 1
 bool is2plane(const vctr &a) {
-  return sign(a.y) < 0 || (sign(a.y) == 0 && sign(a.x) < 0);
+  return sign(a.y)<0 || (sign(a.y)==0 && sign(a.x)<0);
 }
 
 bool cmp_angle(const vctr &a, const vctr &b) {
