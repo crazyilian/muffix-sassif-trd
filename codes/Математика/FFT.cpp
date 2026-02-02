@@ -17,6 +17,7 @@ struct comp {
 
 comp OMEGA[MAXN + 10];
 int tail[MAXN + 10];
+bool fftinit = false;
 
 comp omega(int n, int k) {
   return OMEGA[MAXN / n * k];
@@ -36,10 +37,11 @@ void calcomega() {
 void calctail() {
   tail[0] = 0;
   for (int i = 1; i < MAXN; ++i)
-    tail[i] = (tail[i >> 1] >> 1) | ((i & 1) << (LOG - 1));
+    tail[i] = (tail[i/2]/2) | ((i & 1) << (LOG - 1));
 }
 
 void fft(vector<comp> &A, int lg) {
+  if (!fftinit) calcomega(), calctail(), fftinit = 1;
   int n = A.size();
   for (int i = 0; i < n; ++i) {
     int j = gettail(i, lg);
@@ -103,11 +105,5 @@ vector<int> mul(vector<int> &a, vector<int> &b) {
   while (!c.empty() && c.back() == 0)
     c.pop_back();
   return c;
-}
-
-signed main() {
-  calcomega(); // НЕ ЗАБЫТЬ
-  calctail(); // НЕ ЗАБЫТЬ
-  // your code here
 }
 
