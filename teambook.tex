@@ -1470,7 +1470,7 @@ signed main() {
 }
 \end{lstlisting}
 
-\subsection{Минкост (Джонсон)}
+\subsection{Минкост}
 \begin{lstlisting}[language=C++]
 
 using cost_t = ll;
@@ -1779,51 +1779,51 @@ for (int v = 0; v < graph.size(); ++v) {
 
 \subsection{CHT}
 \begin{lstlisting}[language=C++]
+#define bback(x) (x)[size(x)-2]
 struct line {
-    int k, b;
-    int eval(int x) {
-      return k * x + b;
-    }
+  int k, b;
+  int eval(int x) { return k * x + b; }
 };
-struct part {
-    line a;
-    double x;
-};
-double intersection(line a, line b) {
-  return (a.b - b.b) / (double) (b.k - a.k);
+struct part { line a; dbl x; };
+
+dbl intersection(line a, line b) {
+  return (a.b - b.b) / (dbl)(b.k - a.k);
 }
+
 struct ConvexHull {
-    // for min: k decreasing (non-increasing)
-    // for max: k increasing (non-decreasing)
-    vector<part> st;
+  // for min: k decreasing (non-increasing)
+  // for max: k increasing (non-decreasing)
+  vector<part> st;
 
-    void add(line a) {
-      if (!st.empty() && st.back().a.k == a.k) {
-        if (st.back().a.b < a.b) st.pop_back(); // for max
-//        if (st.back().a.b > a.b) st.pop_back(); // for min
-        else return;
-      }
-      while (st.size() > 1 &&
-             intersection(st[st.size() - 2].a, a) <= st[st.size() - 2].x)
-        st.pop_back();
-      if (!st.empty()) st.back().x = intersection(st.back().a, a);
-      st.push_back({a, INFINITY}); // C++ define
+  void add(line a) {
+    if (!st.empty() && st.back().a.k == a.k) {
+      if (st.back().a.b < a.b) st.pop_back(); // for max
+    //if (st.back().a.b > a.b) st.pop_back(); // for min
+      else return;
     }
+    while (st.size() > 1 &&
+           intersection(bback(st).a, a) <= bback(st).x)
+      st.pop_back();
+    if (!st.empty())
+      st.back().x = intersection(st.back().a, a);
+    st.push_back({a, INFINITY}); // C++ define
+  }
 
-    int get_val(int x) {
-      if (st.empty()) {
-        return -INF; // min possible value, for max
-//        return INF; // max possible value, for min
-      }
-      int l = -1, r = (int) st.size() - 1;
-      while (r - l > 1) {
-        int m = (l + r) / 2;
-        if (st[m].x < x) l = m;
-        else r = m;
-      }
-      return st[r].a.eval(x);
+  int get_val(int x) {
+    if (st.empty()) {
+      return -INF; // min possible value, for max
+     //return INF; // max possible value, for min
     }
+    int l = -1, r = ssize(st) - 1;
+    while (r - l > 1) {
+      int m = (l + r) / 2;
+      if (st[m].x < x) l = m;
+      else r = m;
+    }
+    return st[r].a.eval(x);
+  }
 };
+
 \end{lstlisting}
 
 \subsection{Li Chao}
@@ -2322,27 +2322,6 @@ struct custom_bitset {
 };
 \end{lstlisting}
 
-\subsection{ordered\_set}
-\begin{lstlisting}[language=C++]
-#include <ext/pb_ds/assoc_container.hpp>
-#include <ext/pb_ds/tree_policy.hpp>
-
-using namespace __gnu_pbds;
-
-typedef tree<int, null_type, less<>, rb_tree_tag, tree_order_statistics_node_update> ordered_set;
-
-//st.find_by_order(index);
-//st.order_of_key(key);
-
-\end{lstlisting}
-
-\subsection{pragma}
-\begin{lstlisting}[language=C++]
-#pragma GCC optimize("Ofast,fast-math,unroll-loops,no-stack-protector,inline")
-#pragma GCC target("sse,sse2,sse3,ssse3,sse4,sse4.1,sse4.2,avx,avx2,abm,mmx,popcnt")
-
-\end{lstlisting}
-
 \subsection{Аллокатор Копелиовича}
 \begin{lstlisting}[language=C++]
 // Код вставить до инклюдов
@@ -2392,17 +2371,17 @@ int alphabeta(int player, int alpha, int beta, int depth) {
 \subsection{Отжиг}
 \begin{lstlisting}[language=C++]
 const double lambda = 0.999;
-double temprature = 1;
+double temperature = 1;
 mt19937 rnd(777);
 
 double gen_rand_01() {
   return rnd() / (double) UINT32_MAX;
 }
 bool f(int delta) {
-  return exp(-delta / temprature) > gen_rand_01();
+  return exp(-delta / temperature) > gen_rand_01();
 }
 void make_change() {
-  temprature *= lambda;
+  temperature *= lambda;
   // calc change score
   if (change_score <= 0 || f(change_score)) {
     score += change_score;
@@ -2512,7 +2491,265 @@ vector<ll> berlekamp_massey(vector<ll> a) {
 }
 \end{lstlisting}
 
-\subsection{FFT mod}
+\subsection{FFT}
+\begin{lstlisting}[language=C++]
+const double PI = acos(-1);
+const int LOG = 20;
+const int MAXN = 1 << LOG;
+
+//using comp = complex<double>;
+struct comp {
+  double x, y;
+  comp() : x(0), y(0) {}
+  comp(double x, double y) : x(x), y(y) {}
+  comp(int x) : x(x), y(0) {}
+  comp operator+(const comp &o) const { return {x + o.x, y + o.y}; }
+  comp operator-(const comp &o) const { return {x - o.x, y - o.y}; }
+  comp operator*(const comp &o) const { return {x * o.x - y * o.y, x * o.y + y * o.x}; }
+  comp operator/(const int k) const { return {x / k, y / k}; }
+  comp conj() const { return {x, -y}; }
+};
+
+comp OMEGA[MAXN + 10];
+int tail[MAXN + 10];
+bool fftinit = false;
+
+comp omega(int n, int k) {
+  return OMEGA[MAXN / n * k];
+}
+
+int gettail(int x, int lg) {
+  return tail[x] >> (LOG - lg);
+}
+
+void calcomega() {
+  for (int i = 0; i < MAXN; ++i) {
+    double x = 2 * PI * i / MAXN;
+    OMEGA[i] = {cos(x), sin(x)};
+  }
+}
+
+void calctail() {
+  tail[0] = 0;
+  for (int i = 1; i < MAXN; ++i)
+    tail[i] = (tail[i/2]/2) | ((i & 1) << (LOG - 1));
+}
+
+void fft(vector<comp> &A, int lg) {
+  if (!fftinit) calcomega(), calctail(), fftinit = 1;
+  int n = A.size();
+  for (int i = 0; i < n; ++i) {
+    int j = gettail(i, lg);
+    if (i < j)
+      swap(A[i], A[j]);
+  }
+  for (int len = 2; len <= n; len *= 2) {
+    for (int i = 0; i < n; i += len) {
+      for (int j = 0; j < len / 2; ++j) {
+        auto v = A[i + j];
+        auto u = A[i + j + len / 2] * omega(len, j);
+        A[i + j] = v + u;
+        A[i + j + len / 2] = v - u;
+      }
+    }
+  }
+}
+
+void fft2(vector<comp> &A, vector<comp> &B, int lg) {
+  int n = A.size();
+  vector<comp> C(n);
+  for (int i = 0; i < n; ++i) {
+    C[i].x = A[i].x;
+    C[i].y = B[i].x;
+  }
+  fft(C, lg);
+  C.push_back(C[0]);
+  for (int i = 0; i < n; ++i) {
+    A[i] = (C[i] + C[n - i].conj()) / 2;
+    B[i] = (C[i] - C[n - i].conj()) / 2 * comp(0, -1);
+  }
+}
+
+void invfft(vector<comp> &A, int lg) {
+  int n = 1 << lg;
+  fft(A, lg);
+  for (auto &el : A)
+    el = el / n;
+  reverse(A.begin() + 1, A.end());
+}
+
+vector<int> mul(vector<int> &a, vector<int> &b) {
+  if (a.empty() || b.empty())
+    return {};
+  int lg = 32 - __builtin_clz(a.size() + b.size() - 1);
+  int n = 1 << lg;
+  vector<comp> A(n, 0), B(n, 0);
+  for (int i = 0; i < a.size(); ++i)
+    A[i] = a[i];
+  for (int i = 0; i < b.size(); ++i)
+    B[i] = b[i];
+//  fft2(A, B, lg);
+  fft(A, lg);
+  fft(B, lg);
+  for (int i = 0; i < n; ++i)
+    A[i] = A[i] * B[i];
+  invfft(A, lg);
+  vector<int> c(n);
+  for (int i = 0; i < n; ++i)
+    c[i] = round(A[i].x);
+  while (!c.empty() && c.back() == 0)
+    c.pop_back();
+  return c;
+}
+
+\end{lstlisting}
+
+\subsection{Floor Sum}
+\begin{lstlisting}[language=C++]
+int floor_sum(int n, int d, int m, int a) {
+  // sum_{i=0}^{n-1} floor((a + i*m)/d), only non-negative integers!
+  int ans = 0;
+  ans += (n * (n - 1) / 2) * (m / d);
+  m %= d;
+  ans += n * (a / d);
+  a %= d;
+  int l = m * n + a;
+  if (l >= d)
+    ans += floor_sum(l / d, m, d, l % d);
+  return ans;
+}
+\end{lstlisting}
+
+\subsection{GCD LCM свёртки}
+\begin{lstlisting}[language=C++]
+vector<int> gcd_convolution(vector<int> a, vector<int> b) {
+  // a,b is 1-indexed array; a[0],b[0] doesnt matter
+  int n = ssize(a) - 1;
+  for (int p = 2; p <= n; ++p) {
+    if (!isprime[p]) continue; // alt: for (auto p : primes) if (p>n)break;
+    for (int i = n / p; i > 0; --i) {
+      a[i] += a[i * p];
+      if (a[i] >= mod) a[i] -= mod;
+      b[i] += b[i * p];
+      if (b[i] >= mod) b[i] -= mod;
+    }
+  }
+  for (int i = 1; i <= n; ++i) a[i] = (a[i] * b[i]) % mod;
+  for (int p = 2; p <= n; ++p) {
+    if (!isprime[p]) continue;
+    for (int i = 1; i * p <= n; ++i) {
+      a[i] += mod - a[i * p];
+      if (a[i] >= mod) a[i] -= mod;
+    }
+  }
+  return a;
+}
+
+vector<int> lcm_convolution(vector<int> a, vector<int> b) {
+  int n = ssize(a) - 1;
+  for (int p = 2; p <= n; ++p) {
+    if (!isprime[p]) continue;
+    for (int i = 1; i * p <= n; ++i) {
+      a[i * p] += a[i];
+      if (a[i * p] >= mod) a[i * p] -= mod;
+      b[i * p] += b[i];
+      if (b[i * p] >= mod) b[i * p] -= mod;
+    }
+  }
+  for (int i = 1; i <= n; ++i) a[i] = (a[i] * b[i]) % mod;
+  for (int p = 2; p <= n; ++p) {
+    if (!isprime[p]) continue;
+    for (int i = n / p; i > 0; --i) {
+      a[i * p] += mod - a[i];
+      if (a[i * p] >= mod) a[i * p] -= mod;
+    }
+  }
+  return a;
+}
+\end{lstlisting}
+
+\subsection{Interpolation}
+\begin{lstlisting}[language=C++]
+struct poly {
+  int n = 0;
+  vector<ll> a = {0};
+  poly() = default;
+  poly(vector<ll> a) : a(a), n((int)a.size()-1) {}
+  poly(int n) : n(n), a(n+1, 0) {}
+
+  ll evaluate(int x) {
+    ll val = 0, y = 1;
+    for (int i = 0; i <= n; i++) {
+      val = (val + a[i] * y) % MOD;
+      y = (y * x) % MOD;
+    }
+    return val;
+  }
+};
+
+poly mul(poly &P, poly &Q) {
+  poly R(P.n + Q.n);
+  for (int i = 0; i <= P.n; i++) {
+    for (int j = 0; j <= Q.n; j++) {
+      R.a[i + j] = (R.a[i + j] + P.a[i] * Q.a[j]) % MOD;
+    }
+  }
+  return R;
+}
+
+poly multiply_many(vector<poly> a) {
+  if (a.empty()) return poly((vector<ll>){1ll});
+  if (a.size() == 1) return a[0];
+  vector<poly> b;
+  int n = a.size();
+  for (int i = n / 2; i < n; i++) {
+    b.push_back(a[i]);
+  }
+  a.resize(n / 2);
+  poly P = multiply_many(a), Q = multiply_many(b);
+  return mul(P, Q);
+}
+
+poly divide(poly &res, int c) {
+  poly ans(res.n - 1);
+  ll val = 0;
+  for (int i = res.n; i >= 1; i--) {
+    val = (val * c + res.a[i]) % MOD;
+    ans.a[i - 1] = val;
+  }
+  return ans;
+}
+
+poly interpolate(int deg, vector<int> x, vector<int> y) {
+  assert(x.size() >= deg + 1 && y.size() >= deg + 1);
+  x.resize(deg + 1), y.resize(deg + 1);
+  vector<poly> fm;
+  for (int j = 0; j <= deg; j++) {
+    fm.push_back(poly({(MOD - x[j]) % MOD, 1}));
+  }
+  poly res = multiply_many(fm);
+  poly ans(deg);
+  for (int i = 0; i <= deg; i++) {
+    ll denom = 1;
+    for (int j = 0; j <= deg; j++) {
+      if (j != i) {
+        denom = denom * ((x[i] - x[j] + MOD) % MOD) % MOD;
+      }
+    }
+    poly res_divided = divide(res, x[i]);
+    denom = inv(denom);
+    denom = denom * y[i] % MOD;
+    for (int j = 0; j <= deg; j++) {
+      ll el = res_divided.a[j];
+      el = (el * denom) % MOD;
+      ans.a[j] = (ans.a[j] + el) % MOD;
+    }
+  }
+  return ans;
+}
+\end{lstlisting}
+
+\subsection{NTT}
 \begin{lstlisting}[language=C++]
 const int MOD = 998244353; // $7 \cdot 17 \cdot 2^{23} + 1$
 const int G = 3;
@@ -2693,268 +2930,6 @@ vector<int> exp(vector<int> a, int need) {
   }
   b.resize(need);
   return b;
-}
-\end{lstlisting}
-
-\subsection{FFT}
-\begin{lstlisting}[language=C++]
-const double PI = acos(-1);
-const int LOG = 20;
-const int MAXN = 1 << LOG;
-
-//using comp = complex<double>;
-struct comp {
-  double x, y;
-  comp() : x(0), y(0) {}
-  comp(double x, double y) : x(x), y(y) {}
-  comp(int x) : x(x), y(0) {}
-  comp operator+(const comp &o) const { return {x + o.x, y + o.y}; }
-  comp operator-(const comp &o) const { return {x - o.x, y - o.y}; }
-  comp operator*(const comp &o) const { return {x * o.x - y * o.y, x * o.y + y * o.x}; }
-  comp operator/(const int k) const { return {x / k, y / k}; }
-  comp conj() const { return {x, -y}; }
-};
-
-comp OMEGA[MAXN + 10];
-int tail[MAXN + 10];
-
-comp omega(int n, int k) {
-  return OMEGA[MAXN / n * k];
-}
-
-int gettail(int x, int lg) {
-  return tail[x] >> (LOG - lg);
-}
-
-void calcomega() {
-  for (int i = 0; i < MAXN; ++i) {
-    double x = 2 * PI * i / MAXN;
-    OMEGA[i] = {cos(x), sin(x)};
-  }
-}
-
-void calctail() {
-  tail[0] = 0;
-  for (int i = 1; i < MAXN; ++i)
-    tail[i] = (tail[i >> 1] >> 1) | ((i & 1) << (LOG - 1));
-}
-
-void fft(vector<comp> &A, int lg) {
-  int n = A.size();
-  for (int i = 0; i < n; ++i) {
-    int j = gettail(i, lg);
-    if (i < j)
-      swap(A[i], A[j]);
-  }
-  for (int len = 2; len <= n; len *= 2) {
-    for (int i = 0; i < n; i += len) {
-      for (int j = 0; j < len / 2; ++j) {
-        auto v = A[i + j];
-        auto u = A[i + j + len / 2] * omega(len, j);
-        A[i + j] = v + u;
-        A[i + j + len / 2] = v - u;
-      }
-    }
-  }
-}
-
-void fft2(vector<comp> &A, vector<comp> &B, int lg) {
-  int n = A.size();
-  vector<comp> C(n);
-  for (int i = 0; i < n; ++i) {
-    C[i].x = A[i].x;
-    C[i].y = B[i].x;
-  }
-  fft(C, lg);
-  C.push_back(C[0]);
-  for (int i = 0; i < n; ++i) {
-    A[i] = (C[i] + C[n - i].conj()) / 2;
-    B[i] = (C[i] - C[n - i].conj()) / 2 * comp(0, -1);
-  }
-}
-
-void invfft(vector<comp> &A, int lg) {
-  int n = 1 << lg;
-  fft(A, lg);
-  for (auto &el : A)
-    el = el / n;
-  reverse(A.begin() + 1, A.end());
-}
-
-vector<int> mul(vector<int> &a, vector<int> &b) {
-  if (a.empty() || b.empty())
-    return {};
-  int lg = 32 - __builtin_clz(a.size() + b.size() - 1);
-  int n = 1 << lg;
-  vector<comp> A(n, 0), B(n, 0);
-  for (int i = 0; i < a.size(); ++i)
-    A[i] = a[i];
-  for (int i = 0; i < b.size(); ++i)
-    B[i] = b[i];
-//  fft2(A, B, lg);
-  fft(A, lg);
-  fft(B, lg);
-  for (int i = 0; i < n; ++i)
-    A[i] = A[i] * B[i];
-  invfft(A, lg);
-  vector<int> c(n);
-  for (int i = 0; i < n; ++i)
-    c[i] = round(A[i].x);
-  while (!c.empty() && c.back() == 0)
-    c.pop_back();
-  return c;
-}
-
-signed main() {
-  calcomega(); // НЕ ЗАБЫТЬ
-  calctail(); // НЕ ЗАБЫТЬ
-  // your code here
-}
-
-\end{lstlisting}
-
-\subsection{Floor Sum}
-\begin{lstlisting}[language=C++]
-int floor_sum(int n, int d, int m, int a) {
-  // sum_{i=0}^{n-1} floor((a + i*m)/d), only non-negative integers!
-  int ans = 0;
-  ans += (n * (n - 1) / 2) * (m / d);
-  m %= d;
-  ans += n * (a / d);
-  a %= d;
-  int l = m * n + a;
-  if (l >= d)
-    ans += floor_sum(l / d, m, d, l % d);
-  return ans;
-}
-\end{lstlisting}
-
-\subsection{GCD LCM свёртки}
-\begin{lstlisting}[language=C++]
-vector<int> gcd_convolution(vector<int> a, vector<int> b) {
-  // a,b is 1-indexed array; a[0],b[0] doesnt matter
-  int n = ssize(a) - 1;
-  for (int p = 2; p <= n; ++p) {
-    if (!isprime[p]) continue; // alt: for (auto p : primes) if (p>n)break;
-    for (int i = n / p; i > 0; --i) {
-      a[i] += a[i * p];
-      if (a[i] >= mod) a[i] -= mod;
-      b[i] += b[i * p];
-      if (b[i] >= mod) b[i] -= mod;
-    }
-  }
-  for (int i = 1; i <= n; ++i) a[i] = (a[i] * b[i]) % mod;
-  for (int p = 2; p <= n; ++p) {
-    if (!isprime[p]) continue;
-    for (int i = 1; i * p <= n; ++i) {
-      a[i] += mod - a[i * p];
-      if (a[i] >= mod) a[i] -= mod;
-    }
-  }
-  return a;
-}
-
-vector<int> lcm_convolution(vector<int> a, vector<int> b) {
-  int n = ssize(a) - 1;
-  for (int p = 2; p <= n; ++p) {
-    if (!isprime[p]) continue;
-    for (int i = 1; i * p <= n; ++i) {
-      a[i * p] += a[i];
-      if (a[i * p] >= mod) a[i * p] -= mod;
-      b[i * p] += b[i];
-      if (b[i * p] >= mod) b[i * p] -= mod;
-    }
-  }
-  for (int i = 1; i <= n; ++i) a[i] = (a[i] * b[i]) % mod;
-  for (int p = 2; p <= n; ++p) {
-    if (!isprime[p]) continue;
-    for (int i = n / p; i > 0; --i) {
-      a[i * p] += mod - a[i];
-      if (a[i * p] >= mod) a[i * p] -= mod;
-    }
-  }
-  return a;
-}
-\end{lstlisting}
-
-\subsection{Interpolation}
-\begin{lstlisting}[language=C++]
-struct poly {
-  int n = 0;
-  vector<ll> a = {0};
-  poly() = default;
-  poly(vector<ll> a) : a(a), n((int)a.size()-1) {}
-  poly(int n) : n(n), a(n+1, 0) {}
-
-  ll evaluate(int x) {
-    ll val = 0, y = 1;
-    for (int i = 0; i <= n; i++) {
-      val = (val + a[i] * y) % MOD;
-      y = (y * x) % MOD;
-    }
-    return val;
-  }
-};
-
-poly mul(poly &P, poly &Q) {
-  poly R(P.n + Q.n);
-  for (int i = 0; i <= P.n; i++) {
-    for (int j = 0; j <= Q.n; j++) {
-      R.a[i + j] = (R.a[i + j] + P.a[i] * Q.a[j]) % MOD;
-    }
-  }
-  return R;
-}
-
-poly multiply_many(vector<poly> a) {
-  if (a.empty()) return poly((vector<ll>){1ll});
-  if (a.size() == 1) return a[0];
-  vector<poly> b;
-  int n = a.size();
-  for (int i = n / 2; i < n; i++) {
-    b.push_back(a[i]);
-  }
-  a.resize(n / 2);
-  poly P = multiply_many(a), Q = multiply_many(b);
-  return mul(P, Q);
-}
-
-poly divide(poly &res, int c) {
-  poly ans(res.n - 1);
-  ll val = 0;
-  for (int i = res.n; i >= 1; i--) {
-    val = (val * c + res.a[i]) % MOD;
-    ans.a[i - 1] = val;
-  }
-  return ans;
-}
-
-poly interpolate(int deg, vector<int> x, vector<int> y) {
-  assert(x.size() >= deg + 1 && y.size() >= deg + 1);
-  x.resize(deg + 1), y.resize(deg + 1);
-  vector<poly> fm;
-  for (int j = 0; j <= deg; j++) {
-    fm.push_back(poly({(MOD - x[j]) % MOD, 1}));
-  }
-  poly res = multiply_many(fm);
-  poly ans(deg);
-  for (int i = 0; i <= deg; i++) {
-    ll denom = 1;
-    for (int j = 0; j <= deg; j++) {
-      if (j != i) {
-        denom = denom * ((x[i] - x[j] + MOD) % MOD) % MOD;
-      }
-    }
-    poly res_divided = divide(res, x[i]);
-    denom = inv(denom);
-    denom = denom * y[i] % MOD;
-    for (int j = 0; j <= deg; j++) {
-      ll el = res_divided.a[j];
-      el = (el * denom) % MOD;
-      ans.a[j] = (ans.a[j] + el) % MOD;
-    }
-  }
-  return ans;
 }
 \end{lstlisting}
 
@@ -3648,27 +3623,49 @@ $\varphi(m+1)$~--- кол-во бинарных строк с $m$ различн
 
 \section{Строки}
 
-\subsection{Z-функция}
+\subsection{Z, префикс, Манакер}
 \begin{lstlisting}[language=C++]
-vector<int> z_func(string s) {
+vector<int> z_func(const string &s) {
   int n = s.size();
   vector<int> z(n, 0);
   z[0] = n;
   int l = 0, r = 0;
   for (int i = 1; i < n; i++) {
-    if (i < r) {
-      z[i] = min(z[i - l], r - i);
-    }
-    while (i + z[i] < n && s[z[i]] == s[i + z[i]]) {
-      z[i]++;
-    }
-    if (i + z[i] > r) {
-      l = i;
-      r = i + z[i];
-    }
+    if (i < r) z[i] = min(z[i-l], r-i);
+    while (i+z[i] < n && s[z[i]] == s[i+z[i]]) z[i]++;
+    if (i+z[i] > r) l = i, r = i+z[i];
   }
   return z;
 }
+
+vector<int> prefix_func(const string &s) {
+  int n = s.size(), a = 0;
+  vector<int> pref(n, 0);
+  for (int i = 1; i < n; i++) {
+    while (a > 0 && s[a] != s[i]) a = pref[a-1];
+    pref[i] = a += s[i] == s[a];
+  }
+  return pref;
+}
+
+// d[0][i] even center (i,i+1). d[1][i] odd center (i)
+array<vector<int>, 2> manacher(const string &s) {
+  int n = s.size();
+  array<vector<int>, 2> d;
+  for (int z = 0; z <= 1; ++z) { //0=odd,1=even (!)
+    d[z].resize(n - z);
+    int l = 0, r = -1;
+    for (int i = z; i < n; ++i) {
+      int k = i > r ? 1-z : min(d[z][l+r-i], r-i+z);
+      while(i-k-z>=0 && i+k<n && s[i-k-z]==s[i+k]) ++k;
+      d[z][i-z] = k--;
+      if (i+k > r) l = i-k-z, r = i+k;
+    }
+  }
+  swap(d[0], d[1]);
+  return d;
+}
+
 \end{lstlisting}
 
 \subsection{eertree}
@@ -3820,25 +3817,6 @@ vector<int> kasai(string s, vector<int> sa) {
     lcp[rank[i]] = k;
   }
   return lcp;
-}
-\end{lstlisting}
-
-\subsection{Префикс-функция}
-\begin{lstlisting}[language=C++]
-vector<int> prefix_func(string s) {
-  int n = s.size();
-  vector<int> pref(n, 0);
-  int ans = 0;
-  for (int i = 1; i < n; i++) {
-    while (ans > 0 && s[ans] != s[i]) {
-      ans = pref[ans - 1];
-    }
-    if (s[i] == s[ans]) {
-      ans++;
-    }
-    pref[i] = ans;
-  }
-  return pref;
 }
 \end{lstlisting}
 
@@ -4315,46 +4293,23 @@ int get(int l, int r) {
 
 \end{lstlisting}
 
-\subsection{Фенвик (+ на отрезке)}
-\begin{lstlisting}[language=C++]
-// a[l..r) += x
-void update(int l, int r, int x) {
-  T1.add(l, x);
-  T1.add(r, -x);
-  T2.add(l, -x * l);
-  T2.add(r, x * r);
-}
-
-// sum a[0..i)
-int get(int i) {
-  return T1.get(i) * i + T2.get(i);
-}
-
-\end{lstlisting}
-
 \subsection{Фенвик}
 \begin{lstlisting}[language=C++]
 // Нумерация с 0
-
 struct Fenwick {
   int n;
   vector<int> f;
- 
-  Fenwick(int n) : n(n) {
-    f.resize(n + 1);
-  }
+  Fenwick(int n) : n(n), f(n+1) {}
  
   // a[i] += x
   void add(int i, int x) {
-    for (++i; i <= n; i += i & -i)
-      f[i] += x;
+    for (++i; i <= n; i += i & -i) f[i] += x;
   }
  
   // sum a[0..i)
   int get(int i) {
     int ans = 0;
-    for (; i > 0; i -= i & -i)
-      ans += f[i];
+    for (; i > 0; i -= i & -i) ans += f[i];
     return ans;
   }
  
@@ -4380,6 +4335,19 @@ int sum_3d(int x1, int x2, int y1, int y2, int z1, int z2) {
   ans -= get(x1, y1, z1);
   return ans;
 }
+
+// a[l..r) += x
+void update(int l, int r, int x) {
+  T1.add(l, x);
+  T1.add(r, -x);
+  T2.add(l, -x * l);
+  T2.add(r, x * r);
+}
+// sum a[0..i)
+int get(int i) {
+  return T1.get(i) * i + T2.get(i);
+}
+
 \end{lstlisting}
 
 
