@@ -31,6 +31,7 @@ struct LRFlow {
     ll flow = 0;
     for (auto &e : dinic.graph[Sx]) flow += e.f;
     if (flow != totaldem) return false;
+    // return true; // if want ONLY feasibility
     for (int v = 0; v < dem.size(); ++v) {
       if (dem[v]) dinic.graph[v].pop_back();
     }
