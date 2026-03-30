@@ -27,7 +27,7 @@ struct LiChao {
     ll m = (l + r) / 2;
     if (ln(m) > t[v].ln(m)) swap(ln, t[v].ln); // "<" for min
     if (r - l == 1 || ln.k == t[v].ln.k) return;
-    if (ln.k < t[v].ln.k) add(t[v].l, l, m, ln); // "<" for min
+    if (ln.k < t[v].ln.k) add(t[v].l, l, m, ln); // ">" for min
     else add(t[v].r, m, r, ln);
   }
   void add(Line nw) { add(root, L, R, nw); }
