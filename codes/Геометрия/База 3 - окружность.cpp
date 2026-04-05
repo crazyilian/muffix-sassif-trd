@@ -14,8 +14,8 @@ struct circle {
     C = intersection(l1, l2);
     r = (C - A).dist();
   }
-  bool isin(const vctr P) const {
-    return sign((C - P).dist2() - r * r) <= 0;
+  bool isin(const vctr P, char strict=0) const {
+    return sign((C - P).dist2() - r * r) <= -strict;
   }
 };
 
