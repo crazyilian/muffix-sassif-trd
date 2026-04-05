@@ -37,6 +37,6 @@ vctr intersection(const line &l1, const line &l2) {
 // Серединный перпендикуляр (не биссектриса!)
 line bisection(const vctr A, const vctr B) {
   vctr M = (A + B) / 2;
-  return line(M, M + rotate_ccw_90(B - A));
+  return line(M, M + (B - A).rotate_ccw_90());
 }
 
