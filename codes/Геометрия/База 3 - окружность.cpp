@@ -21,17 +21,13 @@ struct circle {
 
 vector<vctr> intersection_line_circ(line l, circle c) {
   l.normalize();
-  dbl d = abs(l.get(c.C));
-  vctr per = vctr(l.a, l.b).norm() * d;
-  vctr a = c.C + per;
-  if (sign(d - c.r) > 0)
-    return {};
-  if (sign(l.get(a)) != 0)
-    a = c.C - per;
-  if (sign(c.r - d) == 0)
-    return {a};
+  dbl s = l.get(c.C), d = abs(s);
+  if (sign(d - c.r) > 0) return {};
+  vctr a = c.C - vctr(l.a, l.b) * s;
+  if (sign(c.r - d) == 0) return {a};
   dbl k = sqrtl(c.r * c.r - d * d);
-  vctr v = vctr(-l.b, l.a).norm() * k;
+  vctr v = vctr(l.b, -l.a) * k;
+  // arc from res[0] to res[1] ccw lies in positive halfplane
   return {a + v, a - v};
 }
 
@@ -40,16 +36,18 @@ vector<vctr> intersection_circ_circ(circle A, circle B) {
   line l(2 * (b.x - a.x),
          2 * (b.y - a.y),
          B.r * B.r - A.r * A.r
-             + (a.x * a.x + a.y * a.y)
-             - (b.x * b.x + b.y * b.y));
+         + (a.x * a.x + a.y * a.y)
+         - (b.x * b.x + b.y * b.y));
   if (sign(l.a) == 0 && sign(l.b) == 0) return {};
+  // arc from res[0] to res[1] ccw over A is inside B
+  // <=> ccw over B is outside A
   return intersection_line_circ(l, A);
 }
 
 vector<vctr> tangent_vctr_circ(vctr v, circle c) {
   dbl d = (c.C - v).dist();
   dbl k = sqrtl(d * d - c.r * c.r);
-  circle c2(v.x, v.y, k);
-  return intersection_circ_circ(c, c2);
+  // res[0] is right tangent, res[1] is left tangent
+  return intersection_circ_circ(circle(v.x, v.y, k), c);
 }
 
