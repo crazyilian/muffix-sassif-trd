@@ -25,10 +25,17 @@ vector<T> matroid_intersection(const std::vector<T> &ground_set, const A &matroi
       }
     fill(all(inm1), 0);
     fill(all(inm2), 0);
+    // bool found = false; // unweighted
     for (int i: right) {
       inm1[i] = m1.independed_with(ground_set[i]);
       inm2[i] = m2.independed_with(ground_set[i]);
+      // if (inm1[i] && inm2[i]) { // unweighted
+        // in_set[i] = 1;
+        // found = true;
+        // break;
+      // }
     }
+    // if (found) continue; // unweighted
     fill(all(dist), pair{INF, INF});
     fill(all(par), -1);
     fill(all(inQ), 0);
@@ -40,6 +47,7 @@ vector<T> matroid_intersection(const std::vector<T> &ground_set, const A &matroi
         inQ[i] = 1;
       }
     while (!que.empty()) {
+      // if (found) break; // unweighted
       int v = que.front();
       auto [smw, cnte] = dist[v];
       que.pop_front();
@@ -52,6 +60,7 @@ vector<T> matroid_intersection(const std::vector<T> &ground_set, const A &matroi
           if (dist[u] > newdist && m.independed_with(ground_set[u])) {
             par[u] = v;
             dist[u] = newdist;
+            // if (inm2[u]) found = true; // unweighted
             if (!inQ[u]) {
               que.push_back(u);
               inQ[u] = 1;
