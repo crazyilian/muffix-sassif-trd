@@ -1,4 +1,4 @@
-\documentclass[9pt,a4paper,landscape,twosided]{extarticle}
+\documentclass[8pt,a4paper,landscape,twosided]{extarticle}
 
 \usepackage[T2A]{fontenc}
 \usepackage[T1]{fontenc}
@@ -54,7 +54,7 @@
     showstringspaces=true,
     columns=flexible,
     keepspaces=true,
-    basicstyle={\fontsize{9pt}{9pt}\ttfamily},
+    basicstyle={\fontsize{8pt}{8pt}\ttfamily},
     numbers=none,
     numberstyle=\tiny\color{gray},
     keywordstyle=\color{blue},
@@ -394,7 +394,7 @@ vctr intersection(const line &l1, const line &l2) {
 // Серединный перпендикуляр (не биссектриса!)
 line bisection(const vctr A, const vctr B) {
   vctr M = (A + B) / 2;
-  return line(M, M + rotate_ccw_90(B - A));
+  return line(M, M + (B - A).rotate_ccw_90());
 }
 
 \end{lstlisting}
@@ -417,24 +417,20 @@ struct circle {
     C = intersection(l1, l2);
     r = (C - A).dist();
   }
-  bool isin(const vctr P) const {
-    return sign((C - P).dist2() - r * r) <= 0;
+  bool isin(const vctr P, char strict=0) const {
+    return sign((C - P).dist2() - r * r) <= -strict;
   }
 };
 
 vector<vctr> intersection_line_circ(line l, circle c) {
   l.normalize();
-  dbl d = abs(l.get(c.C));
-  vctr per = vctr(l.a, l.b).norm() * d;
-  vctr a = c.C + per;
-  if (sign(d - c.r) > 0)
-    return {};
-  if (sign(l.get(a)) != 0)
-    a = c.C - per;
-  if (sign(c.r - d) == 0)
-    return {a};
+  dbl s = l.get(c.C), d = abs(s);
+  if (sign(d - c.r) > 0) return {};
+  vctr a = c.C - vctr(l.a, l.b) * s;
+  if (sign(c.r - d) == 0) return {a};
   dbl k = sqrtl(c.r * c.r - d * d);
-  vctr v = vctr(-l.b, l.a).norm() * k;
+  vctr v = vctr(l.b, -l.a) * k;
+  // arc from res[0] to res[1] ccw lies in positive halfplane
   return {a + v, a - v};
 }
 
@@ -443,17 +439,19 @@ vector<vctr> intersection_circ_circ(circle A, circle B) {
   line l(2 * (b.x - a.x),
          2 * (b.y - a.y),
          B.r * B.r - A.r * A.r
-             + (a.x * a.x + a.y * a.y)
-             - (b.x * b.x + b.y * b.y));
+         + (a.x * a.x + a.y * a.y)
+         - (b.x * b.x + b.y * b.y));
   if (sign(l.a) == 0 && sign(l.b) == 0) return {};
+  // arc from res[0] to res[1] ccw over A is inside B
+  // <=> ccw over B is outside A
   return intersection_line_circ(l, A);
 }
 
 vector<vctr> tangent_vctr_circ(vctr v, circle c) {
   dbl d = (c.C - v).dist();
   dbl k = sqrtl(d * d - c.r * c.r);
-  circle c2(v.x, v.y, k);
-  return intersection_circ_circ(c, c2);
+  // res[0] is right tangent, res[1] is left tangent
+  return intersection_circ_circ(circle(v.x, v.y, k), c);
 }
 
 \end{lstlisting}
@@ -1646,6 +1644,103 @@ signed main() {
 }
 \end{lstlisting}
 
+\subsection{Пересечение матроидов}
+\begin{lstlisting}[language=C++]
+template<typename T, typename A, typename B>
+vector<T> matroid_intersection(const std::vector<T> &ground_set, const A &matroid1, const B &matroid2) {
+  // у B должны быть методы add_extra, independed_without
+  // у T должно быть поле w
+  // ищет минимальный по весу среди максимальных по размеру
+  int n = ground_set.size();
+  vector<char> in_set(n), inm1(n), inm2(n);
+  vector<pair<ll, int>> dist(n);
+  vector<char> inQ(n);
+  vector<int> par(n), left, right;
+  while (true) {
+    // чтобы искать просто минимальный по весу,
+    // здесь нужно прорелаксировать ответ
+    A m1 = matroid1;
+    B m2 = matroid2;
+    left.clear();
+    right.clear();
+    for (int i = 0; i < n; i++)
+      if (in_set[i]) {
+        m1.add(ground_set[i]);
+        m2.add(ground_set[i]);
+        left.push_back(i);
+      } else {
+        right.push_back(i);
+      }
+    fill(all(inm1), 0);
+    fill(all(inm2), 0);
+    // bool found = false; // unweighted
+    for (int i: right) {
+      inm1[i] = m1.independed_with(ground_set[i]);
+      inm2[i] = m2.independed_with(ground_set[i]);
+      // if (inm1[i] && inm2[i]) { // unweighted
+        // in_set[i] = 1;
+        // found = true;
+        // break;
+      // }
+    }
+    // if (found) continue; // unweighted
+    fill(all(dist), pair{INF, INF});
+    fill(all(par), -1);
+    fill(all(inQ), 0);
+    deque<int> que;
+    for (int i: right)
+      if (inm1[i]) {
+        dist[i] = {ground_set[i].w, 0};
+        que.push_back(i);
+        inQ[i] = 1;
+      }
+    while (!que.empty()) {
+      // if (found) break; // unweighted
+      int v = que.front();
+      auto [smw, cnte] = dist[v];
+      que.pop_front();
+      inQ[v] = 0;
+      if (in_set[v]) {
+        A m = matroid1;
+        for (int i: left) if (i != v) m.add(ground_set[i]);
+        for (int u: right) {
+          auto newdist = pair{smw + ground_set[u].w, cnte + 1};
+          if (dist[u] > newdist && m.independed_with(ground_set[u])) {
+            par[u] = v;
+            dist[u] = newdist;
+            // if (inm2[u]) found = true; // unweighted
+            if (!inQ[u]) {
+              que.push_back(u);
+              inQ[u] = 1;
+        }}}
+      } else {
+        B m = m2;
+        m.add_extra(ground_set[v]);
+        for (auto u: left) {
+          auto newdist = pair{smw - ground_set[u].w, cnte + 1};
+          if (dist[u] > newdist && m.independed_without(ground_set[u])) {
+            par[u] = v;
+            dist[u] = newdist;
+            if (!inQ[u]) {
+              que.push_back(u);
+              inQ[u] = 1;
+      }}}}
+    }
+    int bestv = -1;
+    for (int v : right) {
+      if (inm2[v] && dist[v].first != INF) {
+        if (bestv == -1 || dist[bestv] > dist[v]) {
+          bestv = v;
+    }}}
+    if (bestv == -1) break;
+    for (; bestv != -1; bestv = par[bestv]) in_set[bestv] ^= 1;
+  }
+  vector<T> res;
+  for (int i = 0; i < n; i++) if (in_set[i]) res.push_back(ground_set[i]);
+  return res;
+}
+\end{lstlisting}
+
 \subsection{Точки сочленения}
 \begin{lstlisting}[language=C++]
 void dfs(int v, int p = -1) {
@@ -1665,72 +1760,6 @@ void dfs(int v, int p = -1) {
   is_artic |= p == -1 && child >= 2;
   if (is_artic)
     articulation_points.insert(v);
-}
-\end{lstlisting}
-
-\subsection{Эдмондс-Карп}
-\begin{lstlisting}[language=C++]
-struct edge {
-  int v, f, c, ind;
-};
-
-vector<edge> g[MAXN];
-
-bool bfs(int start, int final, int W) {
-  vector<int> d(MAXN, INF);
-  vector<pair<int, int>> pred(MAXN);
-  d[start] = 0;
-  deque<int> q = {start};
-  while (!q.empty()) {
-    int v = q.front();
-    q.pop_front();
-    for (int i = 0; i < (int) g[v].size(); i++) {
-      auto e = g[v][i];
-      if (e.f + W <= e.c && d[e.v] > d[v] + 1) {
-        d[e.v] = d[v] + 1;
-        pred[e.v] = {v, i};
-        q.push_back(e.v);
-      }
-    }
-  }
-  if (d[final] == INF) {
-    return false;
-  }
-  int v = final;
-  int x = INF;
-  while (v != start) {
-    int ind = pred[v].second;
-    v = pred[v].first;
-    x = min(x, g[v][ind].c - g[v][ind].f);
-  }
-  v = final;
-  while (v != start) {
-    int ind = pred[v].second;
-    v = pred[v].first;
-    g[v][ind].f += x;
-    g[g[v][ind].v][g[v][ind].ind].f -= x;
-  }
-  return true;
-}
-
-signed main() {
-  int n, m;
-  for (int i = 0; i < m; i++) {
-    int u, v, c;
-    cin >> u >> v >> c;
-    g[u].push_back({v, 0, c, (int) g[v].size()});
-    g[v].push_back({u, 0, 0, (int) g[u].size() - 1});
-  }
-  int start = 1, final = n;
-  int W = (1 << 30);
-  do {
-    while (bfs(start, final, W));
-    W /= 2;
-  } while (W >= 1);
-  int res = 0;
-  for (auto e : g[start]) {
-    res += e.f;
-  }
 }
 \end{lstlisting}
 
@@ -1829,59 +1858,51 @@ struct ConvexHull {
 
 \subsection{Li Chao}
 \begin{lstlisting}[language=C++]
-// MAXIMUM
 struct Line {
-  int k, b;
-
-  int f(int x) {
-    return k * x + b;
-  }
+  ll k, b;
+  ll operator()(ll x) const { return k * x + b; }
 };
 
-struct ST {
-  vector<Line> st;
+// LiChao for maximum at x
+struct LiChao {
+  struct Node {
+    int l, r; 
+    Line ln;
+  };
+  ll L, R;
+  int root;
+  vector<Node> t;
 
-  ST(int n) {
-    Line ln = {0LL, -INF};
-    st.resize(4 * n, ln);
+  LiChao(ll L, ll R, int maxsz = 0) : L(L), R(R), root(0) {
+    t.reserve(maxsz + 1);
+    t.pb({0, 0, {0, -INF}}); // t[0] = empty. +INF for min
   }
 
-  void upd(int i, int l, int r, Line ln) {
-    int child = 1;
-    Line ln1 = ln;
-    int m = (l + r) / 2;
-    if (ln.f(m) > st[i].f(m)) {
-      if (ln.k < st[i].k) {
-        child = 2;
-      }
-      ln1 = st[i];
-      st[i] = ln;
-    } else {
-      if (st[i].k < ln.k) {
-        child = 2;
-      }
+  void add(int &v, ll l, ll r, Line ln) {
+    if (!v) {
+      v = t.size();
+      t.push_back({0, 0, ln});
+      return;
     }
-    if (l + 1 < r) {
-      if (child == 1) {
-        upd(i * 2 + 1, l, m, ln1);
-      } else {
-        upd(i * 2 + 2, m, r, ln1);
-      }
-    }
+    ll m = (l + r) / 2;
+    if (ln(m) > t[v].ln(m)) swap(ln, t[v].ln); // "<" for min
+    if (r - l == 1 || ln.k == t[v].ln.k) return;
+    if (ln.k < t[v].ln.k) add(t[v].l, l, m, ln); // ">" for min
+    else add(t[v].r, m, r, ln);
   }
+  void add(Line nw) { add(root, L, R, nw); }
 
-  int res(int i, int l, int r, int x) {
-    if (l + 1 == r) {
-      return st[i].f(x);
+  ll get(ll x) {
+    ll ans = -INF; // +INF for min
+    int v = root;
+    ll l = L, r = R;
+    while (v) {
+      ans = max(ans, t[v].ln(x)); // "min" for min
+      ll m = (l + r) / 2;
+      if (x < m) v = t[v].l, r = m;
+      else v = t[v].r, l = m;
     }
-    int m = (l + r) / 2;
-    int val = st[i].f(x);
-    if (x < m) {
-      val = max(val, res(i * 2 + 1, l, m, x));
-    } else {
-      val = max(val, res(i * 2 + 2, m, r, x));
-    }
-    return val;
+    return ans;
   }
 };
 \end{lstlisting}
@@ -2213,6 +2234,38 @@ struct FastMod {
 }; // Usage:
 // FastMod F(m);
 // ull x_mod_m = F.mod(x);
+\end{lstlisting}
+
+\subsection{Fast sort}
+\begin{lstlisting}[language=C++]
+// n=1e6, a<1e18, B=2^12, iters=5, time=17ms
+// n=1e7, a<1e18, B=2^12, iters=5, time=190ms
+// n=1e8, a<1e18, B=2^12, iters=5, time=1.9s
+// n=1e6, a<1e9, B=2^10, iters=3, time=10ms
+// n=1e7, a<1e9, B=2^10, iters=3, time=120ms
+// n=1e8, a<1e9, B=2^10, iters=3, time=1.2s
+void radix_sort(vector<ll> &a) {
+  // оптимальный $B \approx 2^{10} - 2^{12}$, не обязательно степень 2
+  // $0 \leq a < B^{iters}$
+  // далее можно уменьшить $B$ сохраняя такой же $iters$
+  const signed B = 1 << 12;
+  static signed c[B + 1];
+  vector<ll> b(a.size());
+#define PASS(key) { \
+  memset(c, 0, sizeof c); \
+  for (auto x : a) ++c[(key)+1]; \
+  for (signed i = 1; i <= B; ++i) { c[i]+=c[i-1]; } \
+  for (auto x : a) b[c[key]++] = x; \
+  swap(a,b); \
+}
+  PASS(x%B);
+  PASS(x/B%B);
+  PASS(x/B/B%B);
+  PASS(x/B/B/B%B);
+  PASS(x/B/B/B/B);
+#undef PASS
+}
+
 \end{lstlisting}
 
 \subsection{attribute\_packed}
@@ -2747,6 +2800,41 @@ poly interpolate(int deg, vector<int> x, vector<int> y) {
     }
   }
   return ans;
+}
+\end{lstlisting}
+
+\subsection{MinRem}
+\begin{lstlisting}[language=C++]
+// stolen from https://codeforces.com/blog/entry/78457?#comment-637863 (havent tested myself)
+//	finds min k s.t. L <= (k * A) % M <= R (or -1 if it does not exist
+ll min_rem(ll A, ll M, ll L, ll R) {
+    if (L == 0) return 0;
+    A %= M;
+    ll ans = 0;
+    ll s1 = 1, s2 = 0;
+    while (A > 0) {
+        if (2 * A > M) {
+            A = M - A;
+            L = M - L;
+            R = M - R;
+            swap(L, R);
+            ans += s2;
+            s1 -= s2;
+            s2 *= -1;
+        }
+        ll ff = (L + A - 1) / A;
+        if (A * ff <= R) return ans + ff * s1;
+        ans += (ff - 1) * s1;
+        ff = (ff - 1) * A;
+        L -= ff;
+        R -= ff;
+        ll z = (M + A - 1) / A;
+        s2 = s1 * z - s2;
+        swap(s1, s2);
+        M = z * A - M;
+        swap(A, M);
+    }
+    return -1;
 }
 \end{lstlisting}
 
@@ -3360,15 +3448,6 @@ bool is_prime(ll n) {
     }
   }
   return true;
-}
-\end{lstlisting}
-
-\subsection{Мёбиус}
-\begin{lstlisting}[language=C++]
-vector<int> mu(n + 1);
-mu[1] = 1;
-for (int x = 1; x <= n; x++) {
-  for (int y = x + x; y <= n; y += x) mu[y] -= mu[x];
 }
 \end{lstlisting}
 

@@ -8,5 +8,5 @@ notebook-generator/notebook-generator ./codes \
     --image ./notebook-generator/picture.jpg \
     --assets `pwd`/assets \
     --columns 3 \
-    --size 9
+    --size 8
 
