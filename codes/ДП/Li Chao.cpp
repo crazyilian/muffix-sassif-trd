@@ -13,7 +13,7 @@ struct LiChao {
   int root;
   vector<Node> t;
 
-  LiChao(ll L, ll R, int maxsz=1) : L(L), R(R), root(0) {
+  LiChao(ll L, ll R, int maxsz=0) : L(L), R(R), root(0) {
     t.reserve(maxsz + 1);
     t.pb({0, 0, {0, -INF}}); // t[0] = empty. +INF for min
   }
