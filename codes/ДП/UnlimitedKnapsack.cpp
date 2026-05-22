@@ -1,6 +1,6 @@
 void unlimited_knapsack(int n, int T, vector<int> &v) {
   // O(n^2 log n + T)
-  // v[1..n], v[i] --- best value of a single item with weight=i (+inf for non-existent)
+  // v[1..n], v[i] --- best value of a single item with weight=i (-inf for non-existent)
   vector<int> items(n);
   iota(all(items), 1);
   sort(all(items), [&](int i, int j) {
