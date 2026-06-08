@@ -11,7 +11,7 @@ vector<int> calc_hpi_inds(const vector<line> &ls) {
     return sign(ls[i].get(ls[j].anyPoint()));
   };
   for (int i = 0; i < n; ++i)
-    h[i]=sign(ls[i].b)<0 || (!sign(ls[i].b)&&sign(ls[i].a)<0);
+    h[i] = sign(ls[i].b)<0||(!sign(ls[i].b)&&sign(ls[i].a)<0);
   sort(q.begin(), q.end(), [&](int i, int j) {
     return h[i] != h[j] ? h[i] < h[j] : cr(i, j) > 0;
   });
@@ -30,7 +30,7 @@ vector<int> calc_hpi_inds(const vector<line> &ls) {
     int i = q[t];
     while (r-l>1 && bad(q[r-2], q[r-1], i)) --r;
     while (r-l>1 && bad(q[l+1], q[l], i)) ++l;
-    if (l<r && !sign(cr(q[r-1], i)) && on(q[r - 1], i) < 0)
+    if (l<r && !sign(cr(q[r-1], i)) && on(q[r-1], i) < 0)
       return {};
     q[r++] = i;
   }
