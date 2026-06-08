@@ -322,7 +322,7 @@ struct vctr {
   vctr operator/(const dbl d)const{return{x/d,y/d};}
   void operator+=(const vctr &o) { x += o.x, y += o.y; }
   void operator-=(const vctr &o) { x -= o.x, y -= o.y; }
-  bool operator==(const vctr &o)const{ return !sign(x-o.x)&&!sign(y-o.y); }
+  bool operator==(const vctr &o)const{ return !sign(x-o.x) && !sign(y-o.y); }
   dbl dist2() const { return x * x + y * y; }
   dbl dist() const { return sqrtl(dist2()); }
   vctr norm() const { return *this / dist(); }
