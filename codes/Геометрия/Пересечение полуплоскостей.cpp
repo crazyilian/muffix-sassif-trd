@@ -12,7 +12,7 @@ vector<int> calc_hpi_inds(const vector<line> &ls) {
   };
   for (int i = 0; i < n; ++i)
     h[i] = sign(ls[i].b)<0||(!sign(ls[i].b)&&sign(ls[i].a)<0);
-  sort(q.begin(), q.end(), [&](int i, int j) {
+  sort(q.begin(), q.end(), [&](int i, int j) { // 70% of time
     return h[i] != h[j] ? h[i] < h[j] : cr(i, j) > 0;
   });
   for (int i : q) {
