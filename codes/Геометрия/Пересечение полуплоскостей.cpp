@@ -1,71 +1,58 @@
-// half plane: ax+by+c > 0
-// bounding box MUST have
-vector<int> intersection_half_planes_inds(const vector<line> &ls) {
-  int n = (int)ls.size();
-  vector<int> lsi(n);
-  iota(lsi.begin(), lsi.end(), 0);
-  sort(lsi.begin(), lsi.end(), [&](int i, int j) {
-    vctr aa(ls[i].a, ls[i].b);
-    vctr bb(ls[j].a, ls[j].b);
-    bool pla = is2plane(aa);
-    bool plb = is2plane(bb);
-    if (pla != plb)
-      return pla < plb;
-    return aa * bb > 0;
+// Half plane: ax+by+c >= 0. Bounding box MUST HAVE.
+vector<int> calc_hpi_inds(const vector<line> &ls) {
+  int n = ls.size(), m=0, l=0, r=0;
+  vector<int> q(n);
+  vector<char> h(n);
+  iota(q.begin(), q.end(), 0);
+  auto cr = [&](int i, int j) {
+    return ls[i].a * ls[j].b - ls[i].b * ls[j].a;
+  };
+  auto on = [&](int i, int j) {
+    return sign(ls[i].get(ls[j].anyPoint()));
+  };
+  for (int i = 0; i < n; ++i)
+    h[i]=sign(ls[i].b)<0 || (!sign(ls[i].b)&&sign(ls[i].a)<0);
+  sort(q.begin(), q.end(), [&](int i, int j) {
+    return h[i] != h[j] ? h[i] < h[j] : cr(i, j) > 0;
   });
+  for (int i : q) {
+    if (!m || sign(cr(q[m-1], i))) q[m++] = i;
+    else if (on(q[m-1], i) >= 0) q[m-1] = i;
+  }
 
-  vector<line> st;
-  vector<int> inds;
-  for (int ii = 0; ii < 2 * n; ++ii) {
-    int i = lsi[ii % n];
-    if (st.empty()) {
-      st.push_back(ls[i]);
-      inds.push_back(i);
-      continue;
-    }
-    vctr p = intersection(ls[i], st.back());
-    bool pp = isparallel(ls[i], st.back());
-    bool bad = false;
-    while (st.size() >= 2) {
-      if (!pp && sign(st[st.size() - 2].get(p)) >= 0)
-        break;
-      else if (pp && sign(st.back().get(ls[i].anyPoint())) <= 0) {
-        bad = true;
-        break;
-      }
-      st.pop_back();
-      inds.pop_back();
-      p = intersection(ls[i], st.back());
-      pp = isparallel(ls[i], st.back());
-    }
-    if (!bad) {
-      st.push_back(ls[i]);
-      inds.push_back(i);
-    }
+  auto bad = [&](int i, int j, int k) {
+    if (!sign(cr(i, j))) return false;
+    int s = sign(ls[k].get(intersection(ls[i], ls[j])));
+    int t = sign(cr(i, k));
+    return s<0 || (!s&&t&&sign(cr(i,j))==t&&sign(cr(j,k))==t);
+  };
+  for (int t = 0; t < m; ++t) {
+    int i = q[t];
+    while (r-l>1 && bad(q[r-2], q[r-1], i)) --r;
+    while (r-l>1 && bad(q[l+1], q[l], i)) ++l;
+    if (l<r && !sign(cr(q[r-1], i)) && on(q[r - 1], i) < 0)
+      return {};
+    q[r++] = i;
   }
-  vector<int> cnt(n, 0);
-  for (int i : inds)
-    cnt[i]++;
-  vector<int> good;
-  for (int i : inds) {
-    if (cnt[i]-- == 2)
-      good.push_back(i);
-  }
-  return good;
+  while (r-l > 2 && bad(q[r-2], q[r-1], q[l])) --r;
+  while (r-l > 2 && bad(q[l+1], q[l], q[r-1])) ++l;
+  if (r-l < 3) return {};
+  return {q.begin() + l, q.begin() + r};
 }
 
-vector<vctr> intersection_half_planes(vector<line> &ls) {
-  vector<int> inter = intersection_half_planes_inds(ls);
-  int n = inter.size();
+vector<vctr> half_plane_intersection(const vector<line> &ls) {
+  vector<int> inds = calc_hpi_inds(ls);
+  int n = inds.size();
   vector<vctr> pts;
+  pts.reserve(n);
   for (int i = 0; i < n; ++i) {
-    int j = (i + 1) % n;
-    vctr P = intersection(ls[inter[i]], ls[inter[j]]);
-    if (pts.empty() || sign(pts.back().x - P.x) != 0
-         || sign(pts.back().y - P.y) != 0)
-      pts.push_back(P);
+    vctr P = intersection(ls[inds[i]], ls[inds[(i+1) % n]]);
+    if (pts.empty() || !(pts.back() == P)) pts.pb(P);
   }
-  // pts против часовой стрелки, но pts[0] != minvctr
+  if (pts.size() > 1 && pts[0] == pts.back()) pts.pop_back();
+// "empty"->{}, "point"->{P}, "segment"->{A,B}, else CCW.
+// `inds` have no lines with 0 length, except for "segment"
+// (4 lines), and "point" (3 lines, or 4 if 2 and 2 parallel)
   return pts;
 }
 
