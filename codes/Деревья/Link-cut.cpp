@@ -118,24 +118,22 @@ int get(Node *v, Node *u) {
 }
 
 const int MAXN = 100010;
-Node *nodes[MAXN];
+Node nds[MAXN];
 
 int main() {
   int n, q;
   cin >> n >> q;
-  for (int i = 0; i < n; ++i)
-    nodes[i] = new Node();
   while (q--) {
     string s;
     int a, b;
     cin >> s >> a >> b;
     a--, b--;
     if (s[0] == 'g')
-      cout << get(nodes[a], nodes[b]) << '\n';
+      cout << get(nds + a, nds + b) << '\n';
     else if (s[0] == 'l')
-      link(nodes[a], nodes[b]);
+      link(nds + a, nds + b);
     else
-      cut(nodes[a], nodes[b]);
+      cut(nds + a, nds + b);
   }
 }
 
