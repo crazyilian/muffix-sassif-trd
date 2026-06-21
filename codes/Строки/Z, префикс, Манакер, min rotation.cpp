@@ -39,3 +39,13 @@ array<vector<int>, 2> manacher(const string &s) {
   return d;
 }
 
+// лексикографичкски минимальный циклический сдвиг
+int min_rotation(const string &s) {
+  int a=0, n=s.size(); string t=s+s;
+  for (int b=1; b<n; ++b)
+    for (int k=0; k<n; ++k)
+      if (a+k==b||t[a+k]<t[b+k]) { b+=k?k-1:0; break; }
+      else if (t[a+k]>t[b+k]) { a=b; break; }
+  return a;
+}
+

@@ -3767,7 +3767,7 @@ $\varphi(m+1)$~--- кол-во бинарных строк с $m$ различн
 
 \section{Строки}
 
-\subsection{Z, префикс, Манакер}
+\subsection{Z, префикс, Манакер, min rotation}
 \begin{lstlisting}[language=C++]
 vector<int> z_func(const string &s) {
   int n = s.size();
@@ -3808,6 +3808,16 @@ array<vector<int>, 2> manacher(const string &s) {
   }
   swap(d[0], d[1]);
   return d;
+}
+
+// лексикографичкски минимальный циклический сдвиг
+int min_rotation(const string &s) {
+  int a=0, n=s.size(); string t=s+s;
+  for (int b=1; b<n; ++b)
+    for (int k=0; k<n; ++k)
+      if (a+k==b||t[a+k]<t[b+k]) { b+=k?k-1:0; break; }
+      else if (t[a+k]>t[b+k]) { a=b; break; }
+  return a;
 }
 
 \end{lstlisting}
