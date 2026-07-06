@@ -5,7 +5,7 @@
 // phi: POLY={-1,1}, f_prime_power=pe-prev.
 // f_prime_power may be arbitrary O(1), but e=1 must match POLY.
 
-// ll mul(ll a, ll b);
+// ll mul(ll a, ll b); a, b may be negative!
 
 struct Min25 {
   // f(p) = sum POLY[d] * p^d. Add degrees if needed.
@@ -49,7 +49,10 @@ struct Min25 {
   }
 
   void build(ll _n) {
-    if (built) return;
+    if (built) {
+      assert(n == _n);
+      return;
+    }
     built = true;
     n = _n;
     val.clear();
@@ -93,33 +96,72 @@ struct Min25 {
   // Sum of f(x), x <= limit, all prime divisors of x are >= primes[pos].
   ll dfs(ll limit, int pos) {
     ll last = pos ? primes[pos - 1] : 1;
-    if (limit < 2 || pos >= (int)primes.size()) {
-      ll res = (prime_poly(limit) - prime_poly(last)) % mod;
-      if (res < 0) res += mod;
-      return res;
-    }
     ll res = (prime_poly(limit) - prime_poly(last)) % mod;
     if (res < 0) res += mod;
-    for (int i = pos; i < (int)primes.size(); ++i) {
-      ll p = primes[i];
-      if ((__int128)p * p > limit) break;
-      ll pe_int = p, pe_mod = p % mod, prev_mod = 1;
-      for (int e = 1; (__int128)pe_int * p <= limit; ++e) {
-        ll nxt_mod = mul(pe_mod, p);
-        ll cur = f_prime_power(p, e, pe_mod, prev_mod);
-        ll nxt = f_prime_power(p, e + 1, nxt_mod, pe_mod);
-        res = (res + mul(cur, dfs(limit / pe_int, i + 1)) + nxt) % mod;
-        prev_mod = pe_mod;
-        pe_mod = nxt_mod;
-        pe_int *= p;
+    if (limit >= 2 && pos < (int)primes.size()) {
+      for (int i = pos; i < (int)primes.size(); ++i) {
+        ll p = primes[i];
+        if ((__int128)p * p > limit) break;
+        ll pe_int = p, pe_mod = p % mod, prev_mod = 1;
+        for (int e = 1; (__int128)pe_int * p <= limit; ++e) {
+          ll nxt_mod = mul(pe_mod, p);
+          ll cur = f_prime_power(p, e, pe_mod, prev_mod);
+          ll nxt = f_prime_power(p, e + 1, nxt_mod, pe_mod);
+          res = (res + mul(cur, dfs(limit / pe_int, i + 1)) + nxt) % mod;
+          prev_mod = pe_mod;
+          pe_mod = nxt_mod;
+          pe_int *= p;
+        }
       }
     }
     return res;
   }
 
+  // After build(n), returns sum_{i<=x} f(i).
+  // Requires x <= sqrt(n) or x = floor(n / k) for some k.
+  ll prefix_sum(ll x) {
+    if (x <= 0) return 0;
+    assert(built && x <= n);
+    if (x > sq) assert(val[id_large[n / x]] == x);
+    return (1 + dfs(x, 0)) % mod; // f(1) = 1
+  }
+
+  // Batch version for all Min_25 points in the same DP style as the sieve,
+  // O(n^{3/4}/log n) for O(1) f_prime_power and fixed D.
+  // Returns ans[id(x)] = sum_{i<=x} f(i) for every x in val.
+  vector<ll> all_prefix_sums() {
+    assert(built);
+    vector<ll> prime_sum(val.size()), r(val.size()), ans(val.size());
+    for (int i = 0; i < (int)val.size(); ++i)
+      prime_sum[i] = r[i] = prime_poly_at_index(i);
+
+    for (int ui = (int)primes.size() - 1; ui >= 0; --ui) {
+      ll p = primes[ui];
+      ll before = prime_sum[id(p)];
+      for (int i = 0; i < (int)val.size() && val[i] >= p * p; ++i) {
+        ll pe_int = p, pe_mod = p % mod, prev_mod = 1;
+        for (int e = 1; (__int128)pe_int * p <= val[i]; ++e) {
+          ll nxt_mod = mul(pe_mod, p);
+          ll cur = f_prime_power(p, e, pe_mod, prev_mod);
+          ll nxt = f_prime_power(p, e + 1, nxt_mod, pe_mod);
+          ll tail = r[id(val[i] / pe_int)] - before;
+          if (tail < 0) tail += mod;
+          r[i] = (r[i] + mul(cur, tail) + nxt) % mod;
+          prev_mod = pe_mod;
+          pe_mod = nxt_mod;
+          pe_int *= p;
+        }
+      }
+    }
+
+    for (int i = 0; i < (int)val.size(); ++i)
+      ans[i] = (1 + r[i]) % mod; // f(1) = 1
+    return ans;
+  }
+
   ll solve(ll _n) {
     if (_n <= 0) return 0;
     build(_n); // After build(n), prime_poly(n) is sum f(p) over primes p <= n.
-    return (1 + dfs(n, 0)) % mod; // f(1) = 1
+    return prefix_sum(n);
   }
 };
