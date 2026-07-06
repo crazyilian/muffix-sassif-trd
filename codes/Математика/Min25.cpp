@@ -9,7 +9,7 @@
 
 struct Min25 {
   // f(p) = sum POLY[d] * p^d. Add degrees if needed.
-  static const int D = 1;
+  const int D = 1;
   const vector<ll> POLY = {0, 1}; // id: p
 
   ll n, sq;
@@ -126,8 +126,7 @@ struct Min25 {
     return (1 + dfs(x, 0)) % mod; // f(1) = 1
   }
 
-  // Batch version for all Min_25 points in the same DP style as the sieve,
-  // O(n^{3/4}/log n) for O(1) f_prime_power and fixed D.
+  // O(n^{3/4}/log n)
   // Returns ans[id(x)] = sum_{i<=x} f(i) for every x in val.
   vector<ll> all_prefix_sums() {
     assert(built);
