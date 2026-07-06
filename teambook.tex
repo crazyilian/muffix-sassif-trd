@@ -2805,66 +2805,202 @@ struct poly {
   }
 };
 
-poly mul(poly &P, poly &Q) {
-  poly R(P.n + Q.n);
-  for (int i = 0; i <= P.n; i++) {
-    for (int j = 0; j <= Q.n; j++) {
-      R.a[i + j] = (R.a[i + j] + P.a[i] * Q.a[j]) % MOD;
-    }
-  }
-  return R;
-}
-
-poly multiply_many(vector<poly> a) {
-  if (a.empty()) return poly((vector<ll>){1ll});
-  if (a.size() == 1) return a[0];
-  vector<poly> b;
-  int n = a.size();
-  for (int i = n / 2; i < n; i++) {
-    b.push_back(a[i]);
-  }
-  a.resize(n / 2);
-  poly P = multiply_many(a), Q = multiply_many(b);
-  return mul(P, Q);
-}
-
-poly divide(poly &res, int c) {
-  poly ans(res.n - 1);
-  ll val = 0;
-  for (int i = res.n; i >= 1; i--) {
-    val = (val * c + res.a[i]) % MOD;
-    ans.a[i - 1] = val;
-  }
-  return ans;
-}
-
 poly interpolate(int deg, vector<int> x, vector<int> y) {
   assert(x.size() >= deg + 1 && y.size() >= deg + 1);
-  x.resize(deg + 1), y.resize(deg + 1);
-  vector<poly> fm;
-  for (int j = 0; j <= deg; j++) {
-    fm.push_back(poly({(MOD - x[j]) % MOD, 1}));
+  int n = deg + 1;
+  vector<ll> xs(n), c(n), cur(n);
+  for (int i = 0; i < n; i++) {
+    xs[i] = (x[i] % MOD + MOD) % MOD;
+    c[i] = (y[i] % MOD + MOD) % MOD;
   }
-  poly res = multiply_many(fm);
-  poly ans(deg);
-  for (int i = 0; i <= deg; i++) {
-    ll denom = 1;
-    for (int j = 0; j <= deg; j++) {
-      if (j != i) {
-        denom = denom * ((x[i] - x[j] + MOD) % MOD) % MOD;
+  for (int k = 0; k + 1 < n; k++) {
+    for (int i = k + 1; i < n; i++) {
+      c[i] = (c[i] - c[k] + MOD) * inv((xs[i] - xs[k] + MOD) % MOD)ы % MOD;
+    }
+  }
+  poly res(deg);
+  cur[0] = 1;
+  for (int k = 0; k < n; k++) {
+    for (int i = 0; i <= k; i++) {
+      res.a[i] = (res.a[i] + c[k] * cur[i]) % MOD;
+    }
+    if (k + 1 == n) break;
+    for (int i = k + 1; i >= 0; i--) {
+      cur[i] = ((i ? cur[i - 1] : 0) + (i <= k ? MOD - cur[i] * xs[k] % MOD : 0)) % MOD;
+    }
+  }
+  return res;
+}
+\end{lstlisting}
+
+\subsection{Min25}
+\begin{lstlisting}[language=C++]
+// Sum multiplicative f over [1..n], O(n^{3/4}/log n).
+// Need f(p) = polynomial in p. Change D, POLY, sum_power(), f_prime_power().
+// Default: f(n) = n, f(p) = p, f(p^e) = p^e.
+// Prime count: D=0, POLY={1}, build(n), answer = prime_poly(n).
+// phi: POLY={-1,1}, f_prime_power=pe-prev.
+// f_prime_power may be arbitrary O(1), but e=1 must match POLY.
+
+// ll mul(ll a, ll b); a, b may be negative!
+
+struct Min25 {
+  // f(p) = sum POLY[d] * p^d. Add degrees if needed.
+  const int D = 1;
+  const vector<ll> POLY = {0, 1}; // id: p
+
+  ll n, sq;
+  vector<ll> val;
+  vector<int> id_small, id_large;
+  vector<vector<ll>> g; // g[d][i] = sum_{p<=val[i]} p^d
+  vector<ll> primes;
+  bool built = false;
+
+  int id(ll x) {
+    return x <= sq ? id_small[x] : id_large[n / x];
+  }
+
+  ll sum_power(int d, ll x) {
+    x %= mod;
+    if (d == 0) return x;
+    if (d == 1) return mul(x, x + 1) * ((mod + 1) / 2) % mod;
+    // Add interpolation here for larger D.
+    assert(false);
+  }
+
+  ll prime_poly_at_index(int i) {
+    ll res = 0;
+    for (int d = 0; d <= D; ++d)
+      res = (res + mul(POLY[d], g[d][i])) % mod;
+    return res;
+  }
+
+  ll prime_poly(ll x) {
+    if (x < 2) return 0;
+    return prime_poly_at_index(id(x));
+  }
+
+  // Value f(p^e). Args are (p, e, p^e mod mod, p^{e-1} mod mod).
+  ll f_prime_power(ll p, int e, ll pe, ll prev) {
+    return pe;
+  }
+
+  void build(ll _n) {
+    if (built) {
+      assert(n == _n);
+      return;
+    }
+    built = true;
+    n = _n;
+    val.clear();
+    primes.clear();
+    sq = sqrtl(n);
+    while ((sq + 1) * (sq + 1) <= n) ++sq;
+    while (sq * sq > n) --sq;
+    id_small.assign(sq + 1, -1);
+    id_large.assign(sq + 1, -1);
+
+    for (ll l = 1, r; l <= n; l = r + 1) {
+      ll x = n / l;
+      r = n / x;
+      int i = val.size();
+      val.push_back(x);
+      if (x <= sq) id_small[x] = i;
+      else id_large[n / x] = i;
+    }
+
+    g.assign(D + 1, vector<ll>(val.size()));
+    for (int d = 0; d <= D; ++d)
+      for (int i = 0; i < (int)val.size(); ++i)
+        g[d][i] = (sum_power(d, val[i]) - 1 + mod) % mod;
+
+    for (ll p = 2; p <= sq; ++p) {
+      if (g[0][id(p)] == g[0][id(p - 1)]) continue;
+      primes.push_back(p);
+      vector<ll> ppow(D + 1, 1);
+      for (int d = 1; d <= D; ++d) ppow[d] = mul(ppow[d - 1], p);
+      for (int i = 0; i < (int)val.size() && val[i] >= p * p; ++i) {
+        int ip = id(val[i] / p);
+        int before_p = id(p - 1);
+        for (int d = 0; d <= D; ++d) {
+          ll sub = mul(g[d][ip] - g[d][before_p], ppow[d]);
+          g[d][i] = (g[d][i] - sub + mod) % mod;
+        }
       }
     }
-    poly res_divided = divide(res, x[i]);
-    denom = inv(denom);
-    denom = denom * y[i] % MOD;
-    for (int j = 0; j <= deg; j++) {
-      ll el = res_divided.a[j];
-      el = (el * denom) % MOD;
-      ans.a[j] = (ans.a[j] + el) % MOD;
-    }
   }
-  return ans;
-}
+
+  // Sum of f(x), x <= limit, all prime divisors of x are >= primes[pos].
+  ll dfs(ll limit, int pos) {
+    ll last = pos ? primes[pos - 1] : 1;
+    ll res = (prime_poly(limit) - prime_poly(last)) % mod;
+    if (res < 0) res += mod;
+    if (limit >= 2 && pos < (int)primes.size()) {
+      for (int i = pos; i < (int)primes.size(); ++i) {
+        ll p = primes[i];
+        if ((__int128)p * p > limit) break;
+        ll pe_int = p, pe_mod = p % mod, prev_mod = 1;
+        for (int e = 1; (__int128)pe_int * p <= limit; ++e) {
+          ll nxt_mod = mul(pe_mod, p);
+          ll cur = f_prime_power(p, e, pe_mod, prev_mod);
+          ll nxt = f_prime_power(p, e + 1, nxt_mod, pe_mod);
+          res = (res + mul(cur, dfs(limit / pe_int, i + 1)) + nxt) % mod;
+          prev_mod = pe_mod;
+          pe_mod = nxt_mod;
+          pe_int *= p;
+        }
+      }
+    }
+    return res;
+  }
+
+  // After build(n), returns sum_{i<=x} f(i).
+  // Requires x <= sqrt(n) or x = floor(n / k) for some k.
+  ll prefix_sum(ll x) {
+    if (x <= 0) return 0;
+    assert(built && x <= n);
+    if (x > sq) assert(val[id_large[n / x]] == x);
+    return (1 + dfs(x, 0)) % mod; // f(1) = 1
+  }
+
+  // O(n^{3/4}/log n)
+  // Returns ans[id(x)] = sum_{i<=x} f(i) for every x in val.
+  vector<ll> all_prefix_sums() {
+    assert(built);
+    vector<ll> prime_sum(val.size()), r(val.size()), ans(val.size());
+    for (int i = 0; i < (int)val.size(); ++i)
+      prime_sum[i] = r[i] = prime_poly_at_index(i);
+
+    for (int ui = (int)primes.size() - 1; ui >= 0; --ui) {
+      ll p = primes[ui];
+      ll before = prime_sum[id(p)];
+      for (int i = 0; i < (int)val.size() && val[i] >= p * p; ++i) {
+        ll pe_int = p, pe_mod = p % mod, prev_mod = 1;
+        for (int e = 1; (__int128)pe_int * p <= val[i]; ++e) {
+          ll nxt_mod = mul(pe_mod, p);
+          ll cur = f_prime_power(p, e, pe_mod, prev_mod);
+          ll nxt = f_prime_power(p, e + 1, nxt_mod, pe_mod);
+          ll tail = r[id(val[i] / pe_int)] - before;
+          if (tail < 0) tail += mod;
+          r[i] = (r[i] + mul(cur, tail) + nxt) % mod;
+          prev_mod = pe_mod;
+          pe_mod = nxt_mod;
+          pe_int *= p;
+        }
+      }
+    }
+
+    for (int i = 0; i < (int)val.size(); ++i)
+      ans[i] = (1 + r[i]) % mod; // f(1) = 1
+    return ans;
+  }
+
+  ll solve(ll _n) {
+    if (_n <= 0) return 0;
+    build(_n); // After build(n), prime_poly(n) is sum f(p) over primes p <= n.
+    return prefix_sum(n);
+  }
+};
 \end{lstlisting}
 
 \subsection{MinRem}
@@ -3182,109 +3318,6 @@ vector<ll> convMod(const vector<ll> &a, const vector<ll> &b) {
     res[i] = ((av % MOD * cut + bv) % MOD * cut + cv) % MOD;
   }
   return res;
-}
-\end{lstlisting}
-
-\subsection{min25 sieve}
-\begin{lstlisting}[language=C++]
-ll min25_sieve(ll n) {
-  // given n, calculate prefix sums of some multiplicative function f
-  // at all points of type floor(n/k) in O(n^{3/4}/log(n)), n up to 1e11 is ok
-  // in particular you can find f(1) + ... + f(n)
-  // also, calculation can be done for primes only, i.e prefix sum of f(i)*I{i is prime}
-  // to do that, do not run last stage of algorithm
-
-  vector<ll> v;
-  v.reserve((int) sqrt(n) * 2 + 7);
-  ll sq = 0;
-  {
-    ll k = 1;
-    while (k * k <= n) {
-      v.push_back(k);
-      ++k;
-    }
-    --k;
-    sq = k;
-    if (k * k == n)--k;
-    while (k >= 1) {
-      v.push_back(n / k);
-      --k;
-    }
-  }
-  auto geti = [&](ll x) {
-    // returns i, such that v[i] = x
-    if (x <= sq) return x - 1;
-    return (int) v.size() - (n / x);
-  };
-  // OP1: f(ab) = f(a)f(b) for coprime a, b; f(p) = p^T; f(p^k) can be calculated in O(1); we denote f(p^k) = g(p, k) (p is prime) for all k
-  // OP2: f also can be any fully multiplicative function, f(ab) = f(a)f(b) for all a,b; you need to calc pref sum of f fast, so only prime case is useful
-
-  auto g = [&](ll p, int k) {
-    if (k == 1) {
-      return p - 1; // polynomial, for primes-only can be any fully multiplicative function
-    }
-    return p + k; // any function, g(p^k)
-  };
-
-  auto f = [&](ll x) {
-    return g(x, 1);
-  };
-
-  auto pref = [&](ll x) {
-    // return sum_{i=1..x} g(i, 1), i.e 1^T + 2^T + ... + x^T
-    return x * (x + 1) / 2;
-  };
-
-  vector<ll> s0(v.size()), s1(v.size()); // for all degrees separately
-  for (int i = 0; i < (int) v.size(); i++) {
-    s0[i] = v[i] % M;
-    s1[i] = (((v[i] % M) * ((v[i] + 1) % M) % M) * (((M + 1) / 2) % M)) % M; // pref for g(p,1), degrees separately
-    // s[i] = pref(v[i]) - 1  for primes
-  }
-
-  vector<ll> used_primes;
-  used_primes.reserve((int) sqrt(n) + 7);
-  for (ll p = 2; p * p <= n; ++p) {
-    if (s0[p - 1] == s0[p - 2]) continue;
-    // p is prime
-    used_primes.push_back(p);
-    for (int i = (int) v.size() - 1; i >= 0; --i) {
-      if (v[i] < p * p) break; // very important, dont remove!
-      s0[i] += M - ((s0[geti(v[i] / p)] + M - s0[p - 2]) % M * (1)) % M; // p^0
-      s0[i] %= M;
-      s1[i] += M - ((s1[geti(v[i] / p)] + M - s1[p - 2]) % M * (p)) % M; // p^1
-      s1[i] %= M;
-      // s[i] += M - ((s[geti(v[i] / p)] + M - s[p-2]) % M * f(p)) % M;
-    }
-  }
-
-  // PRIMES ONLY calculation is done
-  // desired answer for v[i] is in s[i]
-  // in particular \sum_{i=1}^n f(i)*I{i is prime} is in s.back()
-  // now last stage for default calculation
-
-  vector<ll> s(v.size());
-  for (int i = 0; i < v.size(); i++) {
-    s[i] = (M - s0[i] % M + s1[i]) % M; // combine polynomial by degrees with needed coeffs
-  }
-
-  vector<ll> r = s;
-
-  for (int ui = (int) used_primes.size() - 1; ui >= 0; --ui) { // ui >= 1, sum for odd numbers only
-    ll p = used_primes[ui];
-    for (int i = (int) v.size() - 1; i >= 0; --i) {
-      if (v[i] < p * p) break; // very important, dont remove!
-      for (ll c = 1, pc = p; pc * p <= v[i]; c++, pc *= p) { // pc = p^c
-        r[i] += g(p, c + 1) % M + ((g(p, c) % M) * ((M + r[geti(v[i] / pc)] - s[geti(p)]) % M)) % M;
-        r[i] %= M;
-      }
-    }
-  }
-
-  // done, answer for v[i] is r[i]+1 (f(1)=1)
-  // in particular \sum_{i=2}^n f(i) is in r.back()
-  // therefore \sum_{i=1}^n f(i) is r.back() + 1
-  return r.back() + 1 - g(1, 1); // since f(1)=1 for real, not g(1,1): 1 is not prime
 }
 \end{lstlisting}
 
@@ -3625,6 +3658,10 @@ $\sum_{k=0}^{r}\binom{m}{k}\binom{n}{r-k}=\binom{m+n}{r}$
 \item % «Хоккейная клюшка» (сумма биномиалов по строке):
 $\sum_{i=r}^{n}\binom{i}{r}=\binom{n+1}{r+1}$
 
+\item % Шары и перегородки с одинаковой верхней границей:
+Число решений $x_1+\cdots+x_n=N,\ 0\le x_i\le r$:
+\\ $\displaystyle \sum_{q=0}^{\min\left(n,\left\lfloor N/(r+1)\right\rfloor\right)}(-1)^q\binom{n}{q}\binom{N-q(r+1)+n-1}{n-1}$
+
 \item % Rolling range sum of binominals
 $2B(l,r,n) = \binom{n}{l} + \binom{n}{r} - \binom{n+1}{l} + B(l, r, n+1)$, где $B(l, r, n) = \sum_{i=l}^r \binom{n}{i}$
 
@@ -3644,7 +3681,7 @@ $\binom{m}{n}\equiv\prod_i\binom{m_i}{n_i}\pmod p,$
 
 \item % Стирлинг II рода в разложении степеней:
 $\sum_{i=0}^{n}\binom{n}{i}i^k
-=\sum_{j=0}^{k}S_2(k,j)\,\frac{n!}{(n-j)!}\,2^{\,n-j}$
+=\sum_{j=0}^{k}s_2(k,j)\,\frac{n!}{(n-j)!}\,2^{\,n-j}$
 
 \item % Частичная сумма биномиалов с весом $x^i$:
 $\sum_{i=0}^{n-1}\binom{i}{j}x^i
@@ -3695,6 +3732,21 @@ $s_2^d(n,k)=s_2(n-d+1,k-d+1)$
 
 \item % Сумма $i a^i$:
 $\sum_{i=1}^n i a^i=\frac{a\bigl(n a^{n+1}-(n+1)a^n+1\bigr)}{(a-1)^2}$
+
+\item % Основные ряды Маклорена для exp/log:
+$\displaystyle e^x=\sum_{k\ge0}\frac{x^k}{k!},\quad
+\log(1+x)=\sum_{k\ge1}(-1)^{k+1}\frac{x^k}{k},\quad
+-\log(1-x)=\sum_{k\ge1}\frac{x^k}{k}$
+
+\item % Биномиальный ряд:
+$\displaystyle (1+x)^\alpha=\sum_{k\ge0}\binom{\alpha}{k}x^k,\quad
+\binom{\alpha}{k}=\frac{\alpha(\alpha-1)\cdots(\alpha-k+1)}{k!}$
+\\ $\displaystyle (1-x)^{-n}=\sum_{k\ge0}\binom{n+k-1}{n-1}x^k$
+
+\item % Тригонометрические ряды Маклорена:
+$\displaystyle \sin x=\sum_{k\ge0}(-1)^k\frac{x^{2k+1}}{(2k+1)!},\quad
+\cos x=\sum_{k\ge0}(-1)^k\frac{x^{2k}}{(2k)!}$
+\\ $\displaystyle \arctan x=\sum_{k\ge0}(-1)^k\frac{x^{2k+1}}{2k+1}\quad(|x|\le1)$
 
 \item % Формула Эйлера—Пентовой (пентагональные числа):
 $\prod_{n=1}^\infty(1-x^n)=1+\sum_{k=1}^{\infty}(-1)^k\bigl(x^{\,k(3k-1)/2}+x^{\,k(3k+1)/2}\bigr)$
@@ -3762,9 +3814,14 @@ $\sum_{i=1}^n\operatorname{lcm}(i,n)=\frac{n}{2}\Bigl(\sum_{d\mid n}\varphi(d)d+
 $\left(\tfrac{p}{q}\right)\left(\tfrac{q}{p}\right)=(-1)^{\frac{(p-1)(q-1)}{4}}$
  для нечётных простых $p,q$
 
-\item
+\item % здарова
 $\varphi(m+1)$~--- кол-во бинарных строк с $m$ различными подпоследовательностями.
 
+\item % Формула Пика:
+$S=I+\frac{B}{2}-1$, $S$ площадь, $I$ целые точки внутри, $B$ целые точки на границе.
+
+\item % Формула Эйлера для связного плоского графа:
+$V-E+F=2$, $V$ вершины, $E$ рёбра, $F$ грани.
 \end{enumerate}
 
 \endgroup
@@ -4518,3 +4575,5 @@ int get(int i) {
 
 \end{multicols*}
 \end{document}
+
+
