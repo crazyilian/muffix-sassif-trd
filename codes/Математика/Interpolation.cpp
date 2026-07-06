@@ -15,63 +15,29 @@ struct poly {
   }
 };
 
-poly mul(poly &P, poly &Q) {
-  poly R(P.n + Q.n);
-  for (int i = 0; i <= P.n; i++) {
-    for (int j = 0; j <= Q.n; j++) {
-      R.a[i + j] = (R.a[i + j] + P.a[i] * Q.a[j]) % MOD;
-    }
-  }
-  return R;
-}
-
-poly multiply_many(vector<poly> a) {
-  if (a.empty()) return poly((vector<ll>){1ll});
-  if (a.size() == 1) return a[0];
-  vector<poly> b;
-  int n = a.size();
-  for (int i = n / 2; i < n; i++) {
-    b.push_back(a[i]);
-  }
-  a.resize(n / 2);
-  poly P = multiply_many(a), Q = multiply_many(b);
-  return mul(P, Q);
-}
-
-poly divide(poly &res, int c) {
-  poly ans(res.n - 1);
-  ll val = 0;
-  for (int i = res.n; i >= 1; i--) {
-    val = (val * c + res.a[i]) % MOD;
-    ans.a[i - 1] = val;
-  }
-  return ans;
-}
-
 poly interpolate(int deg, vector<int> x, vector<int> y) {
   assert(x.size() >= deg + 1 && y.size() >= deg + 1);
-  x.resize(deg + 1), y.resize(deg + 1);
-  vector<poly> fm;
-  for (int j = 0; j <= deg; j++) {
-    fm.push_back(poly({(MOD - x[j]) % MOD, 1}));
+  int n = deg + 1;
+  vector<ll> xs(n), c(n), cur(n);
+  for (int i = 0; i < n; i++) {
+    xs[i] = (x[i] % MOD + MOD) % MOD;
+    c[i] = (y[i] % MOD + MOD) % MOD;
   }
-  poly res = multiply_many(fm);
-  poly ans(deg);
-  for (int i = 0; i <= deg; i++) {
-    ll denom = 1;
-    for (int j = 0; j <= deg; j++) {
-      if (j != i) {
-        denom = denom * ((x[i] - x[j] + MOD) % MOD) % MOD;
-      }
-    }
-    poly res_divided = divide(res, x[i]);
-    denom = inv(denom);
-    denom = denom * y[i] % MOD;
-    for (int j = 0; j <= deg; j++) {
-      ll el = res_divided.a[j];
-      el = (el * denom) % MOD;
-      ans.a[j] = (ans.a[j] + el) % MOD;
+  for (int k = 0; k + 1 < n; k++) {
+    for (int i = k + 1; i < n; i++) {
+      c[i] = (c[i] - c[k] + MOD) * inv((xs[i] - xs[k] + MOD) % MOD)ы % MOD;
     }
   }
-  return ans;
+  poly res(deg);
+  cur[0] = 1;
+  for (int k = 0; k < n; k++) {
+    for (int i = 0; i <= k; i++) {
+      res.a[i] = (res.a[i] + c[k] * cur[i]) % MOD;
+    }
+    if (k + 1 == n) break;
+    for (int i = k + 1; i >= 0; i--) {
+      cur[i] = ((i ? cur[i - 1] : 0) + (i <= k ? MOD - cur[i] * xs[k] % MOD : 0)) % MOD;
+    }
+  }
+  return res;
 }
