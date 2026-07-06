@@ -18,6 +18,10 @@ $\sum_{k=0}^{r}\binom{m}{k}\binom{n}{r-k}=\binom{m+n}{r}$
 \item % «Хоккейная клюшка» (сумма биномиалов по строке):
 $\sum_{i=r}^{n}\binom{i}{r}=\binom{n+1}{r+1}$
 
+\item % Шары и перегородки с одинаковой верхней границей:
+Число решений $x_1+\cdots+x_n=N,\ 0\le x_i\le r$:
+\\ $\displaystyle \sum_{q=0}^{\min\left(n,\left\lfloor N/(r+1)\right\rfloor\right)}(-1)^q\binom{n}{q}\binom{N-q(r+1)+n-1}{n-1}$
+
 \item % Rolling range sum of binominals
 $2B(l,r,n) = \binom{n}{l} + \binom{n}{r} - \binom{n+1}{l} + B(l, r, n+1)$, где $B(l, r, n) = \sum_{i=l}^r \binom{n}{i}$
 
@@ -37,7 +41,7 @@ $\binom{m}{n}\equiv\prod_i\binom{m_i}{n_i}\pmod p,$
 
 \item % Стирлинг II рода в разложении степеней:
 $\sum_{i=0}^{n}\binom{n}{i}i^k
-=\sum_{j=0}^{k}S_2(k,j)\,\frac{n!}{(n-j)!}\,2^{\,n-j}$
+=\sum_{j=0}^{k}s_2(k,j)\,\frac{n!}{(n-j)!}\,2^{\,n-j}$
 
 \item % Частичная сумма биномиалов с весом $x^i$:
 $\sum_{i=0}^{n-1}\binom{i}{j}x^i
@@ -88,6 +92,21 @@ $s_2^d(n,k)=s_2(n-d+1,k-d+1)$
 
 \item % Сумма $i a^i$:
 $\sum_{i=1}^n i a^i=\frac{a\bigl(n a^{n+1}-(n+1)a^n+1\bigr)}{(a-1)^2}$
+
+\item % Основные ряды Маклорена для exp/log:
+$\displaystyle e^x=\sum_{k\ge0}\frac{x^k}{k!},\quad
+\log(1+x)=\sum_{k\ge1}(-1)^{k+1}\frac{x^k}{k},\quad
+-\log(1-x)=\sum_{k\ge1}\frac{x^k}{k}$
+
+\item % Биномиальный ряд:
+$\displaystyle (1+x)^\alpha=\sum_{k\ge0}\binom{\alpha}{k}x^k,\quad
+\binom{\alpha}{k}=\frac{\alpha(\alpha-1)\cdots(\alpha-k+1)}{k!}$
+\\ $\displaystyle (1-x)^{-n}=\sum_{k\ge0}\binom{n+k-1}{n-1}x^k$
+
+\item % Тригонометрические ряды Маклорена:
+$\displaystyle \sin x=\sum_{k\ge0}(-1)^k\frac{x^{2k+1}}{(2k+1)!},\quad
+\cos x=\sum_{k\ge0}(-1)^k\frac{x^{2k}}{(2k)!}$
+\\ $\displaystyle \arctan x=\sum_{k\ge0}(-1)^k\frac{x^{2k+1}}{2k+1}\quad(|x|\le1)$
 
 \item % Формула Эйлера—Пентовой (пентагональные числа):
 $\prod_{n=1}^\infty(1-x^n)=1+\sum_{k=1}^{\infty}(-1)^k\bigl(x^{\,k(3k-1)/2}+x^{\,k(3k+1)/2}\bigr)$
