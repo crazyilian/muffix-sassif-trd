@@ -10,13 +10,16 @@ vector<int> calc_hpi_inds(const vector<line> &ls) {
   auto on = [&](int i, int j) {
     return sign(ls[i].get(ls[j].anyPoint()));
   };
+  auto same_dir = [&](int i, int j) {
+    return !sign(cr(i,j))&&ls[i].a*ls[j].a+ls[i].b*ls[j].b>0;
+  };
   for (int i = 0; i < n; ++i)
-    h[i] = sign(ls[i].b)<0||(!sign(ls[i].b)&&sign(ls[i].a)<0);
+    h[i] = ls[i].b < 0 || (ls[i].b == 0 && ls[i].a < 0);
   sort(q.begin(), q.end(), [&](int i, int j) { // 70% of time
     return h[i] != h[j] ? h[i] < h[j] : cr(i, j) > 0;
   });
   for (int i : q) {
-    if (!m || sign(cr(q[m-1], i))) q[m++] = i;
+    if (!m || !same_dir(q[m-1], i)) q[m++] = i;
     else if (on(q[m-1], i) >= 0) q[m-1] = i;
   }
 
@@ -30,7 +33,7 @@ vector<int> calc_hpi_inds(const vector<line> &ls) {
     int i = q[t];
     while (r-l>1 && bad(q[r-2], q[r-1], i)) --r;
     while (r-l>1 && bad(q[l+1], q[l], i)) ++l;
-    if (l<r && !sign(cr(q[r-1], i)) && on(q[r-1], i) < 0)
+    if (l<r && same_dir(q[r-1], i) && on(q[r-1], i) < 0)
       return {};
     q[r++] = i;
   }
