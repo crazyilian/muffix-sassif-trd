@@ -25,7 +25,7 @@ poly interpolate(int deg, vector<int> x, vector<int> y) {
   }
   for (int k = 0; k + 1 < n; k++) {
     for (int i = k + 1; i < n; i++) {
-      c[i] = (c[i] - c[k] + MOD) * inv((xs[i] - xs[k] + MOD) % MOD)ы % MOD;
+      c[i] = (c[i] - c[k] + MOD) * inv((xs[i] - xs[k] + MOD) % MOD) % MOD;
     }
   }
   poly res(deg);
