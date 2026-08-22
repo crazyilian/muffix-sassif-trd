@@ -20,7 +20,7 @@ struct vctr {
 };
 
 dbl angle_between(const vctr &a, const vctr &b) {
-  return atan2(b * a, b % a);
+  return atan2(a*b, a%b); // ccw от a до b, знак совпадает с a*b
 }
 
 // y > 0 ? 0 : 1
