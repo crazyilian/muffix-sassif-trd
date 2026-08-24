@@ -18,6 +18,41 @@ $\sum_{k=0}^{r}\binom{m}{k}\binom{n}{r-k}=\binom{m+n}{r}$
 \item % «Хоккейная клюшка» (сумма биномиалов по строке):
 $\sum_{i=r}^{n}\binom{i}{r}=\binom{n+1}{r+1}$
 
+\item % Сдвинутый биномиальный базис для полиномиальных DP:
+\newcommand{\nxt}[1]{\textcolor{red}{\overline{\textcolor{black}{#1}}}}
+\textbf{Сдвинутый биномиальный базис}: \\
+$\Phi_{i,d}(x)=[x\ge i]\binom{x-i+d-1}{d-1},\quad d\ge1,\ i\in\mathbb Z$
+
+$F(x)=\sum_{i=1}^{d}c_i\Phi_{i,d}(x),\quad c_i=0\ (i\notin[1,d])$
+
+$\Phi_{i,d}=\Phi_{i,d+1}-\Phi_{i+1,d+1};\quad \nxt{c}_i=c_i-c_{i-1};\quad \nxt{d}=d+1$
+
+$A_i=i+\lambda,\quad B_i=d-i-\lambda$
+
+\resizebox{\linewidth}{!}{$
+(x+\lambda)\Phi_{i,d}=A_i\Phi_{i,d+1}+B_i\Phi_{i+1,d+1};\quad
+\nxt{c}_i=A_ic_i+B_{i-1}c_{i-1};\quad \nxt{d}=d+1
+$}
+
+$c_i^{[0]}=c_i,\quad c_i^{[r+1]}=ic_i^{[r]}+(d+r-i+1)c_{i-1}^{[r]}$
+
+$x^qF(x)=\sum_{i=1}^{d+q}c_i^{[q]}\Phi_{i,d+q}(x),\quad c_i^{[r]}=0\ (i\notin[1,d+r])$
+
+$\sum_{t=i}^{x-k}\Phi_{i,d}(t)\Phi_{k,r}(x-t)=\Phi_{i+k,d+r}(x)$
+
+$\sum_{t=1}^{x-k}F(t)\Phi_{k,r}(x-t)\Longrightarrow
+\nxt{c}_i=c_{i-k},\quad \nxt{d}=d+r$
+
+$\sum_{t=1}^{x}F(t)\binom{x-t+s}{s}\Longrightarrow
+\nxt{c}_i=c_i,\quad \nxt{d}=d+s+1$
+
+$\sum_{t=1}^{x-1}F(t)\binom{x-t+s-1}{s}\Longrightarrow
+\nxt{c}_i=c_{i-1},\quad \nxt{d}=d+s+1$
+
+$F(M)=\sum_{i=1}^{\min(d,M)}c_i\binom{M-i+d-1}{d-1}$
+
+$F+G,\quad d_F=d_G:\qquad c_i=c_i^F+c_i^G$
+
 \item % Шары и перегородки с одинаковой верхней границей:
 Число решений $x_1+\cdots+x_n=N,\ 0\le x_i\le r$:
 \\ $\displaystyle \sum_{q=0}^{\min\left(n,\left\lfloor N/(r+1)\right\rfloor\right)}(-1)^q\binom{n}{q}\binom{N-q(r+1)+n-1}{n-1}$
