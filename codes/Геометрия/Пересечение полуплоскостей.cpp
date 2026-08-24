@@ -1,7 +1,8 @@
 // `compare(a,b,c,d)=sign(a/b-c/d)` (when float).
 // For int line let $N=\max(|a|,|b|)$, $K=\max|c|$, then:
-// cross-multiplication `compare` needs $4N^3K$ fit int type;
-// $O(\log)$ `compare` needs $2N^2$ and $2NK$;
+// $O(\log)$ `compare` needs $2N^2$ and $2NK$ fit into type;
+// cross-multiplication `compare` needs $8N^3K$ with prods diff or $4N^3K$ without;
+
 
 // Half plane: ax+by+c >= 0. Bounding box MUST HAVE.
 vector<int> calc_hpi_inds(const vector<line> &ls) {
