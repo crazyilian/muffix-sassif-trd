@@ -6,3 +6,7 @@ char compare(ll a, ll b, ll c, ll d) {
   if (c == 0) return sign(a) * sign(b);
   return compare(d, c, b, a) * sign(a) * sign(b) * sign(c) * sign(d);
 }
+// O(1) cross-multiplicatoin equivalent
+char compare(ll a, ll b, ll c, ll d) {
+  return sign(a*d-c*b)*sign(b)*sign(d);
+}
