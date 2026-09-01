@@ -33,9 +33,9 @@ pair<int, vector<int>> venger(vector<vector<int>> a) {
       y = z;
     } while (p[y] != 0);
     do {
-      int j1 = way[y];
-      p[y] = p[j1];
-      y = j1;
+      int z = way[y];
+      p[y] = p[z];
+      y = z;
     } while (y);
   }
   int cost = -v[0];
