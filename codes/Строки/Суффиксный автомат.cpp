@@ -1,49 +1,46 @@
-// Суфавтомат с подсчётом кол-ва различных подстрок
+// (Обобщённый) суфавтомат с подсчётом кол-ва различных подстрок
 
 const int SIGMA = 26;
-int ans = 0;
+long long ans = 0;
 
 struct Node {
-  int go[SIGMA];
-  int s, p;
-  int len, firstpos;
-
+  ar(SIGMA) go;
+  int s, p, len, firstpos;
   Node() {
-    fill(go, go + SIGMA, -1);
-    s = -1, p = -1;
-    len = 0, firstpos = -1;
+    go.fill(-1);
+    s=-1, p=-1, len=0, firstpos=-1;
   }
 };
 
 int add(int A, int ch, vector<Node> &sa) {
+  auto clone = [&](int A, int C) {
+    int D = sa.size();
+    sa.pb(sa[C]);
+    sa[D].p = A;
+    sa[D].len = sa[A].len + 1;
+    sa[C].s = D;
+    for (; A != -1 && sa[A].go[ch] == C; A = sa[A].s)
+      sa[A].go[ch] = D;
+    return D;
+  };
+  int C = sa[A].go[ch];
+  if (C != -1)
+    return sa[C].p == A ? C : clone(A, C);
   int B = sa.size();
   sa.emplace_back();
   sa[B].p = A;
-  sa[B].s = 0;
   sa[B].len = sa[A].len + 1;
-  sa[B].firstpos = sa[A].firstpos + 1;
+  sa[B].firstpos = sa[B].len - 1; // no sense when generalized SAM
   for (; A != -1; A = sa[A].s) {
     if (sa[A].go[ch] == -1) {
       sa[A].go[ch] = B;
       continue;
     }
-    int C = sa[A].go[ch];
-    if (sa[C].p == A) {
-      sa[B].s = C;
-      break;
-    }
-    int D = sa.size();
-    sa.emplace_back();
-    sa[D].s = sa[C].s;
-    sa[D].p = A;
-    sa[D].len = sa[A].len + 1;
-    sa[D].firstpos = sa[C].firstpos;
-    sa[C].s = sa[B].s = D;
-    copy(sa[C].go, sa[C].go + SIGMA, sa[D].go);
-    for (; A != -1 && sa[A].go[ch] == C; A = sa[A].s)
-      sa[A].go[ch] = D;
+    C = sa[A].go[ch];
+    sa[B].s = sa[C].p == A ? C : clone(A, C);
     break;
   }
+  if (A == -1) sa[B].s = 0;
   ans += sa[B].len - sa[sa[B].s].len;
   return B;
 }
