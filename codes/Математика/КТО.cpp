@@ -1,21 +1,22 @@
-// ans % p_i = a_i
-vector<vector<int>> r(k, vector<int>(k));
-for (int i = 0; i < k; ++i)
-  for (int j = 0; j < k; ++j)
-    if (i != j)
-      r[i][j] = binpow(p[i] % p[j], p[j] - 2, p[j]); // [phi(p[j]) - 1] для не простого модуля
-vector<int> x(k);
-for (int i = 0; i < k; ++i) {
-  x[i] = a[i];
-  for (int j = 0; j < i; ++j) {
-    x[i] = r[j][i] * (x[i] - x[j]);
-    x[i] = x[i] % p[i];
-    if (x[i] < 0) x[i] += p[i];
+// solve $w \equiv r_i \pmod {c_i}$
+// assumes $c_i > 0$ and $\operatorname{lcm}(c_i)$ fits in ll
+// return minimum $w \geq 0$ and common modulo
+// return {-1, -1} if there is no solution
+pair<ll, ll> generalized_crt(const vector<pair<int, int>> &equations) {
+  ll r = 0, mod = 1;
+  for (auto [ri, ci] : equations) {
+    ri %= ci;
+    if (ri < 0) ri += ci;
+    int reduced_mod = mod % ci;
+    auto [p, q] = ext_gcd(reduced_mod, ci);
+    int g = (ll)p * reduced_mod + (ll)q * ci;
+    ll diff = ri - r;
+    if (diff % g != 0) return {-1, -1};
+    ll k = (__int128)(diff / g) * p % (ci / g);
+    if (k < 0) k += ci / g;
+    ll new_mod = mod / g * ci;
+    r = (r + (__int128)mod * k) % new_mod;
+    mod = new_mod;
   }
-}
-int ans = 0;
-for (int i = 0; i < k; ++i) {
-  int val = x[i];
-  for (int j = 0; j < i; ++j) val *= p[j];
-  ans += val;
+  return {r, mod};
 }
