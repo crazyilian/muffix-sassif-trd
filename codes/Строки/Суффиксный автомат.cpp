@@ -1,8 +1,11 @@
-// (Обобщённый) суфавтомат с подсчётом кол-ва различных подстрок
-
+// (Обобщённый) суфавтомат для кол-ва различных подстрок
 const int SIGMA = 26;
 long long ans = 0;
 
+struct Map{ //если большой алфавит, просто заменить $ar$ на $Map$
+  map<int, int> mp;
+  int &operator[](int x) { return mp.try_emplace(x, -1).first->second; }
+};
 struct Node {
   ar(SIGMA) go;
   int s, p, len, firstpos;
