@@ -6,7 +6,7 @@ void unlimited_knapsack(int n, int T, vector<int> &v) {
   sort(all(items), [&](int i, int j) {
     return v[i] * j > v[j] * i;
   });
-  v.resize(T + 1);
+  v.resize(T + 1, -inf);
   for (int i = 2; i <= T; i++) {
     int tick = 0;
     for (auto j: items) {
