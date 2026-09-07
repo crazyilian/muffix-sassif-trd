@@ -21,17 +21,12 @@ int dfs1_hld(int v, int p) {
 void dfs2_hld(int v, int up) {
   tin[v] = timer++;
   pathup[v] = up;
-  if (graph[v].empty()) {
-    tout[v] = timer;
-    return;
-  }
   for (int i = 1; i < graph[v].size(); ++i) {
     if (sizes[graph[v][i]] > sizes[graph[v][0]])
       swap(graph[v][i], graph[v][0]);
   }
-  dfs2_hld(graph[v][0], up);
-  for (int i = 1; i < graph[v].size(); ++i)
-    dfs2_hld(graph[v][i], graph[v][i]);
+  for (int u : graph[v])
+    dfs2_hld(u, u == graph[v][0] ? up : u);
   tout[v] = timer;
 }
 

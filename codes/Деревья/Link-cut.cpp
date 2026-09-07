@@ -106,6 +106,7 @@ void cut(Node *v, Node *u) {
   makeroot(v);
   v->ch[1] = nullptr;
   u->p = nullptr;
+  pull(v);
 }
 
 int get(Node *v, Node *u) {
