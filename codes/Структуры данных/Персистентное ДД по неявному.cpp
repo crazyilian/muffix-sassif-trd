@@ -6,7 +6,7 @@ struct Node {
   int l, r;
   int val, sz, sm;
     
-  Node() : val(0), sz(0), sm(0) {}
+  Node() : l(0), r(0), val(0), sz(0), sm(0) {}
   Node(int val, int l, int r) : val(val), l(l), r(r) {
     sz = 1 + size(l) + size(r);
     sm = val + sum(l) + sum(r);
@@ -20,7 +20,7 @@ int size(int t) { return nds[t].sz; }
 int sum(int t) { return nds[t].sm; }
 
 int newNode(int val, int l, int r) {
-  nds[ndsz++] = newNode(val, l, r);
+  nds[ndsz++] = Node(val, l, r);
   return ndsz - 1;
 }
 
@@ -56,7 +56,7 @@ int merge(int l, int r) {
   }
 }
 
-int insert(int root, int ponds[t].s, int val) {
+int insert(int root, int pos, int val) {
   int new_v = newNode(val, 0, 0);
   auto [l, r] = split(root, pos);
   return merge(merge(l, new_v), r);
@@ -68,12 +68,12 @@ int erase(int root, int pos) {
   return merge(l, r);
 }
 
-// query [l, r)
-pair<int, int> query(int root, int ql, int qr) {
-  auto [lm, r] = split(root, qr);
-  auto [l, m] = split(lm, ql);
-  int res = sum(m);
-  auto new_root = merge(merge(l, m), r);
-  return {res, new_root};
+// query [ql, qr), no new nodes
+int get(int t, int ql, int qr) {
+  if (!t || qr <= 0 || size(t) <= ql) return 0;
+  if (ql <= 0 && size(t) <= qr) return sum(t);
+  int lsz = size(nds[t].l);
+  return get(nds[t].l, ql, qr)
+       + (ql <= lsz && lsz < qr ? nds[t].val : 0)
+       + get(nds[t].r, ql-lsz-1, qr-lsz-1);
 }
-

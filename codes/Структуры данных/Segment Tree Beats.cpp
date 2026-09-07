@@ -69,9 +69,7 @@ struct ST {
   }
 
   void update(int i, int l, int r, int ql, int qr, int val) {
-    if (qr <= l || r <= ql || mx[i] <= val) {
-      return;
-    }
+    if (qr <= l || r <= ql || mx[i] <= val) return;
     if (ql <= l && r <= qr && sec_mx[i] < val) {
       push_min_eq(i, val);
       return;
@@ -84,13 +82,9 @@ struct ST {
   }
 
   int sum(int i, int l, int r, int ql, int qr) {
-    if (qr <= l || r <= ql) {
-      return 0;
-    }
+    if (qr <= l || r <= ql) return 0;
     push(i, l, r);
-    if (ql <= l && r <= qr) {
-      return st[i];
-    }
+    if (ql <= l && r <= qr) return st[i];
     int m = (l + r) / 2;
     return sum(i * 2 + 1, l, m, ql, qr) + sum(i * 2 + 2, m, r, ql, qr);
   }

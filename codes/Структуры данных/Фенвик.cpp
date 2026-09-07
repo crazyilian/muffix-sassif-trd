@@ -19,7 +19,7 @@ struct Fenwick {
   // a[..] > 0; find max k: sum a[0..k) <= x
   int max_not_more(int x) {
     int cur = 0;
-    for (int i = 20; i >= 0; --i) {
+    for (int i = 31 - __builtin_clz(n); i >= 0; --i) {
       int len = 1 << i;
       if (cur + len <= n && f[cur + len] <= x) {
         cur += len;
@@ -30,7 +30,7 @@ struct Fenwick {
   }
 };
 
-// sum a[x1..x2)[y1..y2)[z1..x2)
+// sum a[x1..x2)[y1..y2)[z1..z2)
 int sum_3d(int x1,int x2,int y1,int y2,int z1,int z2) {
   int ans = get(x2, y2, z2);
   ans -= get(x1,y2,z2) + get(x2,y1,z2) + get(x2,y2,z1);

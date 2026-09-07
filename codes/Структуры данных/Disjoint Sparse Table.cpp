@@ -4,7 +4,7 @@ int floorlog2[MAXN]; // i ? (31 - __builtin_clz(i)) : 0
 
 void build(vector<int> &a) {
   int n = a.size();
-  copy(a.begin(), a.end(), tree[0]);
+  copy(all(a), tree[0]);
   for (int lg = 1; lg < LOG; ++lg) {
     int len = 1 << lg;
     auto &lvl = tree[lg];
