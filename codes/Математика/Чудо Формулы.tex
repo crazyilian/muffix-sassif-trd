@@ -98,7 +98,7 @@ $\sum_{i=0}^{n}\binom{n}{i}i^k
 
 \item % Частичная сумма биномиалов с весом $x^i$:
 $\sum_{i=0}^{n-1}\binom{i}{j}x^i
-= x^j(1-x)^{-j-1}\!\Bigl(1-x^n\sum_{i=0}^j\binom{n}{i}x^{\,j-i}(1-x)^i\Bigr)$
+= x^j(1-x)^{-j-1}\!\Bigl(1-x^{n-j}\sum_{i=0}^j\binom{n}{i}x^{\,j-i}(1-x)^i\Bigr)$
 
 \item % Биномиальная инверсия (следствие):
 $P(n)=\sum_{k=0}^{n}\binom{n}{k}Q(k) \implies Q(n)=\sum_{k=0}^{n}(-1)^{\,n-k}\binom{n}{k}P(k)$
