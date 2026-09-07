@@ -1,6 +1,6 @@
 vector<int> build_suff_arr(string &s) {
   // Remove, if you want to sort cyclic shifts
-  s += (char) (1);
+  s.pb(1);
   int n = s.size();
   vector<int> a(n);
   iota(all(a), 0);
@@ -15,19 +15,18 @@ vector<int> build_suff_arr(string &s) {
     else
       c[a[i]] = c[a[i - 1]];
   }
-  for (int L = 1; L < n; L *= 2) {
-    vector<int> cnt(n);
+  for (int L = 1; L < n && cc < n; L *= 2) {
+    vector<int> cnt(cc);
     for (auto i: c) cnt[i]++;
-    if (*min_element(all(cnt)) > 0) break;
-    vector<int> pref(n);
-    for (int i = 1; i < n; i++)
+    vector<int> pref(cc);
+    for (int i = 1; i < cc; i++)
       pref[i] = pref[i - 1] + cnt[i - 1];
     vector<int> na(n);
     for (int i = 0; i < n; i++) {
       int pos = (a[i] - L + n) % n;
       na[pref[c[pos]]++] = pos;
     }
-    a = na;
+    a.swap(na);
     vector<int> nc(n);
     cc = 0;
     for (int i = 0; i < n; i++) {
@@ -37,7 +36,7 @@ vector<int> build_suff_arr(string &s) {
       else
         nc[a[i]] = nc[a[i - 1]];
     }
-    c = nc;
+    c.swap(nc);
   }
   // Remove, if you want to sort cyclic shifts
   a.erase(a.begin());
@@ -45,7 +44,7 @@ vector<int> build_suff_arr(string &s) {
   return a;
 }
 
-vector<int> kasai(string s, vector<int> sa) {
+vector<int> kasai(string &s, vector<int> &sa) {
   // lcp[i] = lcp(sa[i], sa[i + 1])
   int n = s.size(), k = 0;
   vector<int> lcp(n, 0);
