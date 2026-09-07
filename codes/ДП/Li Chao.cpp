@@ -21,7 +21,7 @@ struct LiChao {
   int add_on_seg(int v, ll l, ll r, ll ql, ll qr, Line ln) {
     if (qr <= l || r <= ql) { return v; }
     if (ql <= l && r <= qr) { return add(v, l, r, ln); }
-    if (!v) { v = t.size(), t.push_back({0, 0, {0, -INF}}); }
+    if (!v) { v = t.size(), t.pb({0, 0, {0, -INF}}); }
     ll m = (l + r) / 2;
     t[v].l = add_on_seg(t[v].l, l, m, ql, qr, ln);
     t[v].r = add_on_seg(t[v].r, m, r, ql, qr, ln);
@@ -34,7 +34,7 @@ struct LiChao {
   int add(int v, ll l, ll r, Line ln) {
     if (!v) {
       v = t.size();
-      t.push_back({0, 0, ln});
+      t.pb({0, 0, ln});
       return v;
     }
     ll m = (l + r) / 2;

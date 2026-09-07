@@ -1,29 +1,23 @@
-// 0-indexation ({$a_0, ..., a_{n-1}$})
-vector<int> lis(vector<int> a) {
-  int n = (int) a.size();
-  vector<int> dp(n + 1, INF), ind(n + 1), par(n + 1); // INF > all a[i] required
-  ind[0] = -INF;
-  dp[0] = -INF;
-  for (int i = 0; i < n; i++) {
-    int l = upper_bound(dp.begin(), dp.end(), a[i]) - dp.begin();
-    if (dp[l - 1] < a[i] && a[i] < dp[l]) {
-      dp[l] = a[i];
-      ind[l] = i;
-      par[i] = ind[l - 1];
+// strict LIS, returns indices
+vector<int> calc_lis(const vector<int> &a) {
+  vector<int> dp, ind, par(a.size());
+  dp.reserve(a.size()), ind.reserve(a.size());
+  for (int i = 0; i < a.size(); ++i) {
+    // upper_bound for non-strict LIS
+    int len = lower_bound(all(dp), a[i]) - dp.begin();
+    par[i] = len ? ind[len - 1] : -1;
+    if (len == dp.size()) {
+      dp.pb(a[i]);
+      ind.pb(i);
+    } else {
+      dp[len] = a[i];
+      ind[len] = i;
     }
   }
-  vector<int> ans; // exact values
-  for (int l = n; l >= 0; l--) {
-    if (dp[l] < INF) {
-      int pi = ind[l];
-      ans.resize(l);
-      for (int i = 0; i < l; i++) {
-        ans[i] = a[pi]; // =pi if need indices
-        pi = par[pi];
-      }
-      reverse(ans.begin(), ans.end());
-      return ans;
-    }
-  }
-  return {};
+  int len = dp.size();
+  vector<int> ans(len);
+  if (len==0) return ans;
+  for (int i = len-1, j=ind.back(); i>=0; j=par[j], --i)
+    ans[i] = j;
+  return ans;
 }
