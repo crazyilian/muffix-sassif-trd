@@ -1,4 +1,3 @@
-// stolen from https://codeforces.com/blog/entry/78457?#comment-637863 (havent tested myself)
 //	finds min k s.t. L <= (k * A) % M <= R (or -1 if it does not exist
 ll min_rem(ll A, ll M, ll L, ll R) {
     if (L == 0) return 0;
