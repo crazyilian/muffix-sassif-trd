@@ -3,7 +3,7 @@ double temperature = 1;
 mt19937 rnd(777);
 
 double gen_rand_01() {
-  return rnd() / (double) UINT32_MAX;
+  return rnd() / (double) mt19937::max();
 }
 bool f(int delta) {
   return exp(-delta / temperature) > gen_rand_01();

@@ -12,6 +12,12 @@ struct Hashmap {
     kk.assign(m+1, EMP); vv.resize(m+1); // fill(kk,kk+s,EMP);
     k=kk.data(), v=vv.data(); // k=kk,v=vv;
   }
+  // must have if copying hashmap (because of pointers k,v):
+  Hashmap(const Hashmap &o) { *this=o; }
+  Hashmap &operator=(const Hashmap &o) {
+    lg=o.lg, m=o.m; kk=o.kk, vv=o.vv;
+    k=kk.data(), v=vv.data(); return *this;
+  }
   int h(cK &x) const { return unsigned(x)*RND>>(32-lg); }
   int pos(cK &x) const {
     int i = h(x);
