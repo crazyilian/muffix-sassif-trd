@@ -717,8 +717,9 @@ circle MinDisk(vector<vctr> &p) {
 \begin{lstlisting}[language=C++]
 // `compare(a,b,c,d)=sign(a/b-c/d)` (when float).
 // For int line let $N=\max(|a|,|b|)$, $K=\max|c|$, then:
-// cross-multiplication `compare` needs $4N^3K$ fit int type;
-// $O(\log)$ `compare` needs $2N^2$ and $2NK$;
+// $O(\log)$ `compare` needs $2N^2$ and $2NK$ fit into type;
+// cross-multiplication `compare` needs $8N^3K$ with prods diff or $4N^3K$ without;
+
 
 // Half plane: ax+by+c >= 0. Bounding box MUST HAVE.
 vector<int> calc_hpi_inds(const vector<line> &ls) {
@@ -1200,37 +1201,39 @@ pair<int, vector<int>> venger(vector<vector<int>> a) {
 // a - массив весов $(n+1) \times (m+1)$
 // a[0][..] = a[..][0] = 0
 // возвращает ans[i] = j если взяли ребро a[i][j]
-  int n = (int) a.size() - 1;
-  int m = (int) a[0].size() - 1;
+  int n = (int)a.size() - 1;
+  int m = (int)a[0].size() - 1;
   vector<int> u(n + 1), v(m + 1), p(m + 1), way(m + 1);
   for (int i = 1; i <= n; ++i) {
     p[0] = i;
-    int j0 = 0;
+    int y = 0;
     vector<int> minv(m + 1, INF);
     vector<char> used(m + 1, false);
     do {
-      used[j0] = true;
-      int i0 = p[j0], delta = INF, j1;
-      for (int j = 1; j <= m; ++j)
+      used[y] = true;
+      int x = p[y], delta = INF, z;
+      for (int j = 1; j <= m; ++j) {
         if (!used[j]) {
-          int cur = a[i0][j] - u[i0] - v[j];
+          int cur = a[x][j] - u[x] - v[j];
           if (cur < minv[j])
-            minv[j] = cur, way[j] = j0;
+            minv[j] = cur, way[j] = y;
           if (minv[j] < delta)
-            delta = minv[j], j1 = j;
+            delta = minv[j], z = j;
         }
-      for (int j = 0; j <= m; ++j)
+      }
+      for (int j = 0; j <= m; ++j) {
         if (used[j])
           u[p[j]] += delta, v[j] -= delta;
         else
           minv[j] -= delta;
-      j0 = j1;
-    } while (p[j0] != 0);
+      }
+      y = z;
+    } while (p[y] != 0);
     do {
-      int j1 = way[j0];
-      p[j0] = p[j1];
-      j0 = j1;
-    } while (j0);
+      int z = way[y];
+      p[y] = p[z];
+      y = z;
+    } while (y);
   }
   int cost = -v[0];
   vector<int> ans(n + 1);
@@ -1814,51 +1817,48 @@ for (int v = 0; v < graph.size(); ++v) {
 
 \subsection{CHT}
 \begin{lstlisting}[language=C++]
-#define bback(x) (x)[size(x)-2]
 struct line {
-  int k, b;
-  int eval(int x) { return k * x + b; }
+  ll k, b;
+  i128 eval(ll x) { return (i128)k * x + b; }
 };
-struct part { line a; dbl x; };
 
-dbl intersection(line a, line b) {
-  return (a.b - b.b) / (dbl)(b.k - a.k);
+// check if b is redudant, exact
+bool redundant(line a, line b, line c) {
+  return (a.b - b.b) * (i128)(c.k - b.k)
+      >= (b.b - c.b) * (i128)(b.k - a.k);
 }
+// floating point alternative
+dbl inter(line a, line b) { return (a.b-b.b)/(dbl)(b.k-a.k); }
+bool redundant(line a, line b, line c) { return inter(a, b)>=inter(b, c); }
 
+// |k|, |b| <= 1e18; query answer must fit long long
 struct ConvexHull {
   // for min: k decreasing (non-increasing)
   // for max: k increasing (non-decreasing)
-  vector<part> st;
+  vector<line> st;
 
   void add(line a) {
-    if (!st.empty() && st.back().a.k == a.k) {
-      if (st.back().a.b < a.b) st.pop_back(); // for max
-    //if (st.back().a.b > a.b) st.pop_back(); // for min
+    if (!st.empty() && st.back().k == a.k) {
+      if (st.back().b < a.b) st.pop_back(); // for max
+    //if (st.back().b > a.b) st.pop_back(); // for min
       else return;
     }
-    while (st.size() > 1 &&
-           intersection(bback(st).a, a) <= bback(st).x)
+    while (st.size() > 1 && redundant(st[st.size()-2], st.back(), a))
       st.pop_back();
-    if (!st.empty())
-      st.back().x = intersection(st.back().a, a);
-    st.push_back({a, INFINITY}); // C++ define
+    st.pb(a);
   }
 
-  int get_val(int x) {
-    if (st.empty()) {
-      return -INF; // min possible value, for max
-     //return INF; // max possible value, for min
-    }
-    int l = -1, r = ssize(st) - 1;
+  ll get_val(ll x) {
+    if (st.empty()) return -INF; // +INF for min
+    int l = -1, r = ssize(s) - 1;
     while (r - l > 1) {
       int m = (l + r) / 2;
-      if (st[m].x < x) l = m;
+      if (st[m].eval(x) < st[m + 1].eval(x)) l = m; // > for min
       else r = m;
     }
-    return st[r].a.eval(x);
+    return st[r].eval(x);
   }
 };
-
 \end{lstlisting}
 
 \subsection{Li Chao}
@@ -1886,7 +1886,7 @@ struct LiChao {
   int add_on_seg(int v, ll l, ll r, ll ql, ll qr, Line ln) {
     if (qr <= l || r <= ql) { return v; }
     if (ql <= l && r <= qr) { return add(v, l, r, ln); }
-    if (!v) { v = t.size(), t.push_back({0, 0, {0, -INF}}); }
+    if (!v) { v = t.size(), t.pb({0, 0, {0, -INF}}); }
     ll m = (l + r) / 2;
     t[v].l = add_on_seg(t[v].l, l, m, ql, qr, ln);
     t[v].r = add_on_seg(t[v].r, m, r, ql, qr, ln);
@@ -1899,7 +1899,7 @@ struct LiChao {
   int add(int v, ll l, ll r, Line ln) {
     if (!v) {
       v = t.size();
-      t.push_back({0, 0, ln});
+      t.pb({0, 0, ln});
       return v;
     }
     ll m = (l + r) / 2;
@@ -1965,7 +1965,8 @@ void unlimited_knapsack(int n, int T, vector<int> &v) {
   sort(all(items), [&](int i, int j) {
     return v[i] * j > v[j] * i;
   });
-  v.resize(T + 1);
+  v.resize(T + 1, -inf);
+  v[0] = 0;
   for (int i = 2; i <= T; i++) {
     int tick = 0;
     for (auto j: items) {
@@ -1982,34 +1983,28 @@ void unlimited_knapsack(int n, int T, vector<int> &v) {
 
 \subsection{НВП}
 \begin{lstlisting}[language=C++]
-// 0-indexation ({$a_0, ..., a_{n-1}$})
-vector<int> lis(vector<int> a) {
-  int n = (int) a.size();
-  vector<int> dp(n + 1, INF), ind(n + 1), par(n + 1); // INF > all a[i] required
-  ind[0] = -INF;
-  dp[0] = -INF;
-  for (int i = 0; i < n; i++) {
-    int l = upper_bound(dp.begin(), dp.end(), a[i]) - dp.begin();
-    if (dp[l - 1] < a[i] && a[i] < dp[l]) {
-      dp[l] = a[i];
-      ind[l] = i;
-      par[i] = ind[l - 1];
+// strict LIS, returns indices
+vector<int> calc_lis(const vector<int> &a) {
+  vector<int> dp, ind, par(a.size());
+  dp.reserve(a.size()), ind.reserve(a.size());
+  for (int i = 0; i < a.size(); ++i) {
+    // upper_bound for non-strict LIS
+    int len = lower_bound(all(dp), a[i]) - dp.begin();
+    par[i] = len ? ind[len - 1] : -1;
+    if (len == dp.size()) {
+      dp.pb(a[i]);
+      ind.pb(i);
+    } else {
+      dp[len] = a[i];
+      ind[len] = i;
     }
   }
-  vector<int> ans; // exact values
-  for (int l = n; l >= 0; l--) {
-    if (dp[l] < INF) {
-      int pi = ind[l];
-      ans.resize(l);
-      for (int i = 0; i < l; i++) {
-        ans[i] = a[pi]; // =pi if need indices
-        pi = par[pi];
-      }
-      reverse(ans.begin(), ans.end());
-      return ans;
-    }
-  }
-  return {};
+  int len = dp.size();
+  vector<int> ans(len);
+  if (len==0) return ans;
+  for (int i = len-1, j=ind.back(); i>=0; j=par[j], --i)
+    ans[i] = j;
+  return ans;
 }
 \end{lstlisting}
 
@@ -2075,17 +2070,12 @@ int dfs1_hld(int v, int p) {
 void dfs2_hld(int v, int up) {
   tin[v] = timer++;
   pathup[v] = up;
-  if (graph[v].empty()) {
-    tout[v] = timer;
-    return;
-  }
   for (int i = 1; i < graph[v].size(); ++i) {
     if (sizes[graph[v][i]] > sizes[graph[v][0]])
       swap(graph[v][i], graph[v][0]);
   }
-  dfs2_hld(graph[v][0], up);
-  for (int i = 1; i < graph[v].size(); ++i)
-    dfs2_hld(graph[v][i], graph[v][i]);
+  for (int u : graph[v])
+    dfs2_hld(u, u == graph[v][0] ? up : u);
   tout[v] = timer;
 }
 
@@ -2227,6 +2217,7 @@ void cut(Node *v, Node *u) {
   makeroot(v);
   v->ch[1] = nullptr;
   u->p = nullptr;
+  pull(v);
 }
 
 int get(Node *v, Node *u) {
@@ -2266,7 +2257,7 @@ int main() {
 \begin{lstlisting}[language=C++]
 struct Hashmap {
   using K = int; using V = int; using cK = const K;
-  static constexpr K EMP = INT_MIN; // forbidden value
+  static constexpr K EMP = INT_MIN; // forbidden key
   static constexpr unsigned RND = 1791791791; // random odd
   int lg, m;
   vector<K> kk; vector<V> vv; // K kk[SZ]; V vv[SZ];
@@ -2278,27 +2269,37 @@ struct Hashmap {
     kk.assign(m+1, EMP); vv.resize(m+1); // fill(kk,kk+s,EMP);
     k=kk.data(), v=vv.data(); // k=kk,v=vv;
   }
-  int h(cK &x) { return unsigned(x)*RND>>(32-lg); }
-  int pos(cK &x) {
+  // must have if copying hashmap (because of pointers k,v):
+  Hashmap(const Hashmap &o) { *this=o; }
+  Hashmap &operator=(const Hashmap &o) {
+    lg=o.lg, m=o.m; kk=o.kk, vv=o.vv;
+    k=kk.data(), v=vv.data(); return *this;
+  }
+  int h(cK &x) const { return unsigned(x)*RND>>(32-lg); }
+  int pos(cK &x) const {
     int i = h(x);
     while (k[i]!=EMP && k[i]!=x) i=(i+1)&m;
     return i;
   }
-  V* getptr(cK &x) { int i = pos(x); return k[i]==x?v+i:0; }
-  V &get(cK &x) { return *getptr(x); }
-  void set(cK &x, const V &y) { int i=pos(x);k[i]=x;v[i]=y; }
+  V* find(cK &x) const { int i=pos(x); return k[i]==x?v+i:0; }
+  bool contains(cK &x) const { return find(x); }
+  const V &operator[](cK &x) const { return *find(x); }
+  V &operator[](cK &x) {
+    int i = pos(x);
+    if (k[i]!=x) k[i]=x;
+    return v[i]; 
+  }
   bool erase(cK &x) {
     int i = pos(x);
     if (k[i]!=x) return 0;
     for (int j=(i+1)&m; k[j]!=EMP; j=(j+1)&m) {
       int r = h(k[j]);
       if (((j-r)&m) > ((i-r)&m))
-        swap(k[i],k[j]), swap(v[i],v[j]), i=j;
+        k[i]=move(k[j]), v[i]=move(v[j]), i=j;
     }
     return k[i]=EMP, 1;
   }
 };
-
 \end{lstlisting}
 
 \subsection{Fast mod}
@@ -2369,24 +2370,17 @@ struct custom_bitset {
   vector<uint64_t> bits;
   int b, n;
 
-  custom_bitset(int _b = 0) {
-    init(_b);
-  }
-  void init(int _b) {
-    b = _b, n = (b + 63) / 64;
+  custom_bitset(int bb = 0) { init(bb); }
+  void init(int bb) {
+    b = bb, n = (b + 63) / 64;
     bits.assign(n, 0);
   }
-  void clear() {
-    b = n = 0;
-    bits.clear();
-  }
-  void reset() {
-    bits.assign(n, 0);
-  }
+  void clear() { b = n = 0, bits.clear(); }
+  void reset() { bits.assign(n, 0); }
   void _clean() {
     // Reset all bits after `b`.
-    if (b != 64 * n)
-      bits.back() &= (1LLU << (b - 64 * (n - 1))) - 1;
+    if (b % 64)
+      bits.back() &= (1LLU << (b % 64)) - 1;
   }
   bool get(int i) const {
     return bits[i / 64] >> (i % 64) & 1;
@@ -2397,52 +2391,57 @@ struct custom_bitset {
     bits[i / 64] |= uint64_t(value) << (i % 64);
   }
 
-  // Simulates `bs |= bs << shift;`
+  // Simulates `bs1 |= bs2 << s;`
   // `|=` can be replaced with `^=`, `&=`, `=`
-  void or_shift_left(int shift) {
-    int div = shift / 64, mod = shift % 64;
-    if (mod == 0) {
-      for (int i = n - 1; i >= div; i--)
-        bits[i] |= bits[i - div];
+  void or_shift_left(int s){return or_shift_left(*this,s);}
+  void or_shift_left(const custom_bitset &o, int s) {
+    // assert(s >= 0);
+    int d = s/64, r = s%64;
+    if (r == 0) {
+      for (int i = n-1; i >= d; --i)
+        bits[i] |= o.bits[i-d];
     } else {
-      for (int i = n - 1; i >= div + 1; i--)
-        bits[i] |= bits[i - (div + 1)] >> (64 - mod) | bits[i - div] << mod;
-      if (div < n)
-        bits[div] |= bits[0] << mod;
+      for (int i = n-1; i >= d+1; --i)
+        bits[i] |= o.bits[i-d-1]>>(64-r) | o.bits[i-d]<<r;
+      if (d < n)
+        bits[d] |= o.bits[0]<<r;
     }
     // if `&=`, `=`
-    //fill(bits.begin(), bits.begin() + min(div, n), 0);
+    //fill(bits.begin(), bits.begin() + min(d, n), 0);
     _clean();
   }
 
-  // Simulates `bs |= bs >> shift;`
+  // Simulates `bs1 |= bs2 >> s;`
   // `|=` can be replaced with `^=`, `&=`, `=`
-  void or_shift_right(int shift) {
-    int div = shift / 64, mod = shift % 64;
-    if (mod == 0) {
-      for (int i = div; i < n; i++)
-        bits[i - div] |= bits[i];
+  void or_shift_right(int s){return or_shift_right(*this,s);}
+  void or_shift_right(const custom_bitset &o, int s) {
+    // assert(s >= 0);
+    int d = s/64, r = s%64;
+    if (r == 0) {
+      for (int i = d; i < n; ++i)
+        bits[i-d] |= o.bits[i];
     } else {
-      for (int i = 0; i < n - (div + 1); i++)
-        bits[i] |= bits[i + (div + 1)] << (64 - mod) | bits[i + div] >> mod;
-      if (div < n)
-        bits[n - div - 1] |= bits[n - 1] >> mod;
+      for (int i = 0; i < n-d-1; ++i)
+        bits[i] |= o.bits[i+d+1]<<(64-r) | o.bits[i+d]>>r;
+      if (d < n)
+        bits[n-d-1] |= o.bits[n-1]>>r;
     }
     // if `&=`, `=`
-    //fill(bits.end() - min(div, n), bits.end(), 0);
+    //fill(bits.end() - min(d, n), bits.end(), 0);
     _clean();
   }
 
   // find min j, that j >= i and bs[j] = 1;
   int find_next(int i) {
+    i = max(i,0);
     if (i >= b) return b;
-    int div = i / 64, mod = i % 64;
-    auto x = bits[div] >> mod;
+    int d = i/64, r = i%64;
+    auto x = bits[d]>>r;
     if (x != 0)
       return i + __builtin_ctzll(x);
-    for (auto k = div + 1; k < n; ++k) {
+    for (auto k = d+1; k < n; ++k) {
       if (bits[k] != 0)
-        return 64 * k + __builtin_ctzll(bits[k]);
+        return 64*k + __builtin_ctzll(bits[k]);
     }
     return b;
   }
@@ -2459,22 +2458,23 @@ struct custom_bitset {
 
 \subsection{Аллокатор Копелиовича}
 \begin{lstlisting}[language=C++]
-// Код вставить до инклюдов
-
+// insert code BEFORE includes
 #include <cassert>
+using namespace std;
+const size_t MAX_MEM = 1e8; // ~100mb
+// set ALIGN=1 if care about ML, but not UB
+const size_t ALIGN = __STDCPP_DEFAULT_NEW_ALIGNMENT__;
+alignas(ALIGN) unsigned char mem[MAX_MEM];
+size_t mpos = 0;
 
-const int MAX_MEM = 1e8; // ~100mb
-int mpos = 0;
-char mem[MAX_MEM];
-
-inline void *operator new(std::size_t n) {
+void *operator new(size_t n) {
+  n = ((n ? n : 1) + ALIGN - 1) & ~(ALIGN - 1);
   mpos += n;
 //  assert(mpos <= MAX_MEM);
   return (void *)(mem + mpos - n);
 }
-
-inline void operator delete(void *) noexcept {} // must have!
-inline void operator delete(void *, std::size_t) noexcept {} // fix!!
+void operator delete(void *) noexcept {}
+void operator delete(void *, size_t) noexcept {}
 \end{lstlisting}
 
 \subsection{Альфа-бета отсечение}
@@ -2487,7 +2487,7 @@ int alphabeta(int player, int alpha, int beta, int depth) {
     int val = -INF;
     for (auto move : possible_moves) {
       val = max(val, alphabeta(1, alpha, beta, depth - 1));
-      if (val > beta) break;
+      if (val >= beta) break;
       alpha = max(alpha, val);
     }
     return val;
@@ -2495,7 +2495,7 @@ int alphabeta(int player, int alpha, int beta, int depth) {
     int val = INF;
     for (auto move : possible_moves) {
       val = min(val, alphabeta(0, alpha, beta, depth - 1));
-      if (val < alpha) break;
+      if (val <= alpha) break;
       beta = min(beta, val);
     }
     return val;
@@ -2510,7 +2510,7 @@ double temperature = 1;
 mt19937 rnd(777);
 
 double gen_rand_01() {
-  return rnd() / (double) UINT32_MAX;
+  return rnd() / (double) mt19937::max();
 }
 bool f(int delta) {
   return exp(-delta / temperature) > gen_rand_01();
@@ -3015,41 +3015,6 @@ struct Min25 {
 };
 \end{lstlisting}
 
-\subsection{MinRem}
-\begin{lstlisting}[language=C++]
-// stolen from https://codeforces.com/blog/entry/78457?#comment-637863 (havent tested myself)
-//	finds min k s.t. L <= (k * A) % M <= R (or -1 if it does not exist
-ll min_rem(ll A, ll M, ll L, ll R) {
-    if (L == 0) return 0;
-    A %= M;
-    ll ans = 0;
-    ll s1 = 1, s2 = 0;
-    while (A > 0) {
-        if (2 * A > M) {
-            A = M - A;
-            L = M - L;
-            R = M - R;
-            swap(L, R);
-            ans += s2;
-            s1 -= s2;
-            s2 *= -1;
-        }
-        ll ff = (L + A - 1) / A;
-        if (A * ff <= R) return ans + ff * s1;
-        ans += (ff - 1) * s1;
-        ff = (ff - 1) * A;
-        L -= ff;
-        R -= ff;
-        ll z = (M + A - 1) / A;
-        s2 = s1 * z - s2;
-        swap(s1, s2);
-        M = z * A - M;
-        swap(A, M);
-    }
-    return -1;
-}
-\end{lstlisting}
-
 \subsection{NTT}
 \begin{lstlisting}[language=C++]
 const int MOD = 998244353; // $7 \cdot 17 \cdot 2^{23} + 1$
@@ -3333,6 +3298,40 @@ vector<ll> convMod(const vector<ll> &a, const vector<ll> &b) {
 }
 \end{lstlisting}
 
+\subsection{min\_rem}
+\begin{lstlisting}[language=C++]
+//	finds min k s.t. L <= (k * A) % M <= R (or -1 if it does not exist
+ll min_rem(ll A, ll M, ll L, ll R) {
+    if (L == 0) return 0;
+    A %= M;
+    ll ans = 0;
+    ll s1 = 1, s2 = 0;
+    while (A > 0) {
+        if (2 * A > M) {
+            A = M - A;
+            L = M - L;
+            R = M - R;
+            swap(L, R);
+            ans += s2;
+            s1 -= s2;
+            s2 *= -1;
+        }
+        ll ff = (L + A - 1) / A;
+        if (A * ff <= R) return ans + ff * s1;
+        ans += (ff - 1) * s1;
+        ff = (ff - 1) * A;
+        L -= ff;
+        R -= ff;
+        ll z = (M + A - 1) / A;
+        s2 = s1 * z - s2;
+        swap(s1, s2);
+        M = z * A - M;
+        swap(A, M);
+    }
+    return -1;
+}
+\end{lstlisting}
+
 \subsection{sqrt mod}
 \begin{lstlisting}[language=C++]
 // p is prime
@@ -3485,26 +3484,27 @@ bool cool_ext_gcd(int a, int b, int c, int &x, int &y) {
 
 \subsection{КТО}
 \begin{lstlisting}[language=C++]
-// ans % p_i = a_i
-vector<vector<int>> r(k, vector<int>(k));
-for (int i = 0; i < k; ++i)
-  for (int j = 0; j < k; ++j)
-    if (i != j)
-      r[i][j] = binpow(p[i] % p[j], p[j] - 2, p[j]); // [phi(p[j]) - 1] для не простого модуля
-vector<int> x(k);
-for (int i = 0; i < k; ++i) {
-  x[i] = a[i];
-  for (int j = 0; j < i; ++j) {
-    x[i] = r[j][i] * (x[i] - x[j]);
-    x[i] = x[i] % p[i];
-    if (x[i] < 0) x[i] += p[i];
+// solve $w \equiv r_i \pmod {c_i}$
+// assumes $c_i > 0$ and $\operatorname{lcm}(c_i)$ fits in ll
+// return minimum $w \geq 0$ and common modulo
+// return {-1, -1} if there is no solution
+pair<ll, ll> generalized_crt(const vector<pair<int, int>> &equations) {
+  ll r = 0, mod = 1;
+  for (auto [ri, ci] : equations) {
+    ri %= ci;
+    if (ri < 0) ri += ci;
+    int reduced_mod = mod % ci;
+    auto [p, q] = ext_gcd(reduced_mod, ci);
+    int g = (ll)p * reduced_mod + (ll)q * ci;
+    ll diff = ri - r;
+    if (diff % g != 0) return {-1, -1};
+    ll k = (__int128)(diff / g) * p % (ci / g);
+    if (k < 0) k += ci / g;
+    ll new_mod = mod / g * ci;
+    r = (r + (__int128)mod * k) % new_mod;
+    mod = new_mod;
   }
-}
-int ans = 0;
-for (int i = 0; i < k; ++i) {
-  int val = x[i];
-  for (int j = 0; j < i; ++j) val *= p[j];
-  ans += val;
+  return {r, mod};
 }
 \end{lstlisting}
 
@@ -3670,6 +3670,59 @@ $\sum_{k=0}^{r}\binom{m}{k}\binom{n}{r-k}=\binom{m+n}{r}$
 \item % «Хоккейная клюшка» (сумма биномиалов по строке):
 $\sum_{i=r}^{n}\binom{i}{r}=\binom{n+1}{r+1}$
 
+\item % Сдвинутый биномиальный базис для полиномиальных DP:
+\newcommand{\nxt}[1]{\textcolor{red}{\overline{\textcolor{black}{#1}}}}
+\textbf{Сдвинутый биномиальный базис}: \\
+$\Phi_{i,d}(x)=[x\ge i]\binom{x-i+d-1}{d-1},\quad d\ge1,\ i\in\mathbb Z$
+
+$F(x)=\sum_{i=1}^{d}c_i\Phi_{i,d}(x),\quad c_i=0\ (i\notin[1,d])$
+
+$\texttt{lift}:\quad
+\Phi_{i,d}=\Phi_{i,d+1}-\Phi_{i+1,d+1};\quad
+\nxt{c}_i=c_i-c_{i-1};\quad \nxt{d}=d+1$
+
+$A_i=i+\lambda,\qquad B_i=d-i-\lambda$
+
+\resizebox{\linewidth}{!}{$
+(x+\lambda)\Phi_{i,d}=A_i\Phi_{i,d+1}+B_i\Phi_{i+1,d+1};\quad
+\nxt{c}_i=A_ic_i+B_{i-1}c_{i-1};\quad \nxt{d}=d+1
+$}
+
+$\sum_{t=i}^{x-k}\Phi_{i,d}(t)\Phi_{k,r}(x-t)=\Phi_{i+k,d+r}(x)$
+
+$\sum_{t=1}^{x-k}F(t)\Phi_{k,r}(x-t)\Longrightarrow
+\nxt{c}_i=c_{i-k},\quad \nxt{d}=d+r$
+
+$\texttt{prefsum}^{s}:\quad
+\sum_{t=1}^{x}F(t)\binom{x-t+s-1}{s-1}\Longrightarrow
+\nxt{c}_i=c_i,\quad \nxt{d}=d+s$
+
+$\texttt{shiftsum}:\quad
+\sum_{t=1}^{x-1}F(t)\Longrightarrow
+\nxt{c}_i=c_{i-1},\quad \nxt{d}=d+1$
+
+\resizebox{\linewidth}{!}{$
+\texttt{shiftsum};\,\texttt{prefsum}^{s}:\quad
+\sum_{t=1}^{x}F(t)\binom{x-t+s-1}{s}\Longrightarrow
+\nxt{c}_i=c_{i-1},\quad \nxt{d}=d+s+1
+$}
+
+$F+G,\quad d_F=d_G:\qquad c_i=c_i^F+c_i^G$
+
+$F\!\cdot\!G:\quad D=d_F+d_G-1,\qquad
+h_d(r)=[r\ge0]\binom{r+d-1}{d-1}$
+
+\resizebox{\linewidth}{!}{$
+f_x=\sum_{i=1}^{d_F}c_i^Fh_{d_F}(x-i),\quad
+g_x=\sum_{i=1}^{d_G}c_i^Gh_{d_G}(x-i),\quad
+p_x=f_xg_x\qquad(1\le x\le D)
+$}
+
+$\nxt{c}_i=\sum_{j=0}^{i-1}(-1)^j\binom{D}{j}p_{i-j},\qquad
+\nxt{d}=D\quad(1\le i\le D)$
+
+$f,\ g,\ \nxt{c}\text{ считаются тремя NTT-свёртками}$
+
 \item % Шары и перегородки с одинаковой верхней границей:
 Число решений $x_1+\cdots+x_n=N,\ 0\le x_i\le r$:
 \\ $\displaystyle \sum_{q=0}^{\min\left(n,\left\lfloor N/(r+1)\right\rfloor\right)}(-1)^q\binom{n}{q}\binom{N-q(r+1)+n-1}{n-1}$
@@ -3697,7 +3750,7 @@ $\sum_{i=0}^{n}\binom{n}{i}i^k
 
 \item % Частичная сумма биномиалов с весом $x^i$:
 $\sum_{i=0}^{n-1}\binom{i}{j}x^i
-= x^j(1-x)^{-j-1}\!\Bigl(1-x^n\sum_{i=0}^j\binom{n}{i}x^{\,j-i}(1-x)^i\Bigr)$
+= x^j(1-x)^{-j-1}\!\Bigl(1-x^{n-j}\sum_{i=0}^j\binom{n}{i}x^{\,j-i}(1-x)^i\Bigr)$
 
 \item % Биномиальная инверсия (следствие):
 $P(n)=\sum_{k=0}^{n}\binom{n}{k}Q(k) \implies Q(n)=\sum_{k=0}^{n}(-1)^{\,n-k}\binom{n}{k}P(k)$
@@ -3873,10 +3926,11 @@ vector<int> prefix_func(const string &s) {
 }
 
 // d[0][i] even center (i,i+1). d[1][i] odd center (i)
+// radius = $\lceil \frac{\text{len}}{2} \rceil$
 array<vector<int>, 2> manacher(const string &s) {
   int n = s.size();
   array<vector<int>, 2> d;
-  for (int z = 0; z <= 1; ++z) { //0=odd,1=even (!)
+  for (int z = 0; z <= 1; ++z) { //0=odd,1=even here!
     d[z].resize(n - z);
     int l = 0, r = -1;
     for (int i = z; i < n; ++i) {
@@ -3988,67 +4042,55 @@ void bfs() {
 
 \subsection{Муффиксный Сассив}
 \begin{lstlisting}[language=C++]
-vector<int> build_suff_arr(string &s) {
-  // Remove, if you want to sort cyclic shifts
-  s += (char) (1);
-  int n = s.size();
-  vector<int> a(n);
-  iota(all(a), 0);
-  stable_sort(all(a), [&](int i, int j) {
-      return s[i] < s[j];
-  });
-  vector<int> c(n);
-  int cc = 0;
-  for (int i = 0; i < n; i++) {
-    if (i == 0 || s[a[i]] != s[a[i - 1]])
-      c[a[i]] = cc++;
-    else
-      c[a[i]] = c[a[i - 1]];
+template<class T> // works for string and vector
+vector<int> build_suff_arr(T s) {
+  { // values compression. comment if already 0 < s[i] < ~1e6
+    vector<int> id(size(s));
+    iota(all(id), 0);
+    sort(all(id), [&](int i, int j) { return s[i]<s[j]; });
+    auto v = s;
+    for (int i=0, r=0; i < ssize(s); i++)
+      v[id[i]] = r += !i || s[id[i]] != s[id[i-1]];
+    s = v;
   }
-  for (int L = 1; L < n; L *= 2) {
-    vector<int> cnt(n);
-    for (auto i: c) cnt[i]++;
-    if (*min_element(all(cnt)) > 0) break;
-    vector<int> pref(n);
-    for (int i = 1; i < n; i++)
-      pref[i] = pref[i - 1] + cnt[i - 1];
-    vector<int> na(n);
-    for (int i = 0; i < n; i++) {
-      int pos = (a[i] - L + n) % n;
-      na[pref[c[pos]]++] = pos;
+  s.pb(0); // remove if cyclic shifts
+  int n = s.size(), m = *max_element(all(s)) + 2;
+  vector<int> sa(n), rk(n), t(n), c(max(n,m));
+  for (auto x : s) c[x+1]++;
+  partial_sum(all(c), begin(c));
+  for (int i=0; i<n; i++) rk[i] = c[s[i]];
+  for (int i=0; i<n; i++) sa[c[s[i]]++] = i;
+  // rk[i] = start of i's class in sa
+  for (int k=1, g=0; k<n && g<n; k*=2) {
+    iota(all(c), 0);
+    for (int i : sa) {
+      int j = i>=k ? i-k : i-k+n;
+      t[c[rk[j]]++] = j;
     }
-    a = na;
-    vector<int> nc(n);
-    cc = 0;
-    for (int i = 0; i < n; i++) {
-      if (i == 0 || c[a[i]] != c[a[i - 1]] ||
-          c[(a[i] + L) % n] != c[(a[i - 1] + L) % n])
-        nc[a[i]] = cc++;
-      else
-        nc[a[i]] = nc[a[i - 1]];
+    swap(sa,t), g=0;
+    for (int i=0, pr=-1, pq=-1, st=0; i<n; i++) {
+      int b=sa[i], j = b+k<n ? b+k : b+k-n;
+      int r=rk[b], q=rk[j];
+      if (r!=pr || q!=pq) st=i, g++;
+      t[b]=st, pr=r, pq=q;
     }
-    c = nc;
+    swap(rk,t);
   }
-  // Remove, if you want to sort cyclic shifts
-  a.erase(a.begin());
-  s.pop_back();
-  return a;
+  sa.erase(sa.begin()); // remove if cyclic shifts
+  return sa;
 }
 
-vector<int> kasai(string s, vector<int> sa) {
-  // lcp[i] = lcp(sa[i], sa[i + 1])
-  int n = s.size(), k = 0;
-  vector<int> lcp(n, 0);
-  vector<int> rank(n, 0);
-  for (int i = 0; i < n; i++) rank[sa[i]] = i;
-  for (int i = 0; i < n; i++, k ? k-- : 0) {
-    if (rank[i] == n - 1) {
-      k = 0;
-      continue;
-    }
-    int j = sa[rank[i] + 1];
-    while (i + k < n && j + k < n && s[i + k] == s[j + k]) k++;
-    lcp[rank[i]] = k;
+// lcp[i] = lcp(sa[i], sa[i + 1]), size = n-1
+template<class T>
+vector<int> kasai(const T &s, const vector<int> &sa) {
+  int n = s.size(), k=0;
+  vector<int> rk(n), lcp(n-!!n);
+  for (int i=0; i<n; i++) rk[sa[i]] = i;
+  for (int i=0; i<n; i++, k-=k>0) {
+    if (rk[i] == n-1) continue;
+    int j = sa[rk[i]+1];
+    while (max(i,j)+k < n && s[i+k]==s[j+k]) k++;
+    lcp[rk[i]] = k;
   }
   return lcp;
 }
@@ -4056,51 +4098,52 @@ vector<int> kasai(string s, vector<int> sa) {
 
 \subsection{Суффиксный автомат}
 \begin{lstlisting}[language=C++]
-// Суфавтомат с подсчётом кол-ва различных подстрок
-
+// (Обобщённый) суфавтомат для кол-ва различных подстрок
 const int SIGMA = 26;
-int ans = 0;
+long long ans = 0;
 
+struct Map{ //если большой алфавит, просто заменить $ar$ на $Map$
+  map<int, int> mp;
+  int &operator[](int x) { return mp.try_emplace(x, -1).first->second; }
+};
 struct Node {
-  int go[SIGMA];
-  int s, p;
-  int len;
-
+  ar(SIGMA) go;
+  int s, p, len, firstpos;
   Node() {
-    fill(go, go + SIGMA, -1);
-    s = -1, p = -1;
-    len = 0;
+    go.fill(-1);
+    s=-1, p=-1, len=0, firstpos=-1;
   }
 };
 
 int add(int A, int ch, vector<Node> &sa) {
+  auto clone = [&](int A, int C) {
+    int D = sa.size();
+    sa.pb(sa[C]);
+    sa[D].p = A;
+    sa[D].len = sa[A].len + 1;
+    sa[C].s = D;
+    for (; A != -1 && sa[A].go[ch] == C; A = sa[A].s)
+      sa[A].go[ch] = D;
+    return D;
+  };
+  int C = sa[A].go[ch];
+  if (C != -1)
+    return sa[C].p == A ? C : clone(A, C);
   int B = sa.size();
   sa.emplace_back();
   sa[B].p = A;
-  sa[B].s = 0;
   sa[B].len = sa[A].len + 1;
+  sa[B].firstpos = sa[B].len - 1; // no sense when generalized SAM
   for (; A != -1; A = sa[A].s) {
     if (sa[A].go[ch] == -1) {
       sa[A].go[ch] = B;
       continue;
     }
-    int C = sa[A].go[ch];
-    if (sa[C].p == A) {
-      sa[B].s = C;
-      break;
-    }
-    int D = sa.size();
-    sa.emplace_back();
-    sa[D].s = sa[C].s;
-    sa[D].p = A;
-    sa[D].len = sa[A].len + 1;
-    sa[C].s = D;
-    sa[B].s = D;
-    copy(sa[C].go, sa[C].go + SIGMA, sa[D].go);
-    for (; A != -1 && sa[A].go[ch] == C; A = sa[A].s)
-      sa[A].go[ch] = D;
+    C = sa[A].go[ch];
+    sa[B].s = sa[C].p == A ? C : clone(A, C);
     break;
   }
+  if (A == -1) sa[B].s = 0;
   ans += sa[B].len - sa[sa[B].s].len;
   return B;
 }
@@ -4126,7 +4169,7 @@ int floorlog2[MAXN]; // i ? (31 - __builtin_clz(i)) : 0
 
 void build(vector<int> &a) {
   int n = a.size();
-  copy(a.begin(), a.end(), tree[0]);
+  copy(all(a), tree[0]);
   for (int lg = 1; lg < LOG; ++lg) {
     int len = 1 << lg;
     auto &lvl = tree[lg];
@@ -4225,9 +4268,7 @@ struct ST {
   }
 
   void update(int i, int l, int r, int ql, int qr, int val) {
-    if (qr <= l || r <= ql || mx[i] <= val) {
-      return;
-    }
+    if (qr <= l || r <= ql || mx[i] <= val) return;
     if (ql <= l && r <= qr && sec_mx[i] < val) {
       push_min_eq(i, val);
       return;
@@ -4240,13 +4281,9 @@ struct ST {
   }
 
   int sum(int i, int l, int r, int ql, int qr) {
-    if (qr <= l || r <= ql) {
-      return 0;
-    }
+    if (qr <= l || r <= ql) return 0;
     push(i, l, r);
-    if (ql <= l && r <= qr) {
-      return st[i];
-    }
+    if (ql <= l && r <= qr) return st[i];
     int m = (l + r) / 2;
     return sum(i * 2 + 1, l, m, ql, qr) + sum(i * 2 + 2, m, r, ql, qr);
   }
@@ -4395,7 +4432,7 @@ struct Node {
   int l, r;
   int val, sz, sm;
     
-  Node() : val(0), sz(0), sm(0) {}
+  Node() : l(0), r(0), val(0), sz(0), sm(0) {}
   Node(int val, int l, int r) : val(val), l(l), r(r) {
     sz = 1 + size(l) + size(r);
     sm = val + sum(l) + sum(r);
@@ -4409,7 +4446,7 @@ int size(int t) { return nds[t].sz; }
 int sum(int t) { return nds[t].sm; }
 
 int newNode(int val, int l, int r) {
-  nds[ndsz++] = newNode(val, l, r);
+  nds[ndsz++] = Node(val, l, r);
   return ndsz - 1;
 }
 
@@ -4445,7 +4482,7 @@ int merge(int l, int r) {
   }
 }
 
-int insert(int root, int ponds[t].s, int val) {
+int insert(int root, int pos, int val) {
   int new_v = newNode(val, 0, 0);
   auto [l, r] = split(root, pos);
   return merge(merge(l, new_v), r);
@@ -4457,15 +4494,15 @@ int erase(int root, int pos) {
   return merge(l, r);
 }
 
-// query [l, r)
-pair<int, int> query(int root, int ql, int qr) {
-  auto [lm, r] = split(root, qr);
-  auto [l, m] = split(lm, ql);
-  int res = sum(m);
-  auto new_root = merge(merge(l, m), r);
-  return {res, new_root};
+// query [ql, qr), no new nodes
+int get(int t, int ql, int qr) {
+  if (!t || qr <= 0 || size(t) <= ql) return 0;
+  if (ql <= 0 && size(t) <= qr) return sum(t);
+  int lsz = size(nds[t].l);
+  return get(nds[t].l, ql, qr)
+       + (ql <= lsz && lsz < qr ? nds[t].val : 0)
+       + get(nds[t].r, ql-lsz-1, qr-lsz-1);
 }
-
 \end{lstlisting}
 
 \subsection{Персистентное ДО}
@@ -4505,11 +4542,11 @@ int get(int v, int l, int r, int ql, int qr) {
 \subsection{Спарсы}
 \begin{lstlisting}[language=C++]
 int tree[LOG][MAXN];
-int floorlog2[MAXN]; // i ? (31 - __builtin_clz(i)) : 0
+int floorlog2[MAXN+1]; // i ? (31 - __builtin_clz(i)) : 0
 
 void build(vector<int> &a) {
   int n = a.size();
-  copy(a.begin(), a.end(), tree[0]);
+  copy(all(a), tree[0]);
   for (int i = 1; i < LOG; ++i) {
     int len = 1 << (i - 1);
     for (int j = 0; j + len < n; ++j)
@@ -4550,7 +4587,7 @@ struct Fenwick {
   // a[..] > 0; find max k: sum a[0..k) <= x
   int max_not_more(int x) {
     int cur = 0;
-    for (int i = 20; i >= 0; --i) {
+    for (int i = 31 - __builtin_clz(n); i >= 0; --i) {
       int len = 1 << i;
       if (cur + len <= n && f[cur + len] <= x) {
         cur += len;
@@ -4561,7 +4598,7 @@ struct Fenwick {
   }
 };
 
-// sum a[x1..x2)[y1..y2)[z1..x2)
+// sum a[x1..x2)[y1..y2)[z1..z2)
 int sum_3d(int x1,int x2,int y1,int y2,int z1,int z2) {
   int ans = get(x2, y2, z2);
   ans -= get(x1,y2,z2) + get(x2,y1,z2) + get(x2,y2,z1);
