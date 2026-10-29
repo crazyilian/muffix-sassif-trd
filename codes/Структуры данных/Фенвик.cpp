@@ -5,8 +5,7 @@ struct Fenwick {
   Fenwick(int n) : n(n), f(n+1) {}
 
   void build(const vector<int> &a) { // O(n)
-    assert(ssize(a) == n);
-    f.assign(n + 1, 0);
+    n=size(a), f.assign(n+1, 0);
     for (int i = 1; i <= n; ++i) {
       f[i] += a[i-1];
       int j = i + (i & -i);
@@ -28,14 +27,12 @@ struct Fenwick {
 
   // n > 0, a[..] >= 0,   pref[i] = a[0] + ... + a[i]
   // lower_bound по pref: min i, что pref[i] >= x (либо n)
+  // get(lower_bound(x)) = максимальное, меньшее x (при x>0)
   int lower_bound(int x) {
     int i = 0;
     for (int b = 31 - __builtin_clz(n); b >= 0; --b) {
       int d = 1 << b;
-      if (i + d <= n && f[i + d] < x) {
-        i += d;
-        x -= f[i];
-      }
+      if (i+d <= n && f[i+d] < x) i+=d, x-=f[i];
     }
     return i;
   }
