@@ -3,6 +3,7 @@ pair<ll, vector<int>> venger(vector<vector<ll>> a) {
 // работает только при n <= m
 // a - массив весов $(n+1) \times (m+1)$
 // a[0][..] = a[..][0] = 0
+// a[i][j] любые (>0, <0, =0)
 // возвращает ans[i] = j если взяли ребро a[i][j]
   int n = ssize(a) - 1;
   int m = ssize(a[0]) - 1;

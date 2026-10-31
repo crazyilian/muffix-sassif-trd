@@ -1,5 +1,6 @@
 // НЕ ЗАБЫТЬ вызвать init(n)
 // вершины нумераются от 1 до n
+// ищет паросочетание max веса, число рёбер любое
 namespace weighted_matching{
   const ll INF = 1e18; // > 4 * max w
   const int MAXN = 1050; //double of possible N
@@ -211,3 +212,10 @@ namespace weighted_matching{
     return {sum, cnt};
   }
 }
+// n вершин, W = max|w|. давать w':
+//   max вес, затем max рёбер: w' = n * w + 1
+//   max вес, затем min рёбер: w' = n * w - 1
+//   min вес, затем ...: то же с -w вместо w
+//   max рёбер, затем max вес: w' = n * W + 1 + w
+//   max рёбер, затем min вес: w' = n * W + 1 - w
+// вес ответа считать по исходным w. нужно 4 * max w' < INF
