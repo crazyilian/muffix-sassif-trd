@@ -2,7 +2,7 @@
 const ll MAGIC[7] = {2, 325, 9375, 28178, 450775, 9780504, 1795265022};
 
 bool is_prime(ll n) {
-  if (n == 1) return false;
+  if (n <= 1) return false;
   if (n <= 3) return true;
   if (n % 2 == 0 || n % 3 == 0) return false;
   ll s = __builtin_ctzll(n - 1), d = n >> s; // $n-1 = 2^s \cdot d$

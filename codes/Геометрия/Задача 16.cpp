@@ -13,7 +13,7 @@ dbl distPointLine(vctr a, vctr l1, vctr l2) {
 }
 
 dbl distPointRay(vctr a, vctr r1, vctr r2) {
-  if (!isInSameHalf(a, r1, r2))
+  if (r1 == r2 || !isInSameHalf(a, r1, r2))
     return distPointPoint(a, r1);
   return distPointLine(a, r1, r2);
 }
@@ -52,6 +52,7 @@ dbl distLineLine(vctr l1a, vctr l1b, vctr l2a, vctr l2b) {
 }
 
 dbl distRayLine(vctr r1, vctr r2, vctr l1, vctr l2) {
+  if (r1 == r2) return distPointLine(r1, l1, l2);
   line r(r1, r2);
   line l(l1, l2);
   if (!isIntersectionLineLine(l, r))
@@ -68,6 +69,8 @@ dbl distSegLine(vctr s1, vctr s2, vctr l1, vctr l2) {
 }
 
 dbl distRayRay(vctr r1a, vctr r1b, vctr r2a, vctr r2b) {
+  if (r1a == r1b) return distPointRay(r1a, r2a, r2b);
+  if (r2a == r2b) return distPointRay(r2a, r1a, r1b);
   line r1(r1a, r1b);
   line r2(r2a, r2b);
   if (!isIntersectionLineLine(r1, r2)) {

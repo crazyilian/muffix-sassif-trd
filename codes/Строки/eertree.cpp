@@ -5,6 +5,7 @@ char s[MAXN];
 int n, last, sz;
 
 void init() {
+  for (int v = 0; v < sz; v++) fill(go[v], go[v] + ALPH, 0);
   n = 0, last = 0;
   s[n++] = -1;
   suf[0] = 1; // root of suflink tree = 1

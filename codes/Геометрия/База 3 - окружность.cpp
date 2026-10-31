@@ -15,7 +15,9 @@ struct circle {
     r = (C - A).dist();
   }
   bool isin(const vctr P, char strict=0) const {
-    return sign((C - P).dist2() - r * r) <= -strict;
+    // `dist2 - r*r` fails on dbl precision.
+    return sign((C - P).dist() - r) <= -strict;
+    // return sign((C - P).dist2() - r * r) <= -strict;
   }
 };
 
@@ -32,20 +34,22 @@ vector<vctr> intersection_line_circ(line l, circle c) {
 }
 
 vector<vctr> intersection_circ_circ(circle A, circle B) {
-  vctr a = A.C, b = B.C;
-  line l(2 * (b.x - a.x),
-         2 * (b.y - a.y),
-         B.r * B.r - A.r * A.r
-         + (a.x * a.x + a.y * a.y)
-         - (b.x * b.x + b.y * b.y));
+  vctr d = B.C - A.C; // better precision
+  line l(2*d.x, 2*d.y,
+         (B.r-A.r) * (B.r+A.r) - d.dist2());
   if (sign(l.a) == 0 && sign(l.b) == 0) return {};
+  auto c = A.r<B.r ? circle(0,0,A.r) : circle(d,B.r); // better precision
+  auto res = intersection_line_circ(l, c);
+  for (auto &p : res) p += A.C;
   // arc from res[0] to res[1] ccw over A is inside B
   // <=> ccw over B is outside A
-  return intersection_line_circ(l, A);
+  return res;
 }
 
 vector<vctr> tangent_vctr_circ(vctr v, circle c) {
   dbl d = (c.C - v).dist();
+  if (sign(d - c.r) < 0) return {};
+  if (sign(d - c.r) == 0) return {v};
   dbl k = sqrtl(d * d - c.r * c.r);
   // res[0] is right tangent, res[1] is left tangent
   return intersection_circ_circ(circle(v.x, v.y, k), c);

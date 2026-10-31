@@ -4,8 +4,8 @@ using flow_t = int;
 
 const int MAXN = 10000;
 const int MAXM = 25000 * 2;
-const cost_t INFw = 1e12;
-const flow_t INFf = 10;
+const cost_t INFw = 1e18;
+const flow_t INFf = 2e9;
 
 struct Edge {
   int v, u;
@@ -48,6 +48,7 @@ flow_t get_flow() {
 
 void spfa() {
   fill(dist, dist + NUMV, INFw);
+  fill(pre, pre + NUMV, -1);
   dist[S] = 0;
   deque<int> Q = {S};
   inQ[S] = true;
@@ -72,7 +73,8 @@ void spfa() {
     }
   }
   for (int i = 0; i < NUMV; ++i)
-    pot[i] += dist[i];
+    if (dist[i] < INFw) // else pot overflows
+      pot[i] += dist[i];
 }
 
 cost_t mincost() {

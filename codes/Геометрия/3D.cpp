@@ -96,9 +96,10 @@ pair<Pt, Pt> intersect(Plane pl1, Plane pl2) {
   return {Pt(p1.y, p1.z, p1.x), Pt(p2.y, p2.z, p2.x)};
 }
 
-// угол между двумя векторами
+// угол между векторами в [0, pi]: сонаправленные -> 0, противоположные -> pi
+// угол между прямыми с направляющими p1, p2: min(a, pi - a)
 dbl get_ang(Pt p1, Pt p2) {
-  return acosl(p1.dot(p2) / p1.dist() / p2.dist());
+  return atan2l(p1.cross(p2).dist(), p1.dot(p2));
 }
 
 // любой перпендикулярный вектор

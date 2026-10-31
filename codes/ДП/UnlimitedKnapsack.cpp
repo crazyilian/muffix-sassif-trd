@@ -1,8 +1,9 @@
 void unlimited_knapsack(int n, int T, vector<int> &v) {
   // O(n^2 log n + T)
   // v[1..n], v[i] --- best value of a single item with weight=i (-inf for non-existent)
-  vector<int> items(n);
-  iota(all(items), 1);
+  vector<int> items;
+  for (int i = 1; i <= n; i++)
+    if (v[i] > -inf) items.pb(i);
   sort(all(items), [&](int i, int j) {
     return v[i] * j > v[j] * i;
   });
@@ -19,4 +20,5 @@ void unlimited_knapsack(int n, int T, vector<int> &v) {
     }
   }
   // v[i] --- best total value of items with total weight=i
+  // weight i is unreachable if `v[i] < -inf/2` (not `== -inf`)
 }

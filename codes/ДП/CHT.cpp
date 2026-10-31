@@ -31,7 +31,7 @@ struct ConvexHull {
 
   ll get_val(ll x) {
     if (st.empty()) return -INF; // +INF for min
-    int l = -1, r = ssize(s) - 1;
+    int l = -1, r = ssize(st) - 1;
     while (r - l > 1) {
       int m = (l + r) / 2;
       if (st[m].eval(x) < st[m + 1].eval(x)) l = m; // > for min

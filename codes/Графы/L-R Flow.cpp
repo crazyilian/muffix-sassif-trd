@@ -6,27 +6,26 @@ struct LRFlow {
 
   LRFlow(int n, int S, int T, int Sx, int Tx) : S(S), T(T), Sx(Sx), Tx(Tx), dinic(n), dem(n) {}
 
-  void addedge(int v, int u, int mincap, int maxcap, int i) {
-    // i - any number, can be used for flow restoring. Just store it inside Edge.
-    dinic.addedge(v, u, maxcap - mincap, i);
-    dem[v] -= mincap;
-    dem[u] += mincap;
+  // returns id: real flow = dinic.graph[v][id].f + mincap
+  int addedge(int v, int u, int mincap, int maxcap) {
+    dem[v] -= mincap, dem[u] += mincap;
+    return dinic.addedge(v, u, maxcap - mincap);
   }
 
-  // edge.real_flow = edge.flow + edge.mincap
-  // returns true if found flow is feasible
-  // size of flow is sum flows+mincaps from S
+  // returns true if found flow is feasible.
+  // size of flow (after aux edges are removed below):
+  // sum e.f over dinic.graph[S] - dem[S]
   bool run() {
-    dinic.addedge(T, S, INF, -1); // INF >= sum maxcap-mincap
     ll totaldem = 0;
     for (int v = 0; v < dem.size(); ++v) {
       if (dem[v] > 0) {
         totaldem += dem[v];
         // here capacity could be long long (sum of v's mincaps)
-        dinic.addedge(Sx, v, dem[v], -1);
+        dinic.addedge(Sx, v, dem[v]);
       } else if (dem[v] < 0)
-        dinic.addedge(v, Tx, -dem[v], -1);
+        dinic.addedge(v, Tx, -dem[v]);
     }
+    dinic.addedge(T, S, totaldem); // totaldem is enough
     dinic.run(Sx, Tx);
     ll flow = 0;
     for (auto &e : dinic.graph[Sx]) flow += e.f;
@@ -39,7 +38,7 @@ struct LRFlow {
     dinic.graph[Tx].clear();
     dinic.graph[S].pop_back();
     dinic.graph[T].pop_back();
-    // dinic.run(S, T); // if we want max lr-flow (not any lr-flow)
+    dinic.run(S, T); // if we want max lr-flow (not any lr-flow)
     return true;
   }
 };

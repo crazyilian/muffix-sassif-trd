@@ -64,10 +64,12 @@ struct Dinic {
     }
   }
 
-  void addedge(int v, int u, int c) {
+  int addedge(int v, int u, int c) { // index in graph[v]
+    int i = graph[v].size();
     graph[v].push_back({u, 0, c, (int)graph[u].size()});
     // если не ориентированно, то обратная capacity = c
-    graph[u].push_back({v, 0, 0, (int)graph[v].size() - 1});
+    graph[u].push_back({v, 0, 0, i});
+    return i;
   }
 };
 
@@ -88,7 +90,7 @@ void use_example() {
   vector<int> cut;
   for (int i = 0; i < m; i++) {
     auto &e = edges[i];
-    if (dinic.vis[e.v] != dinic.vis[e.u])
+    if (dinic.vis[e.v] && !dinic.vis[e.u])
       cut.push_back(i);
   }
 }
