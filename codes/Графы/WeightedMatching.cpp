@@ -1,14 +1,13 @@
 // НЕ ЗАБЫТЬ вызвать init(n)
 // вершины нумераются от 1 до n
 namespace weighted_matching{
-  const int INF = (int)1e9 + 7;
+  const ll INF = 1e18; // > 4 * max w
   const int MAXN = 1050; //double of possible N
-  struct E{
-    int x, y, w;
-  };
+  struct E { int x, y; ll w; };
   int n, m;
   E G[MAXN][MAXN];
-  int lab[MAXN], match[MAXN], slack[MAXN], st[MAXN], pa[MAXN];
+  ll lab[MAXN];
+  int match[MAXN], slack[MAXN], st[MAXN], pa[MAXN];
   int flo_from[MAXN][MAXN], S[MAXN], vis[MAXN];
   vector<int> flo[MAXN];
   queue<int> Q;
@@ -18,10 +17,10 @@ namespace weighted_matching{
       for(int y = 1; y <= n; ++y)
         G[x][y] = E{x, y, 0};
   }
-  void add_edge(int x, int y, int w) {
+  void add_edge(int x, int y, ll w) {
     G[x][y].w = G[y][x].w = w;
   }
-  int e_delta(E e) {
+  ll e_delta(E e) {
     return lab[e.x] + lab[e.y] - G[e.x][e.y].w * 2;
   }
   void update_slack(int u, int x) {
@@ -161,7 +160,7 @@ namespace weighted_matching{
           }
         }
       }
-      int d = INF;
+      ll d = INF;
       for(int b = n + 1; b <= m; ++b)
         if(st[b] == b && S[b] == 1) d = min(d, lab[b] / 2);
       for(int x = 1; x <= m; ++x)
@@ -191,12 +190,12 @@ namespace weighted_matching{
     }
     return false;
   }
-  pair<int, int> solve(vector<pair<int, int>> &ans) {
+  pair<ll, int> solve(vector<pair<int, int>> &ans) {
     fill(match + 1, match + n + 1, 0);
     m = n;
-    int cnt = 0; int sum = 0;
+    int cnt = 0; ll sum = 0;
     for(int u = 0; u <= n; ++u) st[u] = u, flo[u].clear();
-    int mx = 0;
+    ll mx = 0;
     for(int x = 1; x <= n; ++x)
       for(int y = 1; y <= n; ++y){
         flo_from[x][y] = (x == y ? x : 0);

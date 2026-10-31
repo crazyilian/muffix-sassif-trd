@@ -7,7 +7,7 @@ struct LRFlow {
   LRFlow(int n, int S, int T, int Sx, int Tx) : S(S), T(T), Sx(Sx), Tx(Tx), dinic(n), dem(n) {}
 
   // returns id: real flow = dinic.graph[v][id].f + mincap
-  int addedge(int v, int u, int mincap, int maxcap) {
+  int addedge(int v, int u, flow_t mincap, flow_t maxcap) {
     dem[v] -= mincap, dem[u] += mincap;
     return dinic.addedge(v, u, maxcap - mincap);
   }
@@ -20,7 +20,7 @@ struct LRFlow {
     for (int v = 0; v < dem.size(); ++v) {
       if (dem[v] > 0) {
         totaldem += dem[v];
-        // here capacity could be long long (sum of v's mincaps)
+        // aux capacities are sums: flow_t must fit totaldem (~ sum of mincaps)
         dinic.addedge(Sx, v, dem[v]);
       } else if (dem[v] < 0)
         dinic.addedge(v, Tx, -dem[v]);

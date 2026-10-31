@@ -1,11 +1,15 @@
+// flow_t: capacity of one edge, total flow is ll
+// undirected edges: flow_t must fit 2c
+using flow_t = int;
 const int LOG = 29; // масштабирование, =0 если не нужно
-struct Edge { int u, f, c, r; };
+struct Edge { int u, r; flow_t f, c; };
 
 struct Dinic {
   vector<vector<Edge>> graph;
   vector<char> vis;
   vector<int> inds, dist, Q;
-  int ql, qr, S, T, BIT;
+  int ql, qr, S, T;
+  flow_t BIT; // 2^LOG must fit flow_t
   Dinic(int n) : graph(n), vis(n), inds(n), dist(n), Q(n) {}
 
   bool bfs() {
@@ -28,9 +32,9 @@ struct Dinic {
     return false;
   }
 
-  int dfs(int v, int maxF) {
+  flow_t dfs(int v, flow_t maxF) {
     if (v == T) return maxF;
-    int ans = 0;
+    flow_t ans = 0;
     for (int &i = inds[v]; i < graph[v].size(); ++i) {
       auto &e = graph[v][i];
       auto cc = min(maxF - ans, e.c - e.f);
@@ -57,18 +61,18 @@ struct Dinic {
         for (auto &e : graph[S]) {
           if (inds[e.u] == graph[e.u].size() || e.c - e.f < BIT)
             continue;
-          int f = dfs(e.u, e.c - e.f);
+          flow_t f = dfs(e.u, e.c - e.f);
           e.f += f, graph[e.u][e.r].f -= f;
         }
       }
     }
   }
 
-  int addedge(int v, int u, int c) { // index in graph[v]
+  int addedge(int v, int u, flow_t c) { // index in graph[v]
     int i = graph[v].size();
-    graph[v].push_back({u, 0, c, (int)graph[u].size()});
+    graph[v].push_back({u, (int)graph[u].size(), 0, c});
     // если не ориентированно, то обратная capacity = c
-    graph[u].push_back({v, 0, 0, i});
+    graph[u].push_back({v, i, 0, 0});
     return i;
   }
 };
@@ -76,14 +80,14 @@ struct Dinic {
 void use_example() {
   Dinic dinic(n);
   for (int i = 0; i < m; ++i) {
-    int v, u, c;
+    int v, u; flow_t c;
     cin >> v >> u >> c;
     v--, u--;
     dinic.addedge(v, u, c);
   }
   dinic.run(s, t);
 
-  ll maxflow = 0;
+  ll maxflow = 0; // may not fit flow_t
   for (auto &e : dinic.graph[s])
     maxflow += e.f;
 

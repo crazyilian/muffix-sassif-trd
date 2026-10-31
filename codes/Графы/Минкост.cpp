@@ -1,6 +1,8 @@
 
-using cost_t = ll;
+// flow_t: capacity of one edge, total flow is ll
+// cost_t: must fit n * max|w| and the answer
 using flow_t = int;
+using cost_t = ll;
 
 const int MAXN = 10000;
 const int MAXM = 25000 * 2;
@@ -16,8 +18,8 @@ struct Edge {
 Edge edg[MAXM];
 int esz = 0;
 vector<int> graph[MAXN];
-ll dist[MAXN];
-ll pot[MAXN];
+cost_t dist[MAXN];
+cost_t pot[MAXN];
 int S, T;
 int NUMV;
 int pre[MAXN];
@@ -79,7 +81,7 @@ void spfa() {
 
 cost_t mincost() {
   spfa(); // pot[i] = 0 // or ford_bellman
-  flow_t f = 0;
+  ll f = 0; // total flow
   while (true) {
     flow_t ff = get_flow();
     if (ff == 0)
@@ -94,7 +96,7 @@ cost_t mincost() {
   return res;
 }
 
-void add_edge(int v, int u, int c, int w) {
+void add_edge(int v, int u, flow_t c, cost_t w) {
   edg[esz] = {v, u, 0, c, w};
   edg[esz + 1] = {u, v, 0, 0, -w};
   graph[v].push_back(esz);
@@ -111,7 +113,7 @@ signed main() {
   T = n - 1;
   NUMV = n;
   for (int i = 0; i < m; ++i) {
-    int v, u, c, w;
+    int v, u; flow_t c; cost_t w;
     cin >> v >> u >> c >> w;
     v--, u--;
     add_edge(v, u, c, w);
