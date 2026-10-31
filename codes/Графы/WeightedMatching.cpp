@@ -88,12 +88,12 @@ namespace weighted_matching{
     lab[b] = 0, S[b] = 0;
     match[b] = match[l];
     flo[b].clear();
-    flo[b].push_back(l);
+    flo[b].pb(l);
     for(int u = x, v; u != l; u = st[pa[v]])
-      flo[b].push_back(u), flo[b].push_back(v = st[match[u]]), q_push(v);
+      flo[b].pb(u), flo[b].pb(v = st[match[u]]), q_push(v);
     reverse(flo[b].begin() + 1, flo[b].end());
     for(int u = y, v; u != l; u = st[pa[v]])
-      flo[b].push_back(u), flo[b].push_back(v = st[match[u]]), q_push(v);
+      flo[b].pb(u), flo[b].pb(v = st[match[u]]), q_push(v);
     set_st(b, b);
     for(int i = 1; i <= m; ++i) G[b][i].w = G[i][b].w = 0;
     for(int i = 1; i <= n; ++i) flo_from[b][i] = 0;
@@ -207,7 +207,7 @@ namespace weighted_matching{
     for(int x = 1; x <= n; ++x)
       if(match[x] && match[x] < x) {
         sum += G[x][match[x]].w;
-        ans.push_back({x, G[x][match[x]].y});
+        ans.pb({x, G[x][match[x]].y});
       }
     return {sum, cnt};
   }

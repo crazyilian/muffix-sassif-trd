@@ -52,6 +52,7 @@ struct Dinic {
     return ans;
   }
 
+  // repeated runs are NOT independent
   void run(int s, int t) {
     S = s, T = t;
     assert(S != T);
@@ -70,9 +71,9 @@ struct Dinic {
 
   int addedge(int v, int u, flow_t c) { // index in graph[v]
     int i = graph[v].size();
-    graph[v].push_back({u, (int)graph[u].size(), 0, c});
+    graph[v].pb({u, (int)graph[u].size(), 0, c});
     // если не ориентированно, то обратная capacity = c
-    graph[u].push_back({v, i, 0, 0});
+    graph[u].pb({v, i, 0, 0});
     return i;
   }
 };
@@ -95,6 +96,6 @@ void use_example() {
   for (int i = 0; i < m; i++) {
     auto &e = edges[i];
     if (dinic.vis[e.v] && !dinic.vis[e.u])
-      cut.push_back(i);
+      cut.pb(i);
   }
 }
