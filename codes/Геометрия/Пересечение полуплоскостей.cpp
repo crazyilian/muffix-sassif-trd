@@ -1,4 +1,3 @@
-// `compare(a,b,c,d)=sign(a/b-c/d)` (when float).
 // For int line let $N=\max(|a|,|b|)$, $K=\max|c|$, then:
 // $O(\log)$ `compare` needs $2N^2$ and $2NK$ fit into type;
 // cross-multiplication `compare` needs $8N^3K$ with prods diff or $4N^3K$ without;
@@ -13,15 +12,18 @@ vector<int> calc_hpi_inds(const vector<line> &ls) {
   auto cr = [&](int i, int j) {
     return ls[i].a*ls[j].b-ls[i].b*ls[j].a;
   };
+  auto bigb = [&](int i){return abs(ls[i].b)>=abs(ls[i].a);};
   auto num = [&](int i, int j) {
-    if (ls[j].b) return ls[i].b*ls[j].c-ls[i].c*ls[j].b;
+    if (bigb(j)) return ls[i].b*ls[j].c-ls[i].c*ls[j].b;
     return ls[i].c*ls[j].a-ls[i].a*ls[j].c;
   };
   auto dir = [&](int i) {
-    return ls[i].b ? sign(ls[i].b) : -sign(ls[i].a);
+    return bigb(i) ? sign(ls[i].b) : -sign(ls[i].a);
   };
   auto on = [&](int i, int j){return -sign(num(i,j))*dir(j);};
   auto at = [&](int i, int j, int k) {
+    // return (int)sign(ls[k].get(intersection(ls[i],ls[j])));
+    // uncomment above and comment code below if float line
     if (!cr(j,k)) return on(k,j);
     return -sign(cr(j,k))*dir(j)*compare(
       num(i,j),cr(i,j),num(k,j),cr(k,j));
@@ -30,7 +32,7 @@ vector<int> calc_hpi_inds(const vector<line> &ls) {
     return !sign(cr(i,j))&&ls[i].a*ls[j].a+ls[i].b*ls[j].b>0;
   };
   for (int i = 0; i < n; ++i)
-    h[i] = ls[i].b<0||(ls[i].b==0&&ls[i].a<0);
+    h[i] = sign(ls[i].b)<0||(!sign(ls[i].b)&&ls[i].a<0);
   sort(q.begin(), q.end(), [&](int i, int j) { // 70% of time
     return h[i] != h[j] ? h[i] < h[j] : cr(i,j) > 0;
   });
