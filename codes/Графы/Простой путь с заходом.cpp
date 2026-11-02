@@ -1,3 +1,6 @@
+// Кратчайший простой путь s->t через все need, неор граф.
+// s==t => непустой цикл (даже при |need|=0).
+// O(2^|need| (n+m) ans)
 ull path_mul(ull a, ull b) {
   ull r = 0;
   for (; b; b >>= 1, a = (a << 1) ^ (a >> 63) * 27)
@@ -5,8 +8,10 @@ ull path_mul(ull a, ull b) {
   return r;
 }
 
-// Возвращает {число рёбер, первая вершина после s}; {-1,-1}, если не найдено; O(2^k (n+m) ans)
-pair<int, int> find_path_through_specified(int n, vector<pair<int, int>> edges, int s, int t, vector<int> need) {
+// Возвращает {число рёбер, первая вершина после s}, либо {-1,-1} если нет.
+pair<int, int> find_path_through_specified(int n,
+    vector<pair<int, int>> edges, int s, int t,
+    vector<int> need) {
   vector<int> bit(n);
   int k = 0;
   for (auto v : need) {
@@ -33,6 +38,7 @@ pair<int, int> find_path_through_specified(int n, vector<pair<int, int>> edges, 
   int m = es.size();
   vector<vector<ull>> dp(masks, vector<ull>(n));
   vector<vector<ull>> dp_e(masks, vector<ull>(m));
+  auto ndp = dp, ndp_e = dp_e;
   for (auto v : to) dp[bit[v]][v] = rnd();
   for (int len = 1; len < n; ++len) {
     if (s != t || len >= 2) {
@@ -41,8 +47,8 @@ pair<int, int> find_path_through_specified(int n, vector<pair<int, int>> edges, 
       }
     }
     if (len + 1 == n) break;
-    vector<vector<ull>> ndp(masks, vector<ull>(n));
-    vector<vector<ull>> ndp_e(masks, vector<ull>(m));
+    for (auto &r : ndp) fill(all(r), 0);
+    for (auto &r : ndp_e) fill(all(r), 0);
     for (int mask = 0; mask < masks; ++mask) {
       for (int id = 0; id < m; ++id) {
         auto [v, u, w] = es[id];

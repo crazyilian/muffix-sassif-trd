@@ -1,7 +1,7 @@
 // f(x) = (a*x+b) mod m in [0,m); ll = __int128.
 // S = {0} U {x > 0 : f(x) < min_{0 <= j < x} f(j)}.
-// {X,DX}: S = {0} U {X[i]+t*DX[i] : 1 <= t <= (X[i+1]-X[i])/DX[i]}.
-// X[0] = 0; 0 <= i < DX.size(); O(log m).
+// {X,DX}: S = {0} U {X[i] + t*DX[i] : 0 <= i < DX.size(),
+//   1 <= t <= (X[i+1]-X[i])/DX[i]}; X[0] = 0; O(log m).
 pair<vector<ll>, vector<ll>> min_of_linear_segments(ll a, ll b, ll m) {
   a = (a % m + m) % m, b = (b % m + m) % m;
   ll g = __gcd(a, m);
@@ -29,11 +29,11 @@ pair<vector<ll>, vector<ll>> min_of_linear_segments(ll a, ll b, ll m) {
   return {X, DX};
 }
 pair<vector<ll>, vector<ll>> max_of_linear_segments(ll a, ll b, ll m) {
-  return min_of_linear_segments((-a % m + m) % m, m - 1 - (b % m + m) % m, m);
+  return min_of_linear_segments(-a, m - 1 - b, m);
 }
 // min {x >= 0 : l <= f(x) <= r}; -1, если множество пусто.
 // 0 <= l <= r < m; O(log m).
-ll min_rem(ll a, ll m, ll l, ll r, ll b = 0) {
+ll min_rem(ll a, ll b, ll m, ll l, ll r) {
   if (l > r) return -1;
   ll len = r - l + 1;
   b = ((b - l) % m + m) % m;
@@ -48,9 +48,9 @@ ll min_rem(ll a, ll m, ll l, ll r, ll b = 0) {
   }
   return -1;
 }
-// {x,y}: y = min_{0 <= i < n} f(i), x = min {i : 0 <= i < n, f(i) = y}.
+// {x,y}: y = min_{0 <= i < n} f(i), x = min i: f(i) = y.
 // n > 0; O(log m).
-pair<ll, ll> min_mod(ll n, ll m, ll a, ll b) {
+pair<ll, ll> min_mod(ll n, ll a, ll b, ll m) {
   a = (a % m + m) % m, b = (b % m + m) % m;
   auto [X, DX] = min_of_linear_segments(a, b, m);
   ll x = 0;
@@ -58,20 +58,20 @@ pair<ll, ll> min_mod(ll n, ll m, ll a, ll b) {
     x = X[i] + (min(X[i + 1], n - 1) - X[i]) / DX[i] * DX[i];
   return {x, (a * x + b) % m};
 }
-// {x,y}: y = max_{0 <= i < n} f(i), x = min {i : 0 <= i < n, f(i) = y}.
+// {x,y}: y = max_{0 <= i < n} f(i), x = min i: f(i) = y.
 // n > 0; O(log m).
-pair<ll, ll> max_mod(ll n, ll m, ll a, ll b) {
-  auto [x, y] = min_mod(n, m, (-a % m + m) % m, m - 1 - (b % m + m) % m);
+pair<ll, ll> max_mod(ll n, ll a, ll b, ll m) {
+  auto [x, y] = min_mod(n, -a, m - 1 - b, m);
   return {x, m - 1 - y};
 }
-// {x,y}: y = min_{L <= i < R} f(i), x = min {i : L <= i < R, f(i) = y}.
+// {x,y}: y = min_{L <= i < R} f(i), x = min i: f(i) = y.
 // L < R; O(log m).
 pair<ll, ll> min_of_linear(ll L, ll R, ll a, ll b, ll m) {
-  auto [x, y] = min_mod(min(R - L, m), m, a, ((a * L + b) % m + m) % m);
+  auto [x, y] = min_mod(min(R - L, m), a, a * L + b, m);
   return {L + x, y};
 }
 // sum_{0 <= x < n} floor((a*x+b)/m); O(log m).
-ll floor_sum(ll n, ll m, ll a, ll b) {
+ll floor_sum(ll n, ll a, ll b, ll m) {
   ll ans = 0;
   while (n) {
     ll q = a / m - (a % m < 0);
@@ -89,17 +89,19 @@ ll floor_sum(ll n, ll m, ll a, ll b) {
 }
 // sum_{L <= x < R} floor((a*x+b)/m); O(log m).
 ll floor_sum_of_linear(ll L, ll R, ll a, ll b, ll m) {
-  return floor_sum(R - L, m, a, a * L + b);
+  return floor_sum(R - L, a, a * L + b, m);
 }
 // |{x : 0 <= x < n, l <= f(x) <= r}|.
 // 0 <= l <= r < m; l > r -> 0; O(log m).
-ll count_mod(ll n, ll m, ll a, ll b, ll l, ll r) {
+ll count_mod(ll n, ll a, ll b, ll m, ll l, ll r) {
   if (l > r) return 0;
   a = (a % m + m) % m, b = (b % m + m) % m;
-  return floor_sum(n, m, a, b - l) - floor_sum(n, m, a, b - r - 1);
+  return floor_sum(n, a, b - l, m) -
+         floor_sum(n, a, b - r - 1, m);
 }
 // sum_{0 <= x < n} f(x); O(log m).
-ll sum_mod(ll n, ll m, ll a, ll b) {
+ll sum_mod(ll n, ll a, ll b, ll m) {
   a = (a % m + m) % m, b = (b % m + m) % m;
-  return n * (n - 1) / 2 * a + n * b - m * floor_sum(n, m, a, b);
+  return n * (n - 1) / 2 * a + n * b -
+         m * floor_sum(n, a, b, m);
 }
