@@ -178,3 +178,15 @@ vector<int> exp(vector<int> a, int need) {
   b.resize(need);
   return b;
 }
+
+vector<int> power_sum_poly(int k) {
+  vector<int> a(k + 1), p(k + 2);
+  for (int j = 0; j <= k; ++j)
+    a[j] = ifact[j + 1];
+  auto c = inv(a, k + 1);
+  for (int j = 0; j <= k; ++j) {
+    int v = mul(fact[k], mul(c[j], ifact[k + 1 - j]));
+    p[k + 1 - j] = (j & 1) ? sub(0, v) : v;
+  }
+  return p; // P(n) = 1^k+ ... +n^k
+}
