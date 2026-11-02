@@ -57,7 +57,7 @@ void ntt(int n, vector<int> &a, bool rev) {
 vector<int> conv(vector<int> a, vector<int> b) {
   if (a.empty() || b.empty())
     return {};
-  int lg = 32 - __builtin_clz(a.size() + b.size() - 1);
+  int lg = 32-__builtin_clz(max<int>(1,a.size()+b.size()-2));
   int n = 1 << lg;
   a.resize(n);
   b.resize(n);

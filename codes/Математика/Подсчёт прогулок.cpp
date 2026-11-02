@@ -4,7 +4,7 @@ int count_walks_1(int b1, int b2, int p, int q) {
   // without touching y = x + b1 and y = x + b2
   // b1 < 0 < b2 must hold
   // O((p + q) / (b2 - b1))
-  if (min(p, q) < 0) return 0;
+  if (min(p, q) < 0 || q - p <= b1 || q - p >= b2) return 0;
   ll ans = C(p, p + q);
   ar(2) F = {p, q}, S = {p, q};
   int cf = mod - 1;

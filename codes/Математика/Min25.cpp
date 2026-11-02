@@ -2,7 +2,7 @@
 // Need f(p) = polynomial in p. Change D, POLY, sum_power(), f_prime_power().
 // Default: f(n) = n, f(p) = p, f(p^e) = p^e.
 // Prime count: D=0, POLY={1}, build(n), answer = prime_poly(n).
-// phi: POLY={-1,1}, f_prime_power=pe-prev.
+// phi: POLY={-1,1}, f_prime_power=(pe-prev+mod)%mod.
 // f_prime_power may be arbitrary O(1), but e=1 must match POLY.
 
 // ll mul(ll a, ll b); a, b may be negative!

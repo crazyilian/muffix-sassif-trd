@@ -2,7 +2,8 @@
 vector<ll> convMod(const vector<ll> &a, const vector<ll> &b) {
   if (a.empty() || b.empty()) return {};
   vector <ll> res((int) a.size() + (int) b.size() - 1);
-  int lg = 32 - __builtin_clz((int) res.size()), n = 1 << lg, cut = (int) (sqrt(MOD));
+  int lg = 32 - __builtin_clz(max<int>(1, res.size() - 1));
+  int n = 1 << lg, cut = (int) (sqrt(MOD));
   vector <comp> L(n), R(n), outs(n), outl(n);
   // x = h * cut + l, |h|, |l| <~ cut / 2: 4x less fft error
   auto sp = [&](ll x) {

@@ -16,7 +16,7 @@ int getkfps(vector<ll> p, vector<ll> q, ll k) {
     }
     k >>= 1;
   }
-  return (int) ((p[0] * inverse(q[0])) % MOD);
+  return p.empty() ? 0 : (p[0] * inverse(q[0])) % MOD;
 }
 
 // a - initials values of sequence, s - result of berlekamp on a

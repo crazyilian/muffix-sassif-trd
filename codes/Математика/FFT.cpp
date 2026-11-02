@@ -86,7 +86,7 @@ void invfft(vector<comp> &A, int lg) {
 vector<int> mul(vector<int> &a, vector<int> &b) {
   if (a.empty() || b.empty())
     return {};
-  int lg = 32 - __builtin_clz(a.size() + b.size() - 1);
+  int lg = 32-__builtin_clz(max<int>(1,a.size()+b.size()-2));
   int n = 1 << lg;
   vector<comp> A(n, 0), B(n, 0);
   for (int i = 0; i < a.size(); ++i)

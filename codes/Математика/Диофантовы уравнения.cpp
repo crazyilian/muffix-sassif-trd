@@ -17,7 +17,7 @@ bool cool_ext_gcd(int a, int b, int c, int &x, int &y) {
         y = 0;
         if (a == 0)
             return x = 0, c == 0;
-        return x = c / a, c % a == 0;
+        return x = c / a, c % a == 0 && x >= 0;
     }
     auto [x0, y0] = ext_gcd(a, b);
     int g = (ll)x0 * a + (ll)y0 * b;
