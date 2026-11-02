@@ -35,20 +35,12 @@ vctr intersectionLineLine(line l1, line l2) {
   return vctr(x, y);
 }
 
-vctr getPointOnLine(line l) {
-  if (sign(l.b) != 0)
-    return vctr(0, -l.c / l.b);
-  return vctr(-l.c / l.a, 0);
-}
-
 dbl distLineLine(vctr l1a, vctr l1b, vctr l2a, vctr l2b) {
   line l1(l1a, l1b);
   line l2(l2a, l2b);
   if (isIntersectionLineLine(l1, l2))
     return 0;
-  vctr p = getPointOnLine(l1);
-  l2.normalize();
-  return abs(l2.get(p));
+  return distPointLine(l1a, l2a, l2b);
 }
 
 dbl distRayLine(vctr r1, vctr r2, vctr l1, vctr l2) {

@@ -9,9 +9,9 @@ struct circle {
     r = (A - B).dist() / 2;
   }
   circle(const vctr A, const vctr B, const vctr D) {
-    line l1 = bisection(A, B);
-    line l2 = bisection(B, D);
-    C = intersection(l1, l2);
+    vctr u = B-A, v = D-A;
+    dbl p = u.dist2(), q = v.dist2();
+    C = A + vctr(v.y*p - u.y*q, u.x*q - v.x*p) / (2*(u*v));
     r = (C - A).dist();
   }
   bool isin(const vctr P, char strict=0) const {

@@ -1,4 +1,5 @@
 // MAXN дополнить до степени двойки (или n*2)
+// min -> любая ассоциативная операция (порядок важен)
 int tree[LOG][MAXN];
 int floorlog2[MAXN]; // i ? (31 - __builtin_clz(i)) : 0
 
@@ -12,7 +13,7 @@ void build(vector<int> &a) {
       lvl[m - 1] = a[m - 1];
       lvl[m] = a[m];
       for (int i = m - 2; i >= m - len; --i)
-        lvl[i] = min(lvl[i + 1], a[i]);
+        lvl[i] = min(a[i], lvl[i + 1]);
       for (int i = m + 1; i < m + len && i < n; ++i)
         lvl[i] = min(lvl[i - 1], a[i]);
     }
@@ -23,7 +24,7 @@ void build(vector<int> &a) {
 
 // a[l..r)
 int get(int l, int r) {
-  r--;
+  if (l == --r) return tree[0][l];
   int i = floorlog2[l ^ r];
   return min(tree[i][l], tree[i][r]);
 }

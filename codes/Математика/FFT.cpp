@@ -60,6 +60,7 @@ void fft(vector<comp> &A, int lg) {
   }
 }
 
+// optional, can be skipped
 void fft2(vector<comp> &A, vector<comp> &B, int lg) {
   int n = A.size();
   vector<comp> C(n);

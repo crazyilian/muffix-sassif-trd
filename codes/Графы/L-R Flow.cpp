@@ -4,7 +4,8 @@ struct LRFlow {
   int Sx, Tx; // вспомогательные вершины, любые неиспользуемые индексы
   vector<ll> dem;
 
-  LRFlow(int n, int S, int T, int Sx, int Tx) : S(S), T(T), Sx(Sx), Tx(Tx), dinic(n), dem(n) {}
+  LRFlow(int n, int S, int T, int Sx, int Tx)
+    : dinic(n), S(S), T(T), Sx(Sx), Tx(Tx), dem(n) {}
 
   // returns id: real flow = dinic.graph[v][id].f + mincap
   int addedge(int v, int u, flow_t mincap, flow_t maxcap) {

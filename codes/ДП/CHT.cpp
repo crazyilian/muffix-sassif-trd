@@ -8,9 +8,9 @@ bool redundant(line a, line b, line c) {
   return (a.b - b.b) * (i128)(c.k - b.k)
       >= (b.b - c.b) * (i128)(b.k - a.k);
 }
-// floating point alternative
+// floating point alternative, if k and b are not integer
 dbl inter(line a, line b) { return (a.b-b.b)/(dbl)(b.k-a.k); }
-bool redundant(line a, line b, line c) { return inter(a, b)>=inter(b, c); }
+bool redundant(line a, line b, line c) { return inter(a,b)>=inter(b,c); }
 
 // |k|, |b| <= 1e18; query answer must fit long long
 struct ConvexHull {

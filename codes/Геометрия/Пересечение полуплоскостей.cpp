@@ -1,6 +1,6 @@
 // For int line let $N=\max(|a|,|b|)$, $K=\max|c|$, then:
 // $O(\log)$ `compare` needs $2N^2$ and $2NK$ fit into type;
-// cross-multiplication `compare` needs $8N^3K$ with prods diff or $4N^3K$ without;
+// cross-multiplication `compare` needs $4N^3K$.
 
 
 // Half plane: ax+by+c >= 0. Bounding box MUST HAVE.

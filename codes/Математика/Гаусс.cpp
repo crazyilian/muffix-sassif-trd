@@ -1,7 +1,7 @@
-vector<vector<int>> gauss(vector<vector<int>> &a) {
+vector<vector<ll>> gauss(vector<vector<ll>> &a) {
   int n = a.size();
   int m = a[0].size();
-//  int det = 1;
+//  ll det = 1;
   for (int col = 0, row = 0; col < m && row < n; ++col) {
     for (int i = row; i < n; ++i) {
       if (a[i][col]) {
@@ -14,9 +14,10 @@ vector<vector<int>> gauss(vector<vector<int>> &a) {
     }
     if (!a[row][col])
       continue;
+    ll iv = inv(a[row][col]);
     for (int i = 0; i < n; ++i) {
       if (i != row && a[i][col]) {
-        int val = a[i][col] * inv(a[row][col]) % mod;
+        ll val = a[i][col] * iv % mod;
         for (int j = col; j < m; ++j) {
           a[i][j] -= val * a[row][j];
           a[i][j] %= mod;
@@ -31,7 +32,7 @@ vector<vector<int>> gauss(vector<vector<int>> &a) {
   return a;
 }
 
-pair<int, vector<int>> sle(vector<vector<int>> a, vector<int> b) {
+pair<int,vector<ll>> sle(vector<vector<ll>> a, vector<ll> b) {
   int n = a.size();
   int m = a[0].size();
   assert(n == b.size());
@@ -39,7 +40,7 @@ pair<int, vector<int>> sle(vector<vector<int>> a, vector<int> b) {
     a[i].push_back(b[i]);
   }
   a = gauss(a);
-  vector<int> x(m, 0);
+  vector<ll> x(m, 0);
   for (int i = n - 1; i >= 0; --i) {
     int leftmost = m;
     for (int j = 0; j < m; ++j) {
@@ -50,7 +51,7 @@ pair<int, vector<int>> sle(vector<vector<int>> a, vector<int> b) {
     }
     if (leftmost == m && a[i].back() != 0) return {-1, {}};
     if (leftmost == m) continue;
-    int val = a[i].back();
+    ll val = a[i].back();
     for (int j = m - 1; j > leftmost; --j) {
       val -= a[i][j] * x[j];
       val %= mod;
@@ -69,11 +70,9 @@ vector<bitset<N>> gauss_bit(vector<bitset<N>> a, int m) {
         break;
       }
     }
-    if (!a[row][col])
-      continue;
+    if (!a[row][col]) continue;
     for (int i = 0; i < n; ++i)
-      if (i != row && a[i][col])
-        a[i] ^= a[row];
+      if (i != row && a[i][col]) a[i] ^= a[row];
     ++row;
   }
   return a;

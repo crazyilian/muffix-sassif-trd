@@ -6,14 +6,14 @@ void cactus_dfs(int v, int pei, vector<vector<int>> &c2vs, vector<int> &e2c, vec
     if (ei == pei || e2c[ei] != -1)
         continue;
     if (used[u]) {
-      int с = c2vs.size();
+      int c = c2vs.size();
       c2vs.emplace_back();
       for (int j = st.size()-1; st[j].first != u; --j) {
-        c2vs[с].pb(st[j].first);
-        e2c[st[j].second] = с;
+        c2vs[c].pb(st[j].first);
+        e2c[st[j].second] = c;
       }
-      c2vs[с].pb(u);
-      e2c[ei] = с;
+      c2vs[c].pb(u);
+      e2c[ei] = c;
       continue;
     }
     cactus_dfs(u, ei, c2vs, e2c, g, used, st);
