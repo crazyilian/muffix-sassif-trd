@@ -11,7 +11,7 @@ vector<vctr> minkowski_sum(const vector<vctr> &A, const vector<vctr> &B) {
   auto edgA = poly_to_edges(A);
   auto edgB = poly_to_edges(B);
   vector<vctr> edgC(A.size() + B.size());
-  merge(edgA.begin(), edgA.end(), edgB.begin(), edgB.end(), edgC.begin(), cmp_angle);
+  merge(all(edgA), all(edgB), edgC.begin(), cmp_angle);
   // cmp_angle из шаблона вектора
   vector<vctr> C(edgC.size());
   C[0] = A[0] + B[0];
