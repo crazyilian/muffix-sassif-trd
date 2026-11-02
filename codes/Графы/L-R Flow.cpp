@@ -1,5 +1,5 @@
 struct LRFlow {
-  Dinic dinic;
+  Dinic dinic; // ориентированные рёбра
   int S, T; // исток и сток
   int Sx, Tx; // вспомогательные вершины, любые неиспользуемые индексы
   vector<ll> dem;
@@ -26,6 +26,7 @@ struct LRFlow {
         dinic.addedge(v, Tx, -dem[v]);
     }
     dinic.addedge(T, S, totaldem); // totaldem is enough
+    dinic.addedge(S, T, totaldem); // for total flow < 0
     dinic.run(Sx, Tx);
     ll flow = 0;
     for (auto &e : dinic.graph[Sx]) flow += e.f;
@@ -36,8 +37,8 @@ struct LRFlow {
     }
     dinic.graph[Sx].clear();
     dinic.graph[Tx].clear();
-    dinic.graph[S].pop_back();
-    dinic.graph[T].pop_back();
+    for (int i = 0; i < 2; ++i) // T->S, S->T
+      dinic.graph[S].pop_back(), dinic.graph[T].pop_back();
     dinic.run(S, T); // if we want max lr-flow (not any lr-flow)
     return true;
   }
