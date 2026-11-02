@@ -18,7 +18,7 @@ void dfs(int v, int pei) {
           col[st[--sti]] = cc;
         cc++;
       }
-    } else if (tin[u] <= tin[v]) {
+    } else if (tin[u] < tin[v]) {
       st[sti++] = ei;
       upv = min(upv, tin[u]);
     }
@@ -33,5 +33,5 @@ for (int v = 0; v < n; ++v) {
   if (!vis[v])
     dfs(v, -1);
 }
-// col[i] - компонента i-го ребра
+// col[i] - компонента i-го ребра (у петель -1)
 // cc - итоговое кол-во компонент

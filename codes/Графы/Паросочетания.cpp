@@ -19,6 +19,7 @@ bool dfs(int v, int c) {
 signed main() {
   // n - в левой доле, m - в правой
   fill(res, res + m, -1);
+  fill(used, used + n, 0);
   int ans = 0;
   for (int i = 0; i < n; ++i) {
     ans += dfs(i, ans + 1);

@@ -7,9 +7,7 @@ struct TwoSat {
   TwoSat(int n) : n(n) {
     g.resize(2 * n);
     rg.resize(2 * n);
-    comp.assign(2 * n, -1);
     topsort.reserve(2 * n);
-    used.assign(2 * n, 0);
   }
 
   int neg(int v) {
@@ -47,6 +45,8 @@ struct TwoSat {
   }
 
   void SCC() {
+    used.assign(2 * n, 0), comp.assign(2 * n, -1);
+    topsort.clear();
     for (int v = 0; v < 2 * n; ++v) {
       if (!used[v])
         dfs1(v);

@@ -27,7 +27,7 @@ signed main() {
   // c2vs[c] = список вершин цикла c (в порядке обхода)
   vector<int> e2c(m, -1); 
   vector<vector<int>> c2vs;
-  c2vs.reserve(m - n + 1); // m - n + #комп.связ.
+  c2vs.reserve(m - n + 1); // 1 заменить на #комп.связ.
   {
     vector<char> used(n, 0);
     vector<pair<int, int>> st;
