@@ -1,6 +1,6 @@
 // НЕ ЗАБЫТЬ вызвать init(n)
-// вершины нумераются от 1 до n
-// ищет паросочетание max веса, число рёбер любое
+// Вершины нумераются от 1 до n. Петли и кратные рёбра - ок.
+// Ищет паросочетание max веса, число рёбер любое.
 namespace weighted_matching{
   const ll INF = 1e18; // > 4 * max w
   const int MAXN = 1050; //double of possible N
@@ -19,7 +19,7 @@ namespace weighted_matching{
         G[x][y] = E{x, y, 0};
   }
   void add_edge(int x, int y, ll w) {
-    G[x][y].w = G[y][x].w = w;
+    G[x][y].w = G[y][x].w = max(G[x][y].w, w);
   }
   ll e_delta(E e) {
     return lab[e.x] + lab[e.y] - G[e.x][e.y].w * 2;
