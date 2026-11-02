@@ -190,3 +190,18 @@ vector<int> power_sum_poly(int k) {
   }
   return p; // P(n) = 1^k+ ... +n^k
 }
+
+vector<int> power_sums_inv(int n, int k) {
+  vector<int> a(k + 1), b(k + 1);
+  int pw = 1, t = add(n % MOD, 1);
+  for (int i = 0; i <= k; ++i) {
+    pw = mul(pw, t);
+    a[i] = mul(sub(pw, 1), ifact[i + 1]);
+    b[i] = ifact[i + 1];
+  }
+  auto s = conv(a, inv(b, k + 1));
+  s.resize(k + 1);
+  for (int i = 0; i <= k; ++i)
+    s[i] = mul(s[i], fact[i]);
+  return s; // s[i]=1^i+...+n^i; O(k log k)
+}
