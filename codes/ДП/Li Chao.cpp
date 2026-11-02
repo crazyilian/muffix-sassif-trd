@@ -22,7 +22,7 @@ struct LiChao {
     if (qr <= l || r <= ql) { return v; }
     if (ql <= l && r <= qr) { return add(v, l, r, ln); }
     if (!v) { v = t.size(), t.pb({0, 0, {0, -INF}}); }
-    ll m = (l + r) / 2;
+    ll m = (l + r) >> 1; // NOT (l+r)/2
     t[v].l = add_on_seg(t[v].l, l, m, ql, qr, ln);
     t[v].r = add_on_seg(t[v].r, m, r, ql, qr, ln);
     return v;
@@ -37,7 +37,7 @@ struct LiChao {
       t.pb({0, 0, ln});
       return v;
     }
-    ll m = (l + r) / 2;
+    ll m = (l + r) >> 1; // NOT (l+r)/2
     if (ln(m) > t[v].ln(m)) swap(ln, t[v].ln); // "<" for min
     if (r - l == 1 || ln.k == t[v].ln.k) return v;
     if (ln.k < t[v].ln.k) t[v].l = add(t[v].l, l, m, ln); // ">" for min
@@ -52,7 +52,7 @@ struct LiChao {
     ll l = L, r = R;
     while (v) {
       ans = max(ans, t[v].ln(x)); // "min" for min
-      ll m = (l + r) / 2;
+      ll m = (l + r) >> 1; // NOT (l+r)/2
       if (x < m) v = t[v].l, r = m;
       else v = t[v].r, l = m;
     }
