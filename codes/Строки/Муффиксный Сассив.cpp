@@ -1,4 +1,4 @@
-template<class T> // works for string and vector
+template<class T> // string (<= 127 distinct chars) or vector
 vector<int> build_suff_arr(T s) {
   { // values compression. comment if already 0 < s[i] < ~1e6
     vector<int> id(size(s));

@@ -10,7 +10,7 @@ struct Node {
   ar(SIGMA) go;
   int s, p, len, firstpos;
   Node() {
-    go.fill(-1);
+    go.fill(-1); // remove if Map
     s=-1, p=-1, len=0, firstpos=-1;
   }
 };
