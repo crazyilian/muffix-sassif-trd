@@ -19,8 +19,17 @@ struct vctr {
   vctr rotate_ccw_90() const {  return {-y, x}; }
 };
 
+// противоположные (a*b == 0): +pi или -pi, знак от шума
 dbl angle_between(const vctr &a, const vctr &b) {
   return atan2(a*b, a%b); // ccw от a до b, знак совпадает с a*b
+}
+
+const dbl PI = acosl(-1);
+// ccw от a до b в [0, 2pi), ~2pi -> 0
+dbl angle_between_positive(const vctr &a, const vctr &b) {
+  dbl r = atan2(a*b, a%b);
+  if (r < 0) r += 2 * PI;
+  return r > 2 * PI - EPS ? 0 : r;
 }
 
 // y > 0 ? 0 : 1
