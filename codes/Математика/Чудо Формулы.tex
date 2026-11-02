@@ -236,6 +236,11 @@ $S=I+\frac{B}{2}-1$, $S$ площадь, $I$ целые точки внутри,
 \item % Формула Эйлера для связного плоского графа:
 $V-E+F=2$, $V$ вершины, $E$ рёбра, $F$ грани.
 
+\item % Критерий Эрдёша--Галлаи:
+Целые $n>d_1\ge\cdots\ge d_n\ge0$ — степени простого неориентированного графа $\iff$
+$\sum_{i=1}^n d_i\equiv0\pmod2$ и
+\\ $\forall k=1,\ldots,n:\quad \sum_{i=1}^k d_i\le k(k-1)+\sum_{i=k+1}^n\min(d_i,k)$
+
 \item Простые числа
 \begin{itemize}
 \item big NTT-friendly: \begin{itemize}
