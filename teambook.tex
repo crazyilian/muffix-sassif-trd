@@ -255,40 +255,20 @@ Plane get_plane(Pt p1, Pt p2, Pt p3) {
   return pl;
 }
 
-pair<pair<dbl, dbl>, pair<dbl, dbl>> get_xy(dbl a, dbl b, dbl c) {
-  if (abs(a) > EPS) {
-    dbl y1 = 0, y2 = 10;
-    return {{(-c - b * y1) / a, y1}, {(-c - b * y2) / a, y2}};
-  }
-  dbl x1 = 0, x2 = 10;
-  return {{x1, (-c - a * x1) / b}, {x2, (-c - a * x2) / b}};
-}
-
+// две точки прямой пересечения на расстоянии 1
 pair<Pt, Pt> intersect(Plane pl1, Plane pl2) {
-  if (abs(pl2.a) < EPS && abs(pl2.b) < EPS && abs(pl2.c) < EPS)
-    assert(false);
-  if (abs(pl2.a) > EPS) {
-    dbl nd = pl1.d - pl1.a * pl2.d / pl2.a;
-    dbl nc = pl1.c - pl1.a * pl2.c / pl2.a;
-    dbl nb = pl1.b - pl1.a * pl2.b / pl2.a;
-    if (abs(nc) < EPS && abs(nb) < EPS) {
-      // плоскости параллельны (могут совпадать)
-      return {Pt(0, 0, 0), Pt(0, 0, 0)};
-    }
-    auto [yz1, yz2] = get_xy(nb, nc, nd);
-    dbl x1 = (-pl2.d - pl2.c * yz1.second - pl2.b * yz1.first) / pl2.a;
-    dbl x2 = (-pl2.d - pl2.c * yz2.second - pl2.b * yz2.first) / pl2.a;
-    return {Pt(x1, yz1.first, yz1.second), Pt(x2, yz2.first, yz2.second)};
-  }
-  Plane copy_pl1(pl1.c, pl1.a, pl1.b, pl1.d);
-  Plane copy_pl2(pl2.c, pl2.a, pl2.b, pl2.d);
-  auto [p1, p2] = intersect(copy_pl1, copy_pl2);
-  return {Pt(p1.y, p1.z, p1.x), Pt(p2.y, p2.z, p2.x)};
+  Pt n1(pl1.a, pl1.b, pl1.c), n2(pl2.a, pl2.b, pl2.c);
+  Pt dir = n1.cross(n2);
+  dbl len2 = dir.dot(dir);
+  if (len2 < EPS * EPS) return {Pt(), Pt()}; // параллельны
+  Pt p = (n1 * pl2.d - n2 * pl1.d).cross(dir) / len2;
+  return {p, p + dir / sqrtl(len2)};
 }
 
-// угол между двумя векторами
+// угол между векторами в [0, pi]: сонаправленные -> 0, противоположные -> pi
+// угол между прямыми с направляющими p1, p2: min(a, pi - a)
 dbl get_ang(Pt p1, Pt p2) {
-  return acosl(p1.dot(p2) / p1.dist() / p2.dist());
+  return atan2l(p1.cross(p2).dist(), p1.dot(p2));
 }
 
 // любой перпендикулярный вектор
@@ -300,9 +280,7 @@ Pt vector_perp(Pt v) {
 
 // плоскость через точку p перпендикулярная вектору v
 Plane plane_perp(Pt p, Pt v) {
-  Pt v1 = vector_perp(v);
-  Pt v2 = v.cross(v1);
-  return get_plane(p, v1 + p, v2 + p);
+  return Plane(v.x, v.y, v.z, -v.dot(p));
 }
 \end{lstlisting}
 
@@ -329,8 +307,17 @@ struct vctr {
   vctr rotate_ccw_90() const {  return {-y, x}; }
 };
 
+// противоположные (a*b == 0): +pi или -pi, знак от шума
 dbl angle_between(const vctr &a, const vctr &b) {
   return atan2(a*b, a%b); // ccw от a до b, знак совпадает с a*b
+}
+
+const dbl PI = acosl(-1);
+// ccw от a до b в [0, 2pi), ~2pi -> 0
+dbl angle_between_positive(const vctr &a, const vctr &b) {
+  dbl r = atan2(a*b, a%b);
+  if (r < 0) r += 2 * PI;
+  return r > 2 * PI - EPS ? 0 : r;
 }
 
 // y > 0 ? 0 : 1
@@ -341,8 +328,7 @@ bool is2plane(const vctr &a) {
 bool cmp_angle(const vctr &a, const vctr &b) {
   bool pla = is2plane(a);
   bool plb = is2plane(b);
-  if (pla != plb)
-    return pla < plb;
+  if (pla != plb) return pla < plb;
   return sign(a * b) > 0;
 }
 
@@ -413,13 +399,15 @@ struct circle {
     r = (A - B).dist() / 2;
   }
   circle(const vctr A, const vctr B, const vctr D) {
-    line l1 = bisection(A, B);
-    line l2 = bisection(B, D);
-    C = intersection(l1, l2);
+    vctr u = B-A, v = D-A;
+    dbl p = u.dist2(), q = v.dist2();
+    C = A + vctr(v.y*p - u.y*q, u.x*q - v.x*p) / (2*(u*v));
     r = (C - A).dist();
   }
   bool isin(const vctr P, char strict=0) const {
-    return sign((C - P).dist2() - r * r) <= -strict;
+    // `dist2 - r*r` fails on dbl precision.
+    return sign((C - P).dist() - r) <= -strict;
+    // return sign((C - P).dist2() - r * r) <= -strict;
   }
 };
 
@@ -429,65 +417,82 @@ vector<vctr> intersection_line_circ(line l, circle c) {
   if (sign(d - c.r) > 0) return {};
   vctr a = c.C - vctr(l.a, l.b) * s;
   if (sign(c.r - d) == 0) return {a};
-  dbl k = sqrtl(c.r * c.r - d * d);
+  dbl k = sqrtl((c.r - d) * (c.r + d));
   vctr v = vctr(l.b, -l.a) * k;
   // arc from res[0] to res[1] ccw lies in positive halfplane
   return {a + v, a - v};
 }
 
 vector<vctr> intersection_circ_circ(circle A, circle B) {
-  vctr a = A.C, b = B.C;
-  line l(2 * (b.x - a.x),
-         2 * (b.y - a.y),
-         B.r * B.r - A.r * A.r
-         + (a.x * a.x + a.y * a.y)
-         - (b.x * b.x + b.y * b.y));
+  vctr d = B.C - A.C; // better precision
+  line l(2*d.x, 2*d.y,
+         (B.r-A.r) * (B.r+A.r) - d.dist2());
   if (sign(l.a) == 0 && sign(l.b) == 0) return {};
+  auto c = A.r<B.r ? circle(0,0,A.r) : circle(d,B.r); // better precision
+  auto res = intersection_line_circ(l, c);
+  for (auto &p : res) p += A.C;
   // arc from res[0] to res[1] ccw over A is inside B
   // <=> ccw over B is outside A
-  return intersection_line_circ(l, A);
+  return res;
 }
 
 vector<vctr> tangent_vctr_circ(vctr v, circle c) {
   dbl d = (c.C - v).dist();
-  dbl k = sqrtl(d * d - c.r * c.r);
+  if (sign(d - c.r) < 0) return {};
+  if (sign(d - c.r) == 0) return {v};
+  dbl k = sqrtl((d - c.r) * (d + c.r));
   // res[0] is right tangent, res[1] is left tangent
   return intersection_circ_circ(circle(v.x, v.y, k), c);
 }
 
+// {point on A, point on B}: outer tangents, then inner.
+// 4 apart, 3 touch outside, 2 intersect, 1 touch inside,
+// 0 nested. Tangent at touching point has equal points
+// (line is perpendicular to A.C->B.C)
+// Returns (looking from A.C to B.C):
+// {left, left}, {right, right}, {left, right}, {right, left}
+vector<pair<vctr, vctr>> common_tangents(circle A, circle B) {
+  vctr d = B.C - A.C;
+  dbl d2 = d.dist2();
+  if (sign(d2) == 0) return {};
+  vector<pair<vctr, vctr>> res;
+  for (dbl r : {B.r, -B.r}) { // outer, inner
+    dbl dr = A.r - r, h2 = d2 - dr * dr;
+    if (sign(h2) < 0) continue;
+    dbl h = sqrtl(max<dbl>(h2, 0));
+    for (int s : {1, -1}) {
+      vctr v = (d * dr + d.rotate_ccw_90() * (s * h)) / d2;
+      res.pb({A.C + v * A.r, B.C + v * r});
+      if (sign(h2) == 0) break;
+    }
+  }
+  return res;
+}
 \end{lstlisting}
 
 \subsection{Выпуклая оболочка}
 \begin{lstlisting}[language=C++]
-vctr minvctr(INF, INF);
-
-bool cmp_convex_hull(const vctr &a, const vctr &b) {
-  vctr A = a - minvctr;
-  vctr B = b - minvctr;
-  auto sign_prod = sign(A * B);
-  if (sign_prod != 0)
-    return sign_prod > 0;
-  return A.dist2() < B.dist2();
+// need_all: also points on edges
+vector<vctr> convex_hull(vector<vctr> p, bool need_all = 0) {
+  sort(all(p), [](const vctr &a, const vctr &b) {
+    return tie(a.y, a.x) < tie(b.y, b.x);
+  });
+  p.erase(unique(all(p)), end(p)); // must have
+  int n = p.size(), k = 0;
+  if (n <= 2) return p;
+  auto bad = [&](vctr a, vctr b, vctr c) { // pop b?
+    return sign((b - a) * (c - b)) < !need_all;
+  };
+  vector<vctr> ch(2 * n);
+  for (int i = 0; i < n; ch[k++] = p[i++])
+    while (k >= 2 && bad(ch[k-2], ch[k-1], p[i])) --k;
+  for (int i = n - 2, t = k + 1; i >= 0; ch[k++] = p[i--])
+    while (k >= t && bad(ch[k-2], ch[k-1], p[i])) --k;
+  ch.resize(k - 1);
+// If hull is seg and need_all: p[0] p[1] .. p[n-1] .. p[1].
+// If need only one entry in this case: ch.resize(min(k-1, n));
+  return ch;
 }
-
-// minvctr updates here
-vector<vctr> get_convex_hull(vector<vctr> arr) {
-  minvctr = {INF, INF};
-  for (auto v : arr) {
-    auto tmp = v - minvctr;
-    if (sign(tmp.y) < 0 || (sign(tmp.y) == 0 && sign(tmp.x) < 0))
-      minvctr = v;
-  }
-  vector<vctr> hull;
-  sort(arr.begin(), arr.end(), cmp_convex_hull);
-  for (vctr &el : arr) {
-    while (hull.size() > 1 && sign((hull.back() - hull[hull.size() - 2]) * (el - hull.back())) <= 0)
-      hull.pop_back();
-    hull.push_back(el);
-  }
-  return hull;
-}
-
 \end{lstlisting}
 
 \subsection{Задача 16}
@@ -507,7 +512,7 @@ dbl distPointLine(vctr a, vctr l1, vctr l2) {
 }
 
 dbl distPointRay(vctr a, vctr r1, vctr r2) {
-  if (!isInSameHalf(a, r1, r2))
+  if (r1 == r2 || !isInSameHalf(a, r1, r2))
     return distPointPoint(a, r1);
   return distPointLine(a, r1, r2);
 }
@@ -529,23 +534,16 @@ vctr intersectionLineLine(line l1, line l2) {
   return vctr(x, y);
 }
 
-vctr getPointOnLine(line l) {
-  if (sign(l.b) != 0)
-    return vctr(0, -l.c / l.b);
-  return vctr(-l.c / l.a, 0);
-}
-
 dbl distLineLine(vctr l1a, vctr l1b, vctr l2a, vctr l2b) {
   line l1(l1a, l1b);
   line l2(l2a, l2b);
   if (isIntersectionLineLine(l1, l2))
     return 0;
-  vctr p = getPointOnLine(l1);
-  l2.normalize();
-  return abs(l2.get(p));
+  return distPointLine(l1a, l2a, l2b);
 }
 
 dbl distRayLine(vctr r1, vctr r2, vctr l1, vctr l2) {
+  if (r1 == r2) return distPointLine(r1, l1, l2);
   line r(r1, r2);
   line l(l1, l2);
   if (!isIntersectionLineLine(l, r))
@@ -562,6 +560,8 @@ dbl distSegLine(vctr s1, vctr s2, vctr l1, vctr l2) {
 }
 
 dbl distRayRay(vctr r1a, vctr r1b, vctr r2a, vctr r2b) {
+  if (r1a == r1b) return distPointRay(r1a, r2a, r2b);
+  if (r2a == r2b) return distPointRay(r2a, r1a, r1b);
   line r1(r1a, r1b);
   line r2(r2a, r2b);
   if (!isIntersectionLineLine(r1, r2)) {
@@ -592,7 +592,7 @@ dbl distSegSeg(vctr s1a, vctr s1b, vctr s2a, vctr s2b) {
 \subsection{Калиперы}
 \begin{lstlisting}[language=C++]
 // Диаметр выпуклого многоугольника
-int calipers(vector<vctr> &pts) {
+dbl calipers(vector<vctr> &pts) {
   int n = pts.size();
   int a = 0, b = 0;
   for (int i = 1; i < n; ++i) {
@@ -603,20 +603,51 @@ int calipers(vector<vctr> &pts) {
       b = i;
   }
   int aa = (a + 1) % n, bb = (b + 1) % n;
-  int dist2 = 0;
+  dbl dist2 = 0;
   for (int i = 0; i < n; ++i) {
     while (sign((pts[aa] - pts[a]) * (pts[bb] - pts[b])) > 0)
       b = bb, bb = (b + 1) % n;
     dist2 = max(dist2, (pts[a] - pts[b]).dist2());
     a = aa, aa = (a + 1) % n;
   }
-  return dist2;
+  return sqrtl(dist2);
 }
 \end{lstlisting}
 
-\subsection{Касательные из точки}
+\subsection{Касательные к двум многоугольникам}
 \begin{lstlisting}[language=C++]
-pair<int, int> tangents_from_point(vector<vctr> &p, vctr &a) {
+// A, B convex (CCW or CW, independently), no 3 collinear,
+// no common points.                      O(log n log m).
+// Returns (looking from A[i] to B[j]):
+// {left, left}, {left, right}, {right, left}, {right, right}
+vector<pair<int, int>> tangents_polys(vector<vctr> &A,
+                                      vector<vctr> &B) {
+  int n = A.size(), logn = 31 - __builtin_clz(n);
+  vector<pair<int, int>> res;
+  for (int sa : {1, -1}) for (int sb : {1, -1}) {
+    auto t = [&](int i) {
+      auto [r, l] = tangents_from_point(A[i], B);
+      return sb > 0 ? r : l;
+    };
+    auto d = [&](int i) { return B[t(i)] - A[i]; };
+    int i = 0;
+    for (int k = logn; k >= 0; --k) {
+      int i1 = (i - (1 << k) + n) % n;
+      int i2 = (i + (1 << k)) % n;
+      if (sign(d(i) * d(i1)) == sa) i = i1;
+      if (sign(d(i) * d(i2)) == sa) i = i2;
+    }
+    res.pb({i, t(i)});
+  }
+  return res;
+}
+\end{lstlisting}
+
+\subsection{Касательные к многоугольнику}
+\begin{lstlisting}[language=C++]
+// p convex (CCW or CW), no 3 collinear, a outside.
+// {right, left} tangents looking from a to p
+pair<int, int> tangents_from_point(vctr &a, vector<vctr> &p) {
   int n = p.size();
   int logn = 31 - __builtin_clz(n);
   auto findWithSign = [&](int sgn) {
@@ -632,11 +663,8 @@ pair<int, int> tangents_from_point(vector<vctr> &p, vctr &a) {
   return {findWithSign(1), findWithSign(-1)};
 }
 
-\end{lstlisting}
-
-\subsection{Касательные параллельные прямой}
-\begin{lstlisting}[language=C++]
-// find point with max (sgn=1) or min (sgn=-1) signed distance to line
+// p convex, no 3 collinear. Point with max (sgn=1) or
+// min (sgn=-1) signed distance to line
 int tangent_parallel_line(const vector<vctr> &p, line l, int sgn) {
   l *= sgn;
   int n = p.size();
@@ -650,34 +678,36 @@ int tangent_parallel_line(const vector<vctr> &p, line l, int sgn) {
   }
   return i;
 }
-
 \end{lstlisting}
 
 \subsection{Лежит ли точка в многоугольнике}
 \begin{lstlisting}[language=C++]
-// Выпуклый многоугольник, P[0] = minvctr
-bool is_point_in_poly(vctr A, vector<vctr> &P) {
-  auto tmp = A - P[0];
-  if (sign(tmp.y) < 0 || (sign(tmp.y) == 0 && sign(tmp.x) < 0))
-    return false;
-  if (sign(tmp.y) == 0 && sign(tmp.x) == 0) return true;
-  int ind = lower_bound(P.begin(), P.end(), A, cmp_convex_hull) - P.begin();
-  assert(ind != 0);
-  if (ind == P.size()) return false;
-  vctr B = A - P[ind - 1];
-  vctr C = P[ind] - P[ind - 1];
-  return sign(C * B) >= 0;
-}
-bool is_point_in_poly_strict(vctr A, vector<vctr> &P) {
-  if (sign(A.y - P[0].y) <= 0 || sign((A - P[0]) * (P.back() - P[0])) <= 0)
-      return false;
-  int ind = lower_bound(P.begin(), P.end(), A, cmp_convex_hull) - P.begin();
-  assert(ind != 0 && ind != P.size());
-  vctr B = A - P[ind - 1];
-  vctr C = P[ind] - P[ind - 1];
-  return sign(C * B) > 0;
+// convex CCW, no 3 collinear, any start, size >= 3
+bool is_point_in_convex_poly(vctr a, const vector<vctr> &p,
+                             bool strict = 0) {
+  int n = p.size(), l=1, r=n-1;
+  auto s = [&](int i, int j) {
+    return sign((p[j] - p[i]) * (a - p[i]));
+  };
+  if (s(0, 1) < strict || s(0, n-1) > -strict) return false;
+  while (r-l>1) {
+    int m = (l+r)/2;
+    (s(0, m) >= 0 ? l : r) = m;
+  }
+  return s(l, l+1) >= strict;
 }
 
+// p: any simple polygon, any orientation. O(n)
+bool is_point_in_any_poly(vctr a, const vector<vctr> &p,
+                          bool strict = 0) {
+  int n = p.size(), cnt = 0;
+  for (int i = 0, j = n - 1; i < n; j = i++) {
+    vctr u = p[j] - a, v = p[i] - a;
+    if (!sign(u * v) && sign(u % v) <= 0) return !strict;
+    cnt ^= ((0 < u.y) - (0 < v.y)) * sign(u * v) > 0;
+  }
+  return cnt;
+}
 \end{lstlisting}
 
 \subsection{Минимальная покрывающая окружность}
@@ -691,7 +721,6 @@ circle MinDisk2(vector<vctr> &p, vctr A, vctr B, int sz) {
   return w;
 }
 circle MinDisk1(vector<vctr> &p, vctr A, int sz) {
-  shuffle(p.begin(), p.begin() + sz, rnd);
   circle w(A, p[0]);
   for (int i = 1; i < sz; ++i) {
     if (w.isin(p[i])) continue;
@@ -715,10 +744,9 @@ circle MinDisk(vector<vctr> &p) {
 
 \subsection{Пересечение полуплоскостей}
 \begin{lstlisting}[language=C++]
-// `compare(a,b,c,d)=sign(a/b-c/d)` (when float).
 // For int line let $N=\max(|a|,|b|)$, $K=\max|c|$, then:
 // $O(\log)$ `compare` needs $2N^2$ and $2NK$ fit into type;
-// cross-multiplication `compare` needs $8N^3K$ with prods diff or $4N^3K$ without;
+// cross-multiplication `compare` needs $4N^3K$.
 
 
 // Half plane: ax+by+c >= 0. Bounding box MUST HAVE.
@@ -730,15 +758,18 @@ vector<int> calc_hpi_inds(const vector<line> &ls) {
   auto cr = [&](int i, int j) {
     return ls[i].a*ls[j].b-ls[i].b*ls[j].a;
   };
+  auto bigb = [&](int i){return abs(ls[i].b)>=abs(ls[i].a);};
   auto num = [&](int i, int j) {
-    if (ls[j].b) return ls[i].b*ls[j].c-ls[i].c*ls[j].b;
+    if (bigb(j)) return ls[i].b*ls[j].c-ls[i].c*ls[j].b;
     return ls[i].c*ls[j].a-ls[i].a*ls[j].c;
   };
   auto dir = [&](int i) {
-    return ls[i].b ? sign(ls[i].b) : -sign(ls[i].a);
+    return bigb(i) ? sign(ls[i].b) : -sign(ls[i].a);
   };
   auto on = [&](int i, int j){return -sign(num(i,j))*dir(j);};
   auto at = [&](int i, int j, int k) {
+    // return (int)sign(ls[k].get(intersection(ls[i],ls[j])));
+    // uncomment above and comment code below if float line
     if (!cr(j,k)) return on(k,j);
     return -sign(cr(j,k))*dir(j)*compare(
       num(i,j),cr(i,j),num(k,j),cr(k,j));
@@ -747,7 +778,7 @@ vector<int> calc_hpi_inds(const vector<line> &ls) {
     return !sign(cr(i,j))&&ls[i].a*ls[j].a+ls[i].b*ls[j].b>0;
   };
   for (int i = 0; i < n; ++i)
-    h[i] = ls[i].b<0||(ls[i].b==0&&ls[i].a<0);
+    h[i] = sign(ls[i].b)<0||(!sign(ls[i].b)&&ls[i].a<0);
   sort(q.begin(), q.end(), [&](int i, int j) { // 70% of time
     return h[i] != h[j] ? h[i] < h[j] : cr(i,j) > 0;
   });
@@ -822,29 +853,23 @@ bool is_intersection_seg(vctr A, vctr B, vctr C, vctr D) {
 
 \subsection{Сумма Минковского}
 \begin{lstlisting}[language=C++]
-// Список вершин -> список рёбер
-vector<vctr> poly_to_edges(const vector<vctr> &A) {
-  vector<vctr> edg(A.size());
-  for (int i = 0; i < A.size(); ++i)
-    edg[i] = A[(i + 1) % A.size()] - A[i];
-  return edg;
-}
-
-// A и B начинаются с минимальных вершин
-vector<vctr> minkowski_sum(const vector<vctr> &A, const vector<vctr> &B) {
-  auto edgA = poly_to_edges(A);
-  auto edgB = poly_to_edges(B);
-  vector<vctr> edgC(A.size() + B.size());
-  merge(edgA.begin(), edgA.end(), edgB.begin(), edgB.end(), edgC.begin(), cmp_angle);
-  // cmp_angle из шаблона вектора
-  vector<vctr> C(edgC.size());
-  C[0] = A[0] + B[0];
-  for (int i = 0; i + 1 < C.size(); ++i)
-    C[i + 1] = C[i] + edgC[i];
-  // могут быть точки на сторонах
+// A, B: CCW from min (y, x), no 3 collinear, size >= 1.
+// Result: CCW from min, no points on sides, no duplicates
+vector<vctr> minkowski_sum(vector<vctr> A, vector<vctr> B) {
+  int n = A.size(), m = B.size();
+  A.pb(A[0]), A.pb(A[1 % n]);
+  B.pb(B[0]), B.pb(B[1 % m]);
+  vector<vctr> C; C.reserve(n+m);
+  for (int i = 0, j = 0; i < n || j < m; ) {
+    C.pb(A[i] + B[j]);
+    vctr a = A[i + 1] - A[i], b = B[j + 1] - B[j];
+    // cmp_angle from vctr template
+    int c = j==m ? 1 : i==n || cmp_angle(b,a) ? -1 : cmp_angle(a,b);
+    if (c >= 0) ++i;
+    if (c <= 0) ++j;
+  }
   return C;
 }
-
 \end{lstlisting}
 
 \section{Графы}
@@ -860,9 +885,7 @@ struct TwoSat {
   TwoSat(int n) : n(n) {
     g.resize(2 * n);
     rg.resize(2 * n);
-    comp.assign(2 * n, -1);
     topsort.reserve(2 * n);
-    used.assign(2 * n, 0);
   }
 
   int neg(int v) {
@@ -900,6 +923,8 @@ struct TwoSat {
   }
 
   void SCC() {
+    used.assign(2 * n, 0), comp.assign(2 * n, -1);
+    topsort.clear();
     for (int v = 0; v < 2 * n; ++v) {
       if (!used[v])
         dfs1(v);
@@ -929,34 +954,35 @@ struct TwoSat {
 \subsection{L-R Flow}
 \begin{lstlisting}[language=C++]
 struct LRFlow {
-  Dinic dinic;
+  Dinic dinic; // ориентированные рёбра
   int S, T; // исток и сток
   int Sx, Tx; // вспомогательные вершины, любые неиспользуемые индексы
   vector<ll> dem;
 
-  LRFlow(int n, int S, int T, int Sx, int Tx) : S(S), T(T), Sx(Sx), Tx(Tx), dinic(n), dem(n) {}
+  LRFlow(int n, int S, int T, int Sx, int Tx)
+    : dinic(n), S(S), T(T), Sx(Sx), Tx(Tx), dem(n) {}
 
-  void addedge(int v, int u, int mincap, int maxcap, int i) {
-    // i - any number, can be used for flow restoring. Just store it inside Edge.
-    dinic.addedge(v, u, maxcap - mincap, i);
-    dem[v] -= mincap;
-    dem[u] += mincap;
+  // returns id: real flow = dinic.graph[v][id].f + mincap
+  int addedge(int v, int u, flow_t mincap, flow_t maxcap) {
+    dem[v] -= mincap, dem[u] += mincap;
+    return dinic.addedge(v, u, maxcap - mincap);
   }
 
-  // edge.real_flow = edge.flow + edge.mincap
-  // returns true if found flow is feasible
-  // size of flow is sum flows+mincaps from S
+  // returns true if found flow is feasible.
+  // size of flow (after aux edges are removed below):
+  // sum e.f over dinic.graph[S] - dem[S]
   bool run() {
-    dinic.addedge(T, S, INF, -1); // INF >= sum maxcap-mincap
     ll totaldem = 0;
     for (int v = 0; v < dem.size(); ++v) {
       if (dem[v] > 0) {
         totaldem += dem[v];
-        // here capacity could be long long (sum of v's mincaps)
-        dinic.addedge(Sx, v, dem[v], -1);
+        // aux capacities are sums: flow_t must fit totaldem (~ sum of mincaps)
+        dinic.addedge(Sx, v, dem[v]);
       } else if (dem[v] < 0)
-        dinic.addedge(v, Tx, -dem[v], -1);
+        dinic.addedge(v, Tx, -dem[v]);
     }
+    dinic.addedge(T, S, totaldem); // totaldem is enough
+    dinic.addedge(S, T, totaldem); // for total flow < 0
     dinic.run(Sx, Tx);
     ll flow = 0;
     for (auto &e : dinic.graph[Sx]) flow += e.f;
@@ -967,9 +993,9 @@ struct LRFlow {
     }
     dinic.graph[Sx].clear();
     dinic.graph[Tx].clear();
-    dinic.graph[S].pop_back();
-    dinic.graph[T].pop_back();
-    // dinic.run(S, T); // if we want max lr-flow (not any lr-flow)
+    for (int i = 0; i < 2; ++i) // T->S, S->T
+      dinic.graph[S].pop_back(), dinic.graph[T].pop_back();
+    dinic.run(S, T); // if we want max lr-flow (not any lr-flow)
     return true;
   }
 };
@@ -978,16 +1004,16 @@ struct LRFlow {
 \subsection{WeightedMatching}
 \begin{lstlisting}[language=C++]
 // НЕ ЗАБЫТЬ вызвать init(n)
-// вершины нумераются от 1 до n
+// Вершины нумераются от 1 до n. Петли и кратные рёбра - ок.
+// Ищет паросочетание max веса, число рёбер любое.
 namespace weighted_matching{
-  const int INF = (int)1e9 + 7;
+  const ll INF = 1e18; // > 4 * max w
   const int MAXN = 1050; //double of possible N
-  struct E{
-    int x, y, w;
-  };
+  struct E { int x, y; ll w; };
   int n, m;
   E G[MAXN][MAXN];
-  int lab[MAXN], match[MAXN], slack[MAXN], st[MAXN], pa[MAXN];
+  ll lab[MAXN];
+  int match[MAXN], slack[MAXN], st[MAXN], pa[MAXN];
   int flo_from[MAXN][MAXN], S[MAXN], vis[MAXN];
   vector<int> flo[MAXN];
   queue<int> Q;
@@ -997,10 +1023,10 @@ namespace weighted_matching{
       for(int y = 1; y <= n; ++y)
         G[x][y] = E{x, y, 0};
   }
-  void add_edge(int x, int y, int w) {
-    G[x][y].w = G[y][x].w = w;
+  void add_edge(int x, int y, ll w) {
+    G[x][y].w = G[y][x].w = max(G[x][y].w, w);
   }
-  int e_delta(E e) {
+  ll e_delta(E e) {
     return lab[e.x] + lab[e.y] - G[e.x][e.y].w * 2;
   }
   void update_slack(int u, int x) {
@@ -1067,12 +1093,12 @@ namespace weighted_matching{
     lab[b] = 0, S[b] = 0;
     match[b] = match[l];
     flo[b].clear();
-    flo[b].push_back(l);
+    flo[b].pb(l);
     for(int u = x, v; u != l; u = st[pa[v]])
-      flo[b].push_back(u), flo[b].push_back(v = st[match[u]]), q_push(v);
+      flo[b].pb(u), flo[b].pb(v = st[match[u]]), q_push(v);
     reverse(flo[b].begin() + 1, flo[b].end());
     for(int u = y, v; u != l; u = st[pa[v]])
-      flo[b].push_back(u), flo[b].push_back(v = st[match[u]]), q_push(v);
+      flo[b].pb(u), flo[b].pb(v = st[match[u]]), q_push(v);
     set_st(b, b);
     for(int i = 1; i <= m; ++i) G[b][i].w = G[i][b].w = 0;
     for(int i = 1; i <= n; ++i) flo_from[b][i] = 0;
@@ -1140,7 +1166,7 @@ namespace weighted_matching{
           }
         }
       }
-      int d = INF;
+      ll d = INF;
       for(int b = n + 1; b <= m; ++b)
         if(st[b] == b && S[b] == 1) d = min(d, lab[b] / 2);
       for(int x = 1; x <= m; ++x)
@@ -1170,12 +1196,12 @@ namespace weighted_matching{
     }
     return false;
   }
-  pair<int, int> solve(vector<pair<int, int>> &ans) {
+  pair<ll, int> solve(vector<pair<int, int>> &ans) {
     fill(match + 1, match + n + 1, 0);
     m = n;
-    int cnt = 0; int sum = 0;
+    int cnt = 0; ll sum = 0;
     for(int u = 0; u <= n; ++u) st[u] = u, flo[u].clear();
-    int mx = 0;
+    ll mx = 0;
     for(int x = 1; x <= n; ++x)
       for(int y = 1; y <= n; ++y){
         flo_from[x][y] = (x == y ? x : 0);
@@ -1186,35 +1212,46 @@ namespace weighted_matching{
     for(int x = 1; x <= n; ++x)
       if(match[x] && match[x] < x) {
         sum += G[x][match[x]].w;
-        ans.push_back({x, G[x][match[x]].y});
+        ans.pb({x, G[x][match[x]].y});
       }
     return {sum, cnt};
   }
 }
+// n вершин, W = max|w|. давать w':
+//   max вес, затем max рёбер: w' = n * w + 1
+//   max вес, затем min рёбер: w' = n * w - 1
+//   min вес, затем ...: то же с -w вместо w
+//   max рёбер, затем max вес: w' = n * W + 1 + w
+//   max рёбер, затем min вес: w' = n * W + 1 - w
+// вес ответа считать по исходным w. нужно 4 * max w' < INF
 \end{lstlisting}
 
 \subsection{Венгерский алгоритм}
 \begin{lstlisting}[language=C++]
-pair<int, vector<int>> venger(vector<vector<int>> a) {
+pair<ll, vector<int>> venger(vector<vector<ll>> a) {
 // ищет минимальное по стоимости
 // работает только при n <= m
 // a - массив весов $(n+1) \times (m+1)$
 // a[0][..] = a[..][0] = 0
+// a[i][j] любые (>0, <0, =0), n * max|a[i][j]| <= 1.5e18
 // возвращает ans[i] = j если взяли ребро a[i][j]
-  int n = (int)a.size() - 1;
-  int m = (int)a[0].size() - 1;
-  vector<int> u(n + 1), v(m + 1), p(m + 1), way(m + 1);
+  int n = ssize(a) - 1;
+  int m = ssize(a[0]) - 1;
+  vector<ll> u(n + 1), v(m + 1);
+  vector<int> p(m + 1), way(m + 1);
+  const ll INF = LLONG_MAX;
   for (int i = 1; i <= n; ++i) {
     p[0] = i;
     int y = 0;
-    vector<int> minv(m + 1, INF);
+    vector<ll> minv(m + 1, INF);
     vector<char> used(m + 1, false);
     do {
       used[y] = true;
-      int x = p[y], delta = INF, z;
+      int x = p[y], z;
+      ll delta = INF;
       for (int j = 1; j <= m; ++j) {
         if (!used[j]) {
-          int cur = a[x][j] - u[x] - v[j];
+          ll cur = a[x][j] - u[x] - v[j];
           if (cur < minv[j])
             minv[j] = cur, way[j] = y;
           if (minv[j] < delta)
@@ -1235,7 +1272,7 @@ pair<int, vector<int>> venger(vector<vector<int>> a) {
       y = z;
     } while (y);
   }
-  int cost = -v[0];
+  ll cost = -v[0];
   vector<int> ans(n + 1);
   for (int j = 1; j <= m; ++j)
     ans[p[j]] = j;
@@ -1265,7 +1302,7 @@ void dfs(int v, int pei) {
           col[st[--sti]] = cc;
         cc++;
       }
-    } else if (tin[u] <= tin[v]) {
+    } else if (tin[u] < tin[v]) {
       st[sti++] = ei;
       upv = min(upv, tin[u]);
     }
@@ -1280,20 +1317,24 @@ for (int v = 0; v < n; ++v) {
   if (!vis[v])
     dfs(v, -1);
 }
-// col[i] - компонента i-го ребра
+// col[i] - компонента i-го ребра (у петель -1)
 // cc - итоговое кол-во компонент
 \end{lstlisting}
 
 \subsection{Диниц}
 \begin{lstlisting}[language=C++]
+// flow_t: capacity of one edge, total flow is ll
+// undirected edges: flow_t must fit 2c
+using flow_t = int;
 const int LOG = 29; // масштабирование, =0 если не нужно
-struct Edge { int u, f, c, r; };
+struct Edge { int u, r; flow_t f, c; };
 
 struct Dinic {
   vector<vector<Edge>> graph;
   vector<char> vis;
   vector<int> inds, dist, Q;
-  int ql, qr, S, T, BIT;
+  int ql, qr, S, T;
+  flow_t BIT; // 2^LOG must fit flow_t
   Dinic(int n) : graph(n), vis(n), inds(n), dist(n), Q(n) {}
 
   bool bfs() {
@@ -1316,9 +1357,9 @@ struct Dinic {
     return false;
   }
 
-  int dfs(int v, int maxF) {
+  flow_t dfs(int v, flow_t maxF) {
     if (v == T) return maxF;
-    int ans = 0;
+    flow_t ans = 0;
     for (int &i = inds[v]; i < graph[v].size(); ++i) {
       auto &e = graph[v][i];
       auto cc = min(maxF - ans, e.c - e.f);
@@ -1336,6 +1377,7 @@ struct Dinic {
     return ans;
   }
 
+  // repeated runs are NOT independent
   void run(int s, int t) {
     S = s, T = t;
     assert(S != T);
@@ -1345,39 +1387,41 @@ struct Dinic {
         for (auto &e : graph[S]) {
           if (inds[e.u] == graph[e.u].size() || e.c - e.f < BIT)
             continue;
-          int f = dfs(e.u, e.c - e.f);
+          flow_t f = dfs(e.u, e.c - e.f);
           e.f += f, graph[e.u][e.r].f -= f;
         }
       }
     }
   }
 
-  void addedge(int v, int u, int c) {
-    graph[v].push_back({u, 0, c, (int)graph[u].size()});
+  int addedge(int v, int u, flow_t c) { // index in graph[v]
+    int i = graph[v].size();
+    graph[v].pb({u, (int)graph[u].size(), 0, c});
     // если не ориентированно, то обратная capacity = c
-    graph[u].push_back({v, 0, 0, (int)graph[v].size() - 1});
+    graph[u].pb({v, i, 0, 0});
+    return i;
   }
 };
 
 void use_example() {
   Dinic dinic(n);
   for (int i = 0; i < m; ++i) {
-    int v, u, c;
+    int v, u; flow_t c;
     cin >> v >> u >> c;
     v--, u--;
     dinic.addedge(v, u, c);
   }
   dinic.run(s, t);
 
-  ll maxflow = 0;
+  ll maxflow = 0; // may not fit flow_t
   for (auto &e : dinic.graph[s])
     maxflow += e.f;
 
   vector<int> cut;
   for (int i = 0; i < m; i++) {
     auto &e = edges[i];
-    if (dinic.vis[e.v] != dinic.vis[e.u])
-      cut.push_back(i);
+    if (dinic.vis[e.v] && !dinic.vis[e.u])
+      cut.pb(i);
   }
 }
 \end{lstlisting}
@@ -1429,14 +1473,14 @@ void cactus_dfs(int v, int pei, vector<vector<int>> &c2vs, vector<int> &e2c, vec
     if (ei == pei || e2c[ei] != -1)
         continue;
     if (used[u]) {
-      int с = c2vs.size();
+      int c = c2vs.size();
       c2vs.emplace_back();
       for (int j = st.size()-1; st[j].first != u; --j) {
-        c2vs[с].pb(st[j].first);
-        e2c[st[j].second] = с;
+        c2vs[c].pb(st[j].first);
+        e2c[st[j].second] = c;
       }
-      c2vs[с].pb(u);
-      e2c[ei] = с;
+      c2vs[c].pb(u);
+      e2c[ei] = c;
       continue;
     }
     cactus_dfs(u, ei, c2vs, e2c, g, used, st);
@@ -1450,7 +1494,7 @@ signed main() {
   // c2vs[c] = список вершин цикла c (в порядке обхода)
   vector<int> e2c(m, -1); 
   vector<vector<int>> c2vs;
-  c2vs.reserve(m - n + 1); // m - n + #комп.связ.
+  c2vs.reserve(m - n + 1); // 1 заменить на #комп.связ.
   {
     vector<char> used(n, 0);
     vector<pair<int, int>> st;
@@ -1479,127 +1523,114 @@ signed main() {
 
 \subsection{Минкост}
 \begin{lstlisting}[language=C++]
-
-using cost_t = ll;
+// flow_t: capacity of one edge, total flow is ll
+// cost_t: must fit n * max|w| and the answer
 using flow_t = int;
+using cost_t = ll;
+const cost_t INFw = 1e18;
+const flow_t INFf = 2e9;
 
-const int MAXN = 10000;
-const int MAXM = 25000 * 2;
-const cost_t INFw = 1e12;
-const flow_t INFf = 10;
+struct MinCost {
+  struct Edge { int v, u; flow_t f, c; cost_t w; };
+  vector<Edge> edg; // edg[i ^ 1] is reverse of edg[i]
+  vector<vector<int>> graph;
+  vector<cost_t> dist, pot;
+  vector<int> pre;
+  vector<char> inQ;
+  int S, T;
+  MinCost(int n)
+    : graph(n), dist(n), pot(n), pre(n), inQ(n) {}
 
-struct Edge {
-  int v, u;
-  flow_t f, c;
-  cost_t w;
-};
-
-Edge edg[MAXM];
-int esz = 0;
-vector<int> graph[MAXN];
-ll dist[MAXN];
-ll pot[MAXN];
-int S, T;
-int NUMV;
-int pre[MAXN];
-bitset<MAXN> inQ;
-
-flow_t get_flow() {
-  int v = T;
-  if (pre[v] == -1)
-    return 0;
-  flow_t f = INFf;
-  do {
-    int ei = pre[v];
-    Edge &e = edg[ei];
-    f = min(f, e.c - e.f);
-    if (f == 0)
-      return 0;
-    v = e.v;
-  } while (v != S);
-  v = T;
-  do {
-    int ei = pre[v];
-    edg[ei].f += f;
-    edg[ei ^ 1].f -= f;
-    v = edg[ei].v;
-  } while (v != S);
-  return f;
-}
-
-void spfa() {
-  fill(dist, dist + NUMV, INFw);
-  dist[S] = 0;
-  deque<int> Q = {S};
-  inQ[S] = true;
-  while (!Q.empty()) {
-    int v = Q.front();
-    Q.pop_front();
-    inQ[v] = false;
-    cost_t d = dist[v];
-    for (int ei : graph[v]) {
+  flow_t get_flow() {
+    int v = T;
+    if (pre[v] == -1) return 0;
+    flow_t f = INFf;
+    do {
+      int ei = pre[v];
       Edge &e = edg[ei];
-      if (e.f == e.c)
-        continue;
-      cost_t w = e.w + pot[v] - pot[e.u];
-      if (dist[e.u] <= d + w)
-        continue;
-      pre[e.u] = ei;
-      dist[e.u] = d + w;
-      if (!inQ[e.u]) {
-        inQ[e.u] = true;
-        Q.push_back(e.u);
+      f = min(f, e.c - e.f);
+      if (f == 0) return 0;
+      v = e.v;
+    } while (v != S);
+    v = T;
+    do {
+      int ei = pre[v];
+      edg[ei].f += f;
+      edg[ei ^ 1].f -= f;
+      v = edg[ei].v;
+    } while (v != S);
+    return f;
+  }
+
+  void spfa() {
+    fill(all(dist), INFw);
+    fill(all(pre), -1);
+    dist[S] = 0;
+    deque<int> Q = {S};
+    inQ[S] = true;
+    while (!Q.empty()) {
+      int v = Q.front();
+      Q.pop_front();
+      inQ[v] = false;
+      cost_t d = dist[v];
+      for (int ei : graph[v]) {
+        Edge &e = edg[ei];
+        if (e.f == e.c) continue;
+        cost_t w = e.w + pot[v] - pot[e.u];
+        if (dist[e.u] <= d + w) continue;
+        pre[e.u] = ei;
+        dist[e.u] = d + w;
+        if (!inQ[e.u]) {
+          inQ[e.u] = true;
+          Q.pb(e.u);
+        }
       }
     }
+    for (int i = 0; i < dist.size(); ++i)
+      if (dist[i] < INFw) // else pot overflows
+        pot[i] += dist[i];
   }
-  for (int i = 0; i < NUMV; ++i)
-    pot[i] += dist[i];
-}
 
-cost_t mincost() {
-  spfa(); // pot[i] = 0 // or ford_bellman
-  flow_t f = 0;
-  while (true) {
-    flow_t ff = get_flow();
-    if (ff == 0)
-      break;
-    f += ff;
-    spfa(); // or dijkstra
+  // returns {flow, cost}
+  // repeated runs are NOT independent
+  pair<ll, cost_t> run(int s, int t) {
+    S = s, T = t;
+    spfa(); // pot[i] = 0 // or ford_bellman
+    ll flow = 0;
+    while (true) {
+      flow_t ff = get_flow();
+      if (ff == 0) break;
+      flow += ff;
+      spfa(); // or dijkstra
+    }
+    cost_t cost = 0;
+    for (int i = 0; i < edg.size(); i += 2)
+      cost += edg[i].f * edg[i].w;
+    return {flow, cost};
   }
-  cost_t res = 0;
-  for (int i = 0; i < esz; ++i)
-    res += edg[i].f * edg[i].w;
-  res /= 2;
-  return res;
-}
 
-void add_edge(int v, int u, int c, int w) {
-  edg[esz] = {v, u, 0, c, w};
-  edg[esz + 1] = {u, v, 0, 0, -w};
-  graph[v].push_back(esz);
-  graph[u].push_back(esz + 1);
-  esz += 2;
-}
+  // returns id: flow on the edge = edg[id].f
+  int addedge(int v, int u, flow_t c, cost_t w) {
+    // reserve edg to m*2 before adding
+    int i = edg.size();
+    edg.pb({v, u, 0, c, w});
+    edg.pb({u, v, 0, 0, -w});
+    graph[v].pb(i);
+    graph[u].pb(i + 1);
+    return i;
+  }
+};
 
-signed main() {
-  ios_base::sync_with_stdio(false);
-  cin.tie(nullptr);
-  int n, m;
-  cin >> n >> m;
-  S = 0;
-  T = n - 1;
-  NUMV = n;
+void use_example() {
+  MinCost mc(n);
   for (int i = 0; i < m; ++i) {
-    int v, u, c, w;
+    int v, u; flow_t c; cost_t w;
     cin >> v >> u >> c >> w;
     v--, u--;
-    add_edge(v, u, c, w);
+    mc.addedge(v, u, c, w);
   }
-  cost_t ans = mincost();
-  cout << ans;
+  auto [flow, cost] = mc.run(s, t);
 }
-
-
 \end{lstlisting}
 
 \subsection{Мосты}
@@ -1645,6 +1676,7 @@ bool dfs(int v, int c) {
 signed main() {
   // n - в левой доле, m - в правой
   fill(res, res + m, -1);
+  fill(used, used + n, 0);
   int ans = 0;
   for (int i = 0; i < n; ++i) {
     ans += dfs(i, ans + 1);
@@ -1749,6 +1781,78 @@ vector<T> matroid_intersection(const std::vector<T> &ground_set, const A &matroi
 }
 \end{lstlisting}
 
+\subsection{Простой путь с заходом}
+\begin{lstlisting}[language=C++]
+// Кратчайший простой путь s->t через все need, неор граф.
+// s==t => непустой цикл (даже при |need|=0).
+// O(2^|need| (n+m) ans)
+ull path_mul(ull a, ull b) {
+  ull r = 0;
+  for (; b; b >>= 1, a = (a << 1) ^ (a >> 63) * 27)
+    r ^= a * (b & 1);
+  return r;
+}
+
+// Возвращает {число рёбер, первая вершина после s}, либо {-1,-1} если нет.
+pair<int, int> find_path_through_specified(int n,
+    vector<pair<int, int>> edges, int s, int t,
+    vector<int> need) {
+  vector<int> bit(n);
+  int k = 0;
+  for (auto v : need) {
+    if (v == s || v == t || bit[v]) continue;
+    bit[v] = 1 << k++;
+  }
+  int masks = 1 << k;
+  struct Edge { int v, u; ull w; };
+  vector<Edge> es;
+  vector<int> from, to;
+  for (auto [v, u] : edges) {
+    if ((v == s && u == t) || (v == t && u == s)) {
+      if (k == 0) return {1, t};
+      continue;
+    }
+    if (v == s || u == s) from.push_back(v ^ u ^ s);
+    if (v == t || u == t) to.push_back(v ^ u ^ t);
+    if (v != s && v != t && u != s && u != t) {
+      ull w = rnd();
+      es.push_back({v, u, w});
+      es.push_back({u, v, w});
+    }
+  }
+  int m = es.size();
+  vector<vector<ull>> dp(masks, vector<ull>(n));
+  vector<vector<ull>> dp_e(masks, vector<ull>(m));
+  auto ndp = dp, ndp_e = dp_e;
+  for (auto v : to) dp[bit[v]][v] = rnd();
+  for (int len = 1; len < n; ++len) {
+    if (s != t || len >= 2) {
+      for (auto v : from) {
+        if (dp[masks - 1][v]) return {len + 1, v};
+      }
+    }
+    if (len + 1 == n) break;
+    for (auto &r : ndp) fill(all(r), 0);
+    for (auto &r : ndp_e) fill(all(r), 0);
+    for (int mask = 0; mask < masks; ++mask) {
+      for (int id = 0; id < m; ++id) {
+        auto [v, u, w] = es[id];
+        if (bit[u] && (mask & bit[u])) continue;
+        int nmask = mask | bit[u];
+        ull x = dp[mask][v] ^ dp_e[mask][id ^ 1];
+        if (!x) continue;
+        x = path_mul(x, w);
+        ndp[nmask][u] ^= x;
+        ndp_e[nmask][id] ^= x;
+      }
+    }
+    swap(dp, ndp);
+    swap(dp_e, ndp_e);
+  }
+  return {-1, -1};
+}
+\end{lstlisting}
+
 \subsection{Точки сочленения}
 \begin{lstlisting}[language=C++]
 void dfs(int v, int p = -1) {
@@ -1827,9 +1931,9 @@ bool redundant(line a, line b, line c) {
   return (a.b - b.b) * (i128)(c.k - b.k)
       >= (b.b - c.b) * (i128)(b.k - a.k);
 }
-// floating point alternative
+// floating point alternative, if k and b are not integer
 dbl inter(line a, line b) { return (a.b-b.b)/(dbl)(b.k-a.k); }
-bool redundant(line a, line b, line c) { return inter(a, b)>=inter(b, c); }
+bool redundant(line a, line b, line c) { return inter(a,b)>=inter(b,c); }
 
 // |k|, |b| <= 1e18; query answer must fit long long
 struct ConvexHull {
@@ -1850,7 +1954,7 @@ struct ConvexHull {
 
   ll get_val(ll x) {
     if (st.empty()) return -INF; // +INF for min
-    int l = -1, r = ssize(s) - 1;
+    int l = -1, r = ssize(st) - 1;
     while (r - l > 1) {
       int m = (l + r) / 2;
       if (st[m].eval(x) < st[m + 1].eval(x)) l = m; // > for min
@@ -1887,7 +1991,7 @@ struct LiChao {
     if (qr <= l || r <= ql) { return v; }
     if (ql <= l && r <= qr) { return add(v, l, r, ln); }
     if (!v) { v = t.size(), t.pb({0, 0, {0, -INF}}); }
-    ll m = (l + r) / 2;
+    ll m = (l + r) >> 1; // NOT (l+r)/2
     t[v].l = add_on_seg(t[v].l, l, m, ql, qr, ln);
     t[v].r = add_on_seg(t[v].r, m, r, ql, qr, ln);
     return v;
@@ -1902,7 +2006,7 @@ struct LiChao {
       t.pb({0, 0, ln});
       return v;
     }
-    ll m = (l + r) / 2;
+    ll m = (l + r) >> 1; // NOT (l+r)/2
     if (ln(m) > t[v].ln(m)) swap(ln, t[v].ln); // "<" for min
     if (r - l == 1 || ln.k == t[v].ln.k) return v;
     if (ln.k < t[v].ln.k) t[v].l = add(t[v].l, l, m, ln); // ">" for min
@@ -1917,7 +2021,7 @@ struct LiChao {
     ll l = L, r = R;
     while (v) {
       ans = max(ans, t[v].ln(x)); // "min" for min
-      ll m = (l + r) / 2;
+      ll m = (l + r) >> 1; // NOT (l+r)/2
       if (x < m) v = t[v].l, r = m;
       else v = t[v].r, l = m;
     }
@@ -1960,8 +2064,9 @@ for (int i = 0; i < N; i++) {
 void unlimited_knapsack(int n, int T, vector<int> &v) {
   // O(n^2 log n + T)
   // v[1..n], v[i] --- best value of a single item with weight=i (-inf for non-existent)
-  vector<int> items(n);
-  iota(all(items), 1);
+  vector<int> items;
+  for (int i = 1; i <= n; i++)
+    if (v[i] > -inf) items.pb(i);
   sort(all(items), [&](int i, int j) {
     return v[i] * j > v[j] * i;
   });
@@ -1978,6 +2083,7 @@ void unlimited_knapsack(int n, int T, vector<int> &v) {
     }
   }
   // v[i] --- best total value of items with total weight=i
+  // weight i is unreachable if `v[i] < -inf/2` (not `== -inf`)
 }
 \end{lstlisting}
 
@@ -2012,37 +2118,47 @@ vector<int> calc_lis(const vector<int> &a) {
 
 \subsection{Centroid}
 \begin{lstlisting}[language=C++]
-int levels[MAXN];
-int szs[MAXN];
-int cent_par[MAXN];
-
-int calcsizes(int v, int p) {
-  int sz = 1;
-  for (int u : graph[v]) {
-    if (u != p && levels[u] == 0)
-      sz += calcsizes(u, v);
+// g: tree or forest
+// par[v] = parent in centroid trees; -1 for roots
+// level[root] = 1
+struct Centroid {
+  const vector<vector<int>> &g;
+  vector<int> levels, _szs, par;
+  Centroid(const vector<vector<int>> &g) : g(g),
+      levels(g.size()), _szs(g.size()), par(g.size()) {
+    for (int v = 0; v < g.size(); ++v)
+      if (levels[v] == 0) build(v);
   }
-  return szs[v] = sz;
-}
 
-void centroid(int v, int lvl=1, int p=-1) {
-  int sz = calcsizes(v, -1);
-  int nxt = v, prv;
-  while (nxt != -1) {
-    prv = v, v = nxt, nxt = -1;
-    for (int u : graph[v]) {
-      if (u != prv && levels[u] == 0 && szs[u] * 2 >= sz)
-        nxt = u;
+  int _calcsizes(int v, int p) {
+    int sz = 1;
+    for (int u : g[v]) {
+      if (u != p && levels[u] == 0)
+        sz += _calcsizes(u, v);
     }
+    return _szs[v] = sz;
   }
-  levels[v] = lvl;
-  cent_par[v] = p;
-  for (int u : graph[v]) {
-    if (levels[u] == 0)
-      centroid(u, lvl + 1, v);
+
+  void build(int v, int lvl = 1, int p = -1) {
+    int sz = _calcsizes(v, -1);
+    int nxt = v, prv;
+    while (nxt != -1) {
+      prv = v, v = nxt, nxt = -1;
+      for (int u : g[v]) {
+        if (u != prv && levels[u] == 0 && _szs[u] * 2 >= sz)
+          nxt = u;
+      }
+    }
+    levels[v] = lvl;
+    par[v] = p;
+    for (int u : g[v]) {
+      if (levels[u] == 0)
+        build(u, lvl + 1, v);
+    }
+    // calc smth for centroid v: dfs by levels[u]>=lvl
+    // _szs[] are NOT subtree sizes (it's trash)
   }
-  // calc smth for centroid v
-}
+};
 \end{lstlisting}
 
 \subsection{HLD}
@@ -2286,7 +2402,9 @@ struct Hashmap {
   const V &operator[](cK &x) const { return *find(x); }
   V &operator[](cK &x) {
     int i = pos(x);
-    if (k[i]!=x) k[i]=x;
+    // Use =V() if need default constructor and erase
+    //   (e.g. `cnt.erase(x); cnt[y]++;`)
+    if (k[i]!=x) k[i]=x; //, v[i]=V();
     return v[i]; 
   }
   bool erase(cK &x) {
@@ -2529,17 +2647,19 @@ void make_change() {
 
 \subsection{AdivB cmp CdivD}
 \begin{lstlisting}[language=C++]
-// -1 = less, 0 = equal, 1 = greater
+// a/b vs c/d: -1 = less, 0 = equal, 1 = greater
+// O(1) cross-multiplication
 char compare(ll a, ll b, ll c, ll d) {
-  if (a / b != c / d) return sign(a / b - c / d);
+  i128 l = (i128)a * d, r = (i128)c * b;
+  return ((l>r) - (l<r)) * sign(b) * sign(d);
+}
+// O(log), only a,b,c,d must fit into type
+char compare(i128 a, i128 b, i128 c, i128 d) {
+  if (a/b != c/d) return a/b < c/d ? -1 : 1;
   a %= b, c %= d;
   if (a == 0) return -sign(c) * sign(d);
   if (c == 0) return sign(a) * sign(b);
-  return compare(d, c, b, a) * sign(a) * sign(b) * sign(c) * sign(d);
-}
-// O(1) cross-multiplicatoin equivalent
-char compare(ll a, ll b, ll c, ll d) {
-  return sign(a*d-c*b)*sign(b)*sign(d);
+  return compare(d,c,b,a)*sign(a)*sign(b)*sign(c)*sign(d);
 }
 \end{lstlisting}
 
@@ -2563,7 +2683,7 @@ int getkfps(vector<ll> p, vector<ll> q, ll k) {
     }
     k >>= 1;
   }
-  return (int) ((p[0] * inverse(q[0])) % MOD);
+  return p.empty() ? 0 : (p[0] * inverse(q[0])) % MOD;
 }
 
 // a - initials values of sequence, s - result of berlekamp on a
@@ -2685,6 +2805,7 @@ void fft(vector<comp> &A, int lg) {
   }
 }
 
+// optional, can be skipped
 void fft2(vector<comp> &A, vector<comp> &B, int lg) {
   int n = A.size();
   vector<comp> C(n);
@@ -2711,7 +2832,7 @@ void invfft(vector<comp> &A, int lg) {
 vector<int> mul(vector<int> &a, vector<int> &b) {
   if (a.empty() || b.empty())
     return {};
-  int lg = 32 - __builtin_clz(a.size() + b.size() - 1);
+  int lg = 32-__builtin_clz(max<int>(1,a.size()+b.size()-2));
   int n = 1 << lg;
   vector<comp> A(n, 0), B(n, 0);
   for (int i = 0; i < a.size(); ++i)
@@ -2734,19 +2855,114 @@ vector<int> mul(vector<int> &a, vector<int> &b) {
 
 \end{lstlisting}
 
-\subsection{Floor Sum}
+\subsection{Floor Sum, Min Rem}
 \begin{lstlisting}[language=C++]
-int floor_sum(int n, int d, int m, int a) {
-  // sum_{i=0}^{n-1} floor((a + i*m)/d), only non-negative integers!
-  int ans = 0;
-  ans += (n * (n - 1) / 2) * (m / d);
-  m %= d;
-  ans += n * (a / d);
-  a %= d;
-  int l = m * n + a;
-  if (l >= d)
-    ans += floor_sum(l / d, m, d, l % d);
+// f(x) = (a*x+b) mod m in [0,m); ll = __int128.
+// S = {0} U {x > 0 : f(x) < min_{0 <= j < x} f(j)}.
+// {X,DX}: S = {0} U {X[i] + t*DX[i] : 0 <= i < DX.size(),
+//   1 <= t <= (X[i+1]-X[i])/DX[i]}; X[0] = 0; O(log m).
+pair<vector<ll>, vector<ll>> min_of_linear_segments(ll a, ll b, ll m) {
+  a = (a % m + m) % m, b = (b % m + m) % m;
+  ll g = __gcd(a, m);
+  ll A = a / g, M = m / g, y = b / g;
+  ll q = 1, s = 1, dl = M - A, dr = A, x = 0;
+  vector<ll> X = {0}, DX;
+  while (y) {
+    ll k = dr / dl;
+    dr %= dl;
+    if (!dr) --k, dr = dl;
+    s += k * q;
+    while (true) {
+      k = max<ll>(0, (dl - y + dr - 1) / dr);
+      if (dl - k * dr <= 0) break;
+      dl -= k * dr;
+      q += k * s;
+      k = y / dl;
+      y -= k * dl, x += q * k;
+      X.pb(x), DX.pb(q);
+    }
+    k = dl / dr;
+    dl -= k * dr;
+    q += k * s;
+  }
+  return {X, DX};
+}
+pair<vector<ll>, vector<ll>> max_of_linear_segments(ll a, ll b, ll m) {
+  return min_of_linear_segments(-a, m - 1 - b, m);
+}
+// min {x >= 0 : l <= f(x) <= r}; -1, если множество пусто.
+// 0 <= l <= r < m; O(log m).
+ll min_rem(ll a, ll b, ll m, ll l, ll r) {
+  if (l > r) return -1;
+  ll len = r - l + 1;
+  b = ((b - l) % m + m) % m;
+  if (b < len) return 0;
+  auto [X, DX] = min_of_linear_segments(a, b, m);
+  for (ll i = 0; i < DX.size(); ++i) {
+    ll y2 = ((a * X[i + 1] + b) % m + m) % m;
+    if (y2 >= len) continue;
+    ll y1 = ((a * X[i] + b) % m + m) % m;
+    ll d = (y1 - y2) / ((X[i + 1] - X[i]) / DX[i]);
+    return X[i] + ((y1 - len) / d + 1) * DX[i];
+  }
+  return -1;
+}
+// {x,y}: y = min_{0 <= i < n} f(i), x = min i: f(i) = y.
+// n > 0; O(log m).
+pair<ll, ll> min_mod(ll n, ll a, ll b, ll m) {
+  a = (a % m + m) % m, b = (b % m + m) % m;
+  auto [X, DX] = min_of_linear_segments(a, b, m);
+  ll x = 0;
+  for (ll i = 0; i < DX.size() && X[i] < n; ++i)
+    x = X[i] + (min(X[i + 1], n - 1) - X[i]) / DX[i] * DX[i];
+  return {x, (a * x + b) % m};
+}
+// {x,y}: y = max_{0 <= i < n} f(i), x = min i: f(i) = y.
+// n > 0; O(log m).
+pair<ll, ll> max_mod(ll n, ll a, ll b, ll m) {
+  auto [x, y] = min_mod(n, -a, m - 1 - b, m);
+  return {x, m - 1 - y};
+}
+// {x,y}: y = min_{L <= i < R} f(i), x = min i: f(i) = y.
+// L < R; O(log m).
+pair<ll, ll> min_of_linear(ll L, ll R, ll a, ll b, ll m) {
+  auto [x, y] = min_mod(min(R - L, m), a, a * L + b, m);
+  return {L + x, y};
+}
+// sum_{0 <= x < n} floor((a*x+b)/m); O(log m).
+ll floor_sum(ll n, ll a, ll b, ll m) {
+  ll ans = 0;
+  while (n) {
+    ll q = a / m - (a % m < 0);
+    a -= q * m;
+    ans += n * (n - 1) / 2 * q;
+    q = b / m - (b % m < 0);
+    b -= q * m;
+    ans += n * q;
+    ll y = a * n + b;
+    if (y < m) break;
+    n = y / m, b = y % m;
+    swap(a, m);
+  }
   return ans;
+}
+// sum_{L <= x < R} floor((a*x+b)/m); O(log m).
+ll floor_sum_of_linear(ll L, ll R, ll a, ll b, ll m) {
+  return floor_sum(R - L, a, a * L + b, m);
+}
+// |{x : 0 <= x < n, l <= f(x) <= r}|.
+// 0 <= l <= r < m; l > r -> 0; O(log m).
+ll count_mod(ll n, ll a, ll b, ll m, ll l, ll r) {
+  if (l > r) return 0;
+  a = (a % m + m) % m, b = (b % m + m) % m;
+  return floor_sum(n, a, b - l, m) -
+         floor_sum(n, a, b - r - 1, m);
+}
+// sum_{0 <= x < n} f(x); O(log m).
+ll sum_mod(ll n, ll a, ll b, ll m) {
+  a = (a % m + m) % m, b = (b % m + m) % m;
+  return n * (n - 1) / 2 * a + n * b -
+         m * floor_sum(n, a, b, m);
 }
 \end{lstlisting}
 
@@ -2851,10 +3067,10 @@ poly interpolate(int deg, vector<int> x, vector<int> y) {
 // Need f(p) = polynomial in p. Change D, POLY, sum_power(), f_prime_power().
 // Default: f(n) = n, f(p) = p, f(p^e) = p^e.
 // Prime count: D=0, POLY={1}, build(n), answer = prime_poly(n).
-// phi: POLY={-1,1}, f_prime_power=pe-prev.
-// f_prime_power may be arbitrary O(1), but e=1 must match POLY.
+// phi: POLY={-1,1}, f_prime_power=(pe-prev+mod)%mod.
+// f_prime_power: any O(1) in [0, mod), e=1 must match POLY.
 
-// ll mul(ll a, ll b); a, b may be negative!
+// ll mul(ll a, ll b) in [0, mod); a, b may be negative!
 
 struct Min25 {
   // f(p) = sum POLY[d] * p^d. Add degrees if needed.
@@ -3076,7 +3292,7 @@ void ntt(int n, vector<int> &a, bool rev) {
 vector<int> conv(vector<int> a, vector<int> b) {
   if (a.empty() || b.empty())
     return {};
-  int lg = 32 - __builtin_clz(a.size() + b.size() - 1);
+  int lg = 32-__builtin_clz(max<int>(1,a.size()+b.size()-2));
   int n = 1 << lg;
   a.resize(n);
   b.resize(n);
@@ -3197,6 +3413,33 @@ vector<int> exp(vector<int> a, int need) {
   b.resize(need);
   return b;
 }
+
+vector<int> power_sum_poly(int k) {
+  vector<int> a(k + 1), p(k + 2);
+  for (int j = 0; j <= k; ++j)
+    a[j] = ifact[j + 1];
+  auto c = inv(a, k + 1);
+  for (int j = 0; j <= k; ++j) {
+    int v = mul(fact[k], mul(c[j], ifact[k + 1 - j]));
+    p[k + 1 - j] = (j & 1) ? sub(0, v) : v;
+  }
+  return p; // P(n) = 1^k+ ... +n^k = sum p[i] n^i
+}
+
+vector<int> power_sums_inv(int n, int k) {
+  vector<int> a(k + 1), b(k + 1);
+  int pw = 1, t = add(n % MOD, 1);
+  for (int i = 0; i <= k; ++i) {
+    pw = mul(pw, t);
+    a[i] = mul(sub(pw, 1), ifact[i + 1]);
+    b[i] = ifact[i + 1];
+  }
+  auto s = conv(a, inv(b, k + 1));
+  s.resize(k + 1);
+  for (int i = 0; i <= k; ++i)
+    s[i] = mul(s[i], fact[i]);
+  return s; // s[i]=1^i+...+n^i; O(k log k)
+}
 \end{lstlisting}
 
 \subsection{OR XOR AND свёртки}
@@ -3275,13 +3518,21 @@ vector<int> xor_conv(int n, vector<int> a, vector<int> b) { // $|a| = |b| = 2^n$
 
 \subsection{convMod}
 \begin{lstlisting}[language=C++]
+// a[i] in [0, MOD), MOD <~ 1e9, n + m <= 2^20 (precision)
 vector<ll> convMod(const vector<ll> &a, const vector<ll> &b) {
   if (a.empty() || b.empty()) return {};
   vector <ll> res((int) a.size() + (int) b.size() - 1);
-  int lg = 32 - __builtin_clz((int) res.size()), n = 1 << lg, cut = (int) (sqrt(MOD));
+  int lg = 32 - __builtin_clz(max<int>(1, res.size() - 1));
+  int n = 1 << lg, cut = (int) (sqrt(MOD));
   vector <comp> L(n), R(n), outs(n), outl(n);
-  for (int i = 0; i < a.size(); i++) L[i] = comp((int) a[i] / cut, (int) a[i] % cut);
-  for (int i = 0; i < b.size(); i++) R[i] = comp((int) b[i] / cut, (int) b[i] % cut);
+  // x = h * cut + l, |h|, |l| <~ cut / 2: 4x less fft error
+  auto sp = [&](ll x) {
+    if (x > MOD / 2) x -= MOD;
+    ll h = rint((double)x / cut);
+    return comp(h, x - h * cut);
+  };
+  for (int i = 0; i < a.size(); i++) L[i] = sp(a[i]);
+  for (int i = 0; i < b.size(); i++) R[i] = sp(b[i]);
   fft(L, lg), fft(R, lg);
   for (int i = 0; i < n; i++) {
     int j = -i & (n - 1);
@@ -3290,45 +3541,12 @@ vector<ll> convMod(const vector<ll> &a, const vector<ll> &b) {
   }
   fft(outl, lg), fft(outs, lg);
   for (int i = 0; i < res.size(); i++) {
-    ll av = (ll)((outl[i]).x + .5), cv = (ll)((outs[i]).y + .5);
-    ll bv = (ll)((outl[i]).y + .5) + (ll)((outs[i]).x + .5);
+    ll av = rint(outl[i].x), cv = rint(outs[i].y);
+    ll bv = rint(outl[i].y) + rint(outs[i].x);
     res[i] = ((av % MOD * cut + bv) % MOD * cut + cv) % MOD;
+    res[i] += res[i] < 0 ? MOD : 0;
   }
   return res;
-}
-\end{lstlisting}
-
-\subsection{min\_rem}
-\begin{lstlisting}[language=C++]
-//	finds min k s.t. L <= (k * A) % M <= R (or -1 if it does not exist
-ll min_rem(ll A, ll M, ll L, ll R) {
-    if (L == 0) return 0;
-    A %= M;
-    ll ans = 0;
-    ll s1 = 1, s2 = 0;
-    while (A > 0) {
-        if (2 * A > M) {
-            A = M - A;
-            L = M - L;
-            R = M - R;
-            swap(L, R);
-            ans += s2;
-            s1 -= s2;
-            s2 *= -1;
-        }
-        ll ff = (L + A - 1) / A;
-        if (A * ff <= R) return ans + ff * s1;
-        ans += (ff - 1) * s1;
-        ff = (ff - 1) * A;
-        L -= ff;
-        R -= ff;
-        ll z = (M + A - 1) / A;
-        s2 = s1 * z - s2;
-        swap(s1, s2);
-        M = z * A - M;
-        swap(A, M);
-    }
-    return -1;
 }
 \end{lstlisting}
 
@@ -3367,25 +3585,26 @@ ll sqrt(ll a, ll p) {
 
 \subsection{Гаусс}
 \begin{lstlisting}[language=C++]
-vector<vector<int>> gauss(vector<vector<int>> &a) {
+// for modular: dbl -> ll, EPS=0
+char sign(dbl x) { return (x>EPS) - (x<-EPS); }
+
+// for double: ll -> dbl, no % mod, inv(x) = 1/x
+vector<vector<ll>> gauss(vector<vector<ll>> &a) {
   int n = a.size();
   int m = a[0].size();
-//  int det = 1;
+//  ll det = 1;
   for (int col = 0, row = 0; col < m && row < n; ++col) {
+    int sel = row; // max |a| is for dbl precision
     for (int i = row; i < n; ++i) {
-      if (a[i][col]) {
-        swap(a[i], a[row]);
-        if (i != row) {
-//          det *= -1;
-        }
-        break;
-      }
+      if (abs(a[i][col]) > abs(a[sel][col])) sel = i;
     }
-    if (!a[row][col])
-      continue;
+    if (!sign(a[sel][col])) continue;
+    swap(a[sel], a[row]);
+//    if (sel != row) det *= -1;
+    ll iv = inv(a[row][col]);
     for (int i = 0; i < n; ++i) {
-      if (i != row && a[i][col]) {
-        int val = a[i][col] * inv(a[row][col]) % mod;
+      if (i != row && sign(a[i][col])) {
+        ll val = a[i][col] * iv % mod;
         for (int j = col; j < m; ++j) {
           a[i][j] -= val * a[row][j];
           a[i][j] %= mod;
@@ -3400,7 +3619,7 @@ vector<vector<int>> gauss(vector<vector<int>> &a) {
   return a;
 }
 
-pair<int, vector<int>> sle(vector<vector<int>> a, vector<int> b) {
+pair<int,vector<ll>> sle(vector<vector<ll>> a, vector<ll> b) {
   int n = a.size();
   int m = a[0].size();
   assert(n == b.size());
@@ -3408,18 +3627,18 @@ pair<int, vector<int>> sle(vector<vector<int>> a, vector<int> b) {
     a[i].push_back(b[i]);
   }
   a = gauss(a);
-  vector<int> x(m, 0);
+  vector<ll> x(m, 0);
   for (int i = n - 1; i >= 0; --i) {
     int leftmost = m;
     for (int j = 0; j < m; ++j) {
-      if (a[i][j] != 0) {
+      if (sign(a[i][j])) {
         leftmost = j;
         break;
       }
     }
-    if (leftmost == m && a[i].back() != 0) return {-1, {}};
+    if (leftmost == m && sign(a[i].back())) return {-1, {}};
     if (leftmost == m) continue;
-    int val = a[i].back();
+    ll val = a[i].back();
     for (int j = m - 1; j > leftmost; --j) {
       val -= a[i][j] * x[j];
       val %= mod;
@@ -3438,11 +3657,9 @@ vector<bitset<N>> gauss_bit(vector<bitset<N>> a, int m) {
         break;
       }
     }
-    if (!a[row][col])
-      continue;
+    if (!a[row][col]) continue;
     for (int i = 0; i < n; ++i)
-      if (i != row && a[i][col])
-        a[i] ^= a[row];
+      if (i != row && a[i][col]) a[i] ^= a[row];
     ++row;
   }
   return a;
@@ -3470,7 +3687,7 @@ bool cool_ext_gcd(int a, int b, int c, int &x, int &y) {
         y = 0;
         if (a == 0)
             return x = 0, c == 0;
-        return x = c / a, c % a == 0;
+        return x = c / a, c % a == 0 && x >= 0;
     }
     auto [x0, y0] = ext_gcd(a, b);
     int g = (ll)x0 * a + (ll)y0 * b;
@@ -3536,7 +3753,7 @@ for (int i = 2; i <= N; ++i) {
 const ll MAGIC[7] = {2, 325, 9375, 28178, 450775, 9780504, 1795265022};
 
 bool is_prime(ll n) {
-  if (n == 1) return false;
+  if (n <= 1) return false;
   if (n <= 3) return true;
   if (n % 2 == 0 || n % 3 == 0) return false;
   ll s = __builtin_ctzll(n - 1), d = n >> s; // $n-1 = 2^s \cdot d$
@@ -3568,7 +3785,7 @@ int count_walks_1(int b1, int b2, int p, int q) {
   // without touching y = x + b1 and y = x + b2
   // b1 < 0 < b2 must hold
   // O((p + q) / (b2 - b1))
-  if (min(p, q) < 0) return 0;
+  if (min(p, q) < 0 || q - p <= b1 || q - p >= b2) return 0;
   ll ans = C(p, p + q);
   ar(2) F = {p, q}, S = {p, q};
   int cf = mod - 1;
@@ -3888,6 +4105,11 @@ $S=I+\frac{B}{2}-1$, $S$ площадь, $I$ целые точки внутри,
 \item % Формула Эйлера для связного плоского графа:
 $V-E+F=2$, $V$ вершины, $E$ рёбра, $F$ грани.
 
+\item % Критерий Эрдёша--Галлаи:
+Целые $n>d_1\ge\cdots\ge d_n\ge0$ — степени простого неориентированного графа $\iff$
+$\sum_{i=1}^n d_i\equiv0\pmod2$ и
+\\ $\forall k=1,\ldots,n:\quad \sum_{i=1}^k d_i\le k(k-1)+\sum_{i=k+1}^n\min(d_i,k)$
+
 \item Простые числа
 \begin{itemize}
 \item big NTT-friendly: \begin{itemize}
@@ -3920,7 +4142,7 @@ $V-E+F=2$, $V$ вершины, $E$ рёбра, $F$ грани.
 vector<int> z_func(const string &s) {
   int n = s.size();
   vector<int> z(n, 0);
-  z[0] = n;
+  if (n) z[0] = n;
   int l = 0, r = 0;
   for (int i = 1; i < n; i++) {
     if (i < r) z[i] = min(z[i-l], r-i);
@@ -3945,6 +4167,7 @@ vector<int> prefix_func(const string &s) {
 array<vector<int>, 2> manacher(const string &s) {
   int n = s.size();
   array<vector<int>, 2> d;
+  if (!n) return d;
   for (int z = 0; z <= 1; ++z) { //0=odd,1=even here!
     d[z].resize(n - z);
     int l = 0, r = -1;
@@ -3980,6 +4203,7 @@ char s[MAXN];
 int n, last, sz;
 
 void init() {
+  for (int v = 0; v < sz; v++) fill(go[v], go[v] + ALPH, 0);
   n = 0, last = 0;
   s[n++] = -1;
   suf[0] = 1; // root of suflink tree = 1
@@ -4008,56 +4232,51 @@ void add_char(char c) {
 
 \subsection{Ахо-Корасик}
 \begin{lstlisting}[language=C++]
-int go[MAXN][ALPH];
-vector<int> term[MAXN];
-int par[MAXN], suf[MAXN];
-char par_c[MAXN];
-vector<int> g[MAXN];
+const int SIGMA = 26; // letters from 'a'
+struct AhoCorasick {
+  vector<array<int, SIGMA>> go;
+  vector<int> par, suf;
+  vector<char> par_c;
+  vector<vector<int>> term, g; // g: suffix link tree
+  int cntv = 1, cnt_s = 0;
+  // maxn >= sum of lengths + 1
+  AhoCorasick(int maxn) : go(maxn), par(maxn), suf(maxn),
+      par_c(maxn), term(maxn), g(maxn) {}
 
-int cntv = 1;
-
-void add(string &s) {
-  static int cnt_s = 1;
-  int v = 0;
-  for (char el: s) {
-    if (go[v][el - 'a'] == 0) {
-      go[v][el - 'a'] = cntv;
-      par[cntv] = v;
-      par_c[cntv] = el;
-      cntv++;
-    }
-    v = go[v][el - 'a'];
-  }
-  term[v].push_back(cnt_s++);
-}
-
-void bfs() {
-  deque<int> q = {0};
-  while (!q.empty()) {
-    int v = q.front();
-    q.pop_front();
-    if (v > 0) {
-      if (par[v] == 0) {
-        suf[v] = 0;
-      } else {
-        suf[v] = go[suf[par[v]]][par_c[v] - 'a'];
+  // returns node of s, term[v] = ids of strings (from 0)
+  int add(const string &s) {
+    int v = 0;
+    for (char el : s) {
+      if (go[v][el - 'a'] == 0) {
+        go[v][el - 'a'] = cntv;
+        par[cntv] = v;
+        par_c[cntv] = el;
+        cntv++;
       }
-      g[suf[v]].push_back(v);
+      v = go[v][el - 'a'];
     }
-    for (int c = 0; c < ALPH; c++) {
-      if (go[v][c] == 0) {
-        go[v][c] = go[suf[v]][c];
-      } else {
-        q.push_back(go[v][c]);
+    term[v].pb(cnt_s++);
+    return v;
+  }
+
+  void bfs() {
+    vector<int> q(cntv); // q[0] = 0
+    for (int l = 0, r = 1; l < r; ++l) {
+      int v = q[l];
+      if (v > 0) g[suf[v]].pb(v);
+      for (int c = 0; c < SIGMA; c++) {
+        int &u = go[v][c];
+        if (u == 0) u = go[suf[v]][c];
+        else suf[u] = v ? go[suf[v]][c] : 0, q[r++] = u;
       }
     }
   }
-}
+};
 \end{lstlisting}
 
 \subsection{Муффиксный Сассив}
 \begin{lstlisting}[language=C++]
-template<class T> // works for string and vector
+template<class T> // string (<= 127 distinct chars) or vector
 vector<int> build_suff_arr(T s) {
   { // values compression. comment if already 0 < s[i] < ~1e6
     vector<int> id(size(s));
@@ -4125,7 +4344,7 @@ struct Node {
   ar(SIGMA) go;
   int s, p, len, firstpos;
   Node() {
-    go.fill(-1);
+    go.fill(-1); // remove if Map
     s=-1, p=-1, len=0, firstpos=-1;
   }
 };
@@ -4179,6 +4398,7 @@ signed main() {
 \subsection{Disjoint Sparse Table}
 \begin{lstlisting}[language=C++]
 // MAXN дополнить до степени двойки (или n*2)
+// min -> любая ассоциативная операция (порядок важен)
 int tree[LOG][MAXN];
 int floorlog2[MAXN]; // i ? (31 - __builtin_clz(i)) : 0
 
@@ -4192,7 +4412,7 @@ void build(vector<int> &a) {
       lvl[m - 1] = a[m - 1];
       lvl[m] = a[m];
       for (int i = m - 2; i >= m - len; --i)
-        lvl[i] = min(lvl[i + 1], a[i]);
+        lvl[i] = min(a[i], lvl[i + 1]);
       for (int i = m + 1; i < m + len && i < n; ++i)
         lvl[i] = min(lvl[i - 1], a[i]);
     }
@@ -4203,7 +4423,7 @@ void build(vector<int> &a) {
 
 // a[l..r)
 int get(int l, int r) {
-  r--;
+  if (l == --r) return tree[0][l];
   int i = floorlog2[l ^ r];
   return min(tree[i][l], tree[i][r]);
 }
