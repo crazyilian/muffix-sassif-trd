@@ -1,23 +1,17 @@
-// Список вершин -> список рёбер
-vector<vctr> poly_to_edges(const vector<vctr> &A) {
-  vector<vctr> edg(A.size());
-  for (int i = 0; i < A.size(); ++i)
-    edg[i] = A[(i + 1) % A.size()] - A[i];
-  return edg;
-}
-
-// A и B начинаются с минимальных вершин
-vector<vctr> minkowski_sum(const vector<vctr> &A, const vector<vctr> &B) {
-  auto edgA = poly_to_edges(A);
-  auto edgB = poly_to_edges(B);
-  vector<vctr> edgC(A.size() + B.size());
-  merge(all(edgA), all(edgB), edgC.begin(), cmp_angle);
-  // cmp_angle из шаблона вектора
-  vector<vctr> C(edgC.size());
-  C[0] = A[0] + B[0];
-  for (int i = 0; i + 1 < C.size(); ++i)
-    C[i + 1] = C[i] + edgC[i];
-  // могут быть точки на сторонах
+// A, B: CCW from min (y, x), no 3 collinear, size >= 1.
+// Result: CCW from min, no points on sides, no duplicates
+vector<vctr> minkowski_sum(vector<vctr> A, vector<vctr> B) {
+  int n = A.size(), m = B.size();
+  A.pb(A[0]), A.pb(A[1 % n]);
+  B.pb(B[0]), B.pb(B[1 % m]);
+  vector<vctr> C; C.reserve(n+m);
+  for (int i = 0, j = 0; i < n || j < m; ) {
+    C.pb(A[i] + B[j]);
+    vctr a = A[i + 1] - A[i], b = B[j + 1] - B[j];
+    // cmp_angle from vctr template
+    int c = j==m ? 1 : i==n || cmp_angle(b,a) ? -1 : cmp_angle(a,b);
+    if (c >= 0) ++i;
+    if (c <= 0) ++j;
+  }
   return C;
 }
-

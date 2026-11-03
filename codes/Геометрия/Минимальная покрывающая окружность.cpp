@@ -7,7 +7,6 @@ circle MinDisk2(vector<vctr> &p, vctr A, vctr B, int sz) {
   return w;
 }
 circle MinDisk1(vector<vctr> &p, vctr A, int sz) {
-  shuffle(p.begin(), p.begin() + sz, rnd);
   circle w(A, p[0]);
   for (int i = 1; i < sz; ++i) {
     if (w.isin(p[i])) continue;

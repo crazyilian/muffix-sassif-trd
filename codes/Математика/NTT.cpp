@@ -188,7 +188,7 @@ vector<int> power_sum_poly(int k) {
     int v = mul(fact[k], mul(c[j], ifact[k + 1 - j]));
     p[k + 1 - j] = (j & 1) ? sub(0, v) : v;
   }
-  return p; // P(n) = 1^k+ ... +n^k
+  return p; // P(n) = 1^k+ ... +n^k = sum p[i] n^i
 }
 
 vector<int> power_sums_inv(int n, int k) {

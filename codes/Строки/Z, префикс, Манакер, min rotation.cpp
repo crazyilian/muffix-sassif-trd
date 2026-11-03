@@ -1,7 +1,7 @@
 vector<int> z_func(const string &s) {
   int n = s.size();
   vector<int> z(n, 0);
-  z[0] = n;
+  if (n) z[0] = n;
   int l = 0, r = 0;
   for (int i = 1; i < n; i++) {
     if (i < r) z[i] = min(z[i-l], r-i);
@@ -26,6 +26,7 @@ vector<int> prefix_func(const string &s) {
 array<vector<int>, 2> manacher(const string &s) {
   int n = s.size();
   array<vector<int>, 2> d;
+  if (!n) return d;
   for (int z = 0; z <= 1; ++z) { //0=odd,1=even here!
     d[z].resize(n - z);
     int l = 0, r = -1;

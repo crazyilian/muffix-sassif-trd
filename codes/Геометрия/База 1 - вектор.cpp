@@ -40,8 +40,7 @@ bool is2plane(const vctr &a) {
 bool cmp_angle(const vctr &a, const vctr &b) {
   bool pla = is2plane(a);
   bool plb = is2plane(b);
-  if (pla != plb)
-    return pla < plb;
+  if (pla != plb) return pla < plb;
   return sign(a * b) > 0;
 }
 
