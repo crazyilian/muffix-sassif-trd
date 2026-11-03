@@ -1,6 +1,6 @@
 // A, B convex (CCW or CW, independently), no 3 collinear,
 // no common points.                      O(log n log m).
-// Returns: line A[i] -> B[j]:
+// Returns (looking from A[i] to B[j]):
 // {left, left}, {left, right}, {right, left}, {right, right}
 vector<pair<int, int>> tangents_polys(vector<vctr> &A,
                                       vector<vctr> &B) {

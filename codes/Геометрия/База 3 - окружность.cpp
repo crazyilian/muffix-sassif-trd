@@ -57,8 +57,10 @@ vector<vctr> tangent_vctr_circ(vctr v, circle c) {
 
 // {point on A, point on B}: outer tangents, then inner.
 // 4 apart, 3 touch outside, 2 intersect, 1 touch inside,
-// 0 nested. Tangent at touching point has equal points 
+// 0 nested. Tangent at touching point has equal points
 // (line is perpendicular to A.C->B.C)
+// Returns (looking from A.C to B.C):
+// {left, left}, {right, right}, {left, right}, {right, left}
 vector<pair<vctr, vctr>> common_tangents(circle A, circle B) {
   vctr d = B.C - A.C;
   dbl d2 = d.dist2();
