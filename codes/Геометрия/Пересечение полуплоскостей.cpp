@@ -59,7 +59,7 @@ vector<int> calc_hpi_inds(const vector<line> &ls) {
   if (r-l < 3) return {};
   return {q.begin()+l,q.begin()+r};
 }
-// below `vctr` must be float even if `line` is integer
+// requires dbl vctr (line can be integer)
 vector<vctr> half_plane_intersection(const vector<line> &ls) {
   vector<int> inds = calc_hpi_inds(ls);
   int n = inds.size();

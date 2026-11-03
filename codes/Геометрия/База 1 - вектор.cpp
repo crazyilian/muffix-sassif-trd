@@ -15,8 +15,9 @@ struct vctr {
   bool operator==(const vctr &o)const{ return !sign(x-o.x) && !sign(y-o.y); }
   dbl dist2() const { return x * x + y * y; }
   dbl dist() const { return sqrtl(dist2()); }
-  vctr norm() const { return *this / dist(); }
   vctr rotate_ccw_90() const {  return {-y, x}; }
+  // requires dbl vctr
+  vctr norm() const { return *this / dist(); }
 };
 
 // противоположные (a*b == 0): +pi или -pi, знак от шума
@@ -44,6 +45,7 @@ bool cmp_angle(const vctr &a, const vctr &b) {
   return sign(a * b) > 0;
 }
 
+// requires dbl vctr
 vctr rotate_ccw(const vctr &a, dbl phi) {
   dbl cs = cosl(phi);
   dbl sn = sinl(phi);

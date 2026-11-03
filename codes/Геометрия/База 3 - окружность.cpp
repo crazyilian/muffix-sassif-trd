@@ -4,6 +4,7 @@ struct circle {
   circle() {}
   circle(dbl x, dbl y, dbl r) : C(x, y), r(r) {}
   circle(vctr C, dbl r) : C(C), r(r) {}
+  // requires dbl vctr
   circle(const vctr A, const vctr B) {
     C = (A + B) / 2;
     r = (A - B).dist() / 2;
@@ -15,12 +16,13 @@ struct circle {
     r = (C - A).dist();
   }
   bool isin(const vctr P, char strict=0) const {
-    // `dist2 - r*r` fails on dbl precision.
     return sign((C - P).dist() - r) <= -strict;
+    // int C, r: exact, but fails on dbl precision
     // return sign((C - P).dist2() - r * r) <= -strict;
   }
 };
 
+// below: requires dbl vctr and dbl line
 vector<vctr> intersection_line_circ(line l, circle c) {
   l.normalize();
   dbl s = l.get(c.C), d = abs(s);

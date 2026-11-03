@@ -1,3 +1,4 @@
+// requires dbl vctr
 circle MinDisk2(vector<vctr> &p, vctr A, vctr B, int sz) {
   circle w(A, B);
   for (int i = 0; i < sz; ++i) {
