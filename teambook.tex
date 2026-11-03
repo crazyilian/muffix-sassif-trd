@@ -303,8 +303,9 @@ struct vctr {
   bool operator==(const vctr &o)const{ return !sign(x-o.x) && !sign(y-o.y); }
   dbl dist2() const { return x * x + y * y; }
   dbl dist() const { return sqrtl(dist2()); }
-  vctr norm() const { return *this / dist(); }
   vctr rotate_ccw_90() const {  return {-y, x}; }
+  // requires dbl vctr
+  vctr norm() const { return *this / dist(); }
 };
 
 // противоположные (a*b == 0): +pi или -pi, знак от шума
@@ -332,6 +333,7 @@ bool cmp_angle(const vctr &a, const vctr &b) {
   return sign(a * b) > 0;
 }
 
+// requires dbl vctr
 vctr rotate_ccw(const vctr &a, dbl phi) {
   dbl cs = cosl(phi);
   dbl sn = sinl(phi);
@@ -356,11 +358,12 @@ struct line {
   void operator*=(dbl x) { a *= x, b *= x, c *= x; }
   void operator/=(dbl x) { a /= x, b /= x, c /= x; }
   dbl get(const vctr P) const { return a * P.x + b * P.y + c; }
+  // requires dbl vctr
   vctr anyPoint() const {
-    dbl x = -a * c / (a * a + b * b);
-    dbl y = -b * c / (a * a + b * b);
-    return {x, y};
+    dbl d = a * a + b * b;
+    return {-a * c / d, -b * c / d};
   }
+  // requires dbl line
   void normalize() {
     dbl d = sqrtl(a * a + b * b);
     a /= d, b /= d, c /= d;
@@ -371,6 +374,7 @@ bool isparallel(line l1, line l2) {
   return sign(l2.a * l1.b - l2.b * l1.a) == 0;
 }
 
+// requires dbl vctr
 vctr intersection(const line &l1, const line &l2) {
   dbl z = l2.a * l1.b - l2.b * l1.a;
   dbl x = (l1.c * l2.b - l2.c * l1.b) / z;
@@ -378,10 +382,10 @@ vctr intersection(const line &l1, const line &l2) {
   return {x, y};
 }
 
-// Серединный перпендикуляр (не биссектриса!)
+// Серединный перпендикуляр (не биссектриса!), get(A) > 0
 line bisection(const vctr A, const vctr B) {
-  vctr M = (A + B) / 2;
-  return line(M, M + (B - A).rotate_ccw_90());
+  vctr d = (A - B) * 2;
+  return line(d.x, d.y, B.dist2() - A.dist2());
 }
 
 \end{lstlisting}
@@ -394,6 +398,7 @@ struct circle {
   circle() {}
   circle(dbl x, dbl y, dbl r) : C(x, y), r(r) {}
   circle(vctr C, dbl r) : C(C), r(r) {}
+  // requires dbl vctr
   circle(const vctr A, const vctr B) {
     C = (A + B) / 2;
     r = (A - B).dist() / 2;
@@ -405,12 +410,13 @@ struct circle {
     r = (C - A).dist();
   }
   bool isin(const vctr P, char strict=0) const {
-    // `dist2 - r*r` fails on dbl precision.
     return sign((C - P).dist() - r) <= -strict;
+    // int C, r: exact, but fails on dbl precision
     // return sign((C - P).dist2() - r * r) <= -strict;
   }
 };
 
+// below: requires dbl vctr and dbl line
 vector<vctr> intersection_line_circ(line l, circle c) {
   l.normalize();
   dbl s = l.get(c.C), d = abs(s);
@@ -506,9 +512,7 @@ dbl distPointPoint(vctr a, vctr b) {
 }
 
 dbl distPointLine(vctr a, vctr l1, vctr l2) {
-  line l(l1, l2);
-  l.normalize();
-  return abs(l.get(a));
+  return abs((l2 - l1) * (a - l1)) / (l2 - l1).dist();
 }
 
 dbl distPointRay(vctr a, vctr r1, vctr r2) {
@@ -522,35 +526,14 @@ dbl distPointSeg(vctr a, vctr s1, vctr s2) {
              distPointRay(a, s2, s1));
 }
 
-bool isIntersectionLineLine(line l1, line l2) {
-  dbl znam = l1.b * l2.a - l1.a * l2.b;
-  return sign(znam) != 0;
-}
-
-vctr intersectionLineLine(line l1, line l2) {
-  dbl znam = l1.b * l2.a - l1.a * l2.b;
-  dbl y = -(l1.c * l2.a - l2.c * l1.a) / znam;
-  dbl x = -(l1.c * l2.b - l2.c * l1.b) / -znam;
-  return vctr(x, y);
-}
-
 dbl distLineLine(vctr l1a, vctr l1b, vctr l2a, vctr l2b) {
-  line l1(l1a, l1b);
-  line l2(l2a, l2b);
-  if (isIntersectionLineLine(l1, l2))
-    return 0;
+  if (sign((l1b - l1a) * (l2b - l2a))) return 0;
   return distPointLine(l1a, l2a, l2b);
 }
 
 dbl distRayLine(vctr r1, vctr r2, vctr l1, vctr l2) {
-  if (r1 == r2) return distPointLine(r1, l1, l2);
-  line r(r1, r2);
-  line l(l1, l2);
-  if (!isIntersectionLineLine(l, r))
-    return distLineLine(r1, r2, l1, l2);
-  vctr p = intersectionLineLine(l, r);
-  if (isInSameHalf(p, r1, r2))
-    return 0;
+  vctr d = l2 - l1;
+  if (sign(d * (r1 - l1)) * sign(d * (r2 - r1)) < 0) return 0;
   return distPointLine(r1, l1, l2);
 }
 
@@ -560,19 +543,9 @@ dbl distSegLine(vctr s1, vctr s2, vctr l1, vctr l2) {
 }
 
 dbl distRayRay(vctr r1a, vctr r1b, vctr r2a, vctr r2b) {
-  if (r1a == r1b) return distPointRay(r1a, r2a, r2b);
-  if (r2a == r2b) return distPointRay(r2a, r1a, r1b);
-  line r1(r1a, r1b);
-  line r2(r2a, r2b);
-  if (!isIntersectionLineLine(r1, r2)) {
-    if (isInSameHalf(r1a, r2a, r2b) || isInSameHalf(r2a, r1a, r1b))
-      return distLineLine(r1a, r1b, r2a, r2b);
-    else
-      return distPointPoint(r1a, r2a);
-  }
-  vctr p = intersectionLineLine(r1, r2);
-  if (isInSameHalf(p, r1a, r1b) && isInSameHalf(p, r2a, r2b))
-    return 0;
+  vctr u = r1b - r1a, v = r2b - r2a, w = r2a - r1a;
+  int c = sign(u * v); // cross not at the ray starts:
+  if (sign(w * v) * c > 0 && sign(w * u) * c > 0) return 0;
   return min(distPointRay(r1a, r2a, r2b),
              distPointRay(r2a, r1a, r1b));
 }
@@ -586,13 +559,12 @@ dbl distSegSeg(vctr s1a, vctr s1b, vctr s2a, vctr s2b) {
   return max(distSegRay(s1a, s1b, s2a, s2b),
              distSegRay(s1a, s1b, s2b, s2a));
 }
-
 \end{lstlisting}
 
 \subsection{Калиперы}
 \begin{lstlisting}[language=C++]
-// Диаметр выпуклого многоугольника
-dbl calipers(vector<vctr> &pts) {
+// Квадрат диаметра выпуклого многоугольника
+auto calipers(vector<vctr> &pts) {
   int n = pts.size();
   int a = 0, b = 0;
   for (int i = 1; i < n; ++i) {
@@ -603,14 +575,14 @@ dbl calipers(vector<vctr> &pts) {
       b = i;
   }
   int aa = (a + 1) % n, bb = (b + 1) % n;
-  dbl dist2 = 0;
+  auto d2 = (pts[a] - pts[b]).dist2();
   for (int i = 0; i < n; ++i) {
     while (sign((pts[aa] - pts[a]) * (pts[bb] - pts[b])) > 0)
       b = bb, bb = (b + 1) % n;
-    dist2 = max(dist2, (pts[a] - pts[b]).dist2());
+    d2 = max(d2, (pts[a] - pts[b]).dist2());
     a = aa, aa = (a + 1) % n;
   }
-  return sqrtl(dist2);
+  return d2;
 }
 \end{lstlisting}
 
@@ -712,6 +684,7 @@ bool is_point_in_any_poly(vctr a, const vector<vctr> &p,
 
 \subsection{Минимальная покрывающая окружность}
 \begin{lstlisting}[language=C++]
+// requires dbl vctr
 circle MinDisk2(vector<vctr> &p, vctr A, vctr B, int sz) {
   circle w(A, B);
   for (int i = 0; i < sz; ++i) {
@@ -805,7 +778,7 @@ vector<int> calc_hpi_inds(const vector<line> &ls) {
   if (r-l < 3) return {};
   return {q.begin()+l,q.begin()+r};
 }
-// below `vctr` must be float even if `line` is integer
+// requires dbl vctr (line can be integer)
 vector<vctr> half_plane_intersection(const vector<line> &ls) {
   vector<int> inds = calc_hpi_inds(ls);
   int n = inds.size();
