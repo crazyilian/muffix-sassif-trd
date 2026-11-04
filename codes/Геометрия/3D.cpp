@@ -92,3 +92,58 @@ Pt vector_perp(Pt v) {
 Plane plane_perp(Pt p, Pt v) {
   return Plane(v.x, v.y, v.z, -v.dot(p));
 }
+
+// ближайшая к p точка прямой ab; при |a-b| < EPS ответ a
+Pt closest_line(Pt p, Pt a, Pt b) {
+  Pt v = b - a;
+  dbl len2 = v.dot(v);
+  if (len2 < EPS * EPS) return a;
+  return a + v * ((p - a).dot(v) / len2);
+}
+
+// ближайшая к p точка луча из a в сторону b
+Pt closest_ray(Pt p, Pt a, Pt b) {
+  if ((p - a).dot(b - a) < EPS) return a;
+  return closest_line(p, a, b);
+}
+
+// ближайшая к p точка отрезка ab
+Pt closest_seg(Pt p, Pt a, Pt b) {
+  if ((p - b).dot(a - b) < EPS) return b;
+  return closest_ray(p, a, b);
+}
+
+// прямая a + (b - a) * t; |b-a| и длина нормали > EPS
+// 0 -- нет, 1 -- точка, 2 -- прямая лежит в плоскости
+// t записывается при ответе 1
+// луч: t >= 0; отрезок: 0 <= t <= 1
+int intersect(Pt a, Pt b, Plane pl, dbl &t) {
+  Pt v = b - a, n(pl.a, pl.b, pl.c);
+  dbl len = n.dist(), den = n.dot(v), val = pl.get_val(a);
+  assert(len > EPS && v.dot(v) > EPS * EPS);
+  if (abs(den) < EPS * max<dbl>(1, len * v.dist()))
+    return abs(val) < EPS * len ? 2 : 0;
+  t = -val / den;
+  return 1;
+}
+
+// ортонормированный базис плоскости через o; |n| > EPS
+struct Basis {
+  Pt o, u, v;
+  Basis(Pt o, Pt n) : o(o) {
+    dbl len = n.dist();
+    assert(len > EPS);
+    n = n / len;
+    u = vector_perp(n);
+    u = u / u.dist();
+    v = n.cross(u);
+  }
+  // для точки вне плоскости -- координаты её проекции
+  pair<dbl, dbl> to_2d(Pt p) const {
+    p = p - o;
+    return {p.dot(u), p.dot(v)};
+  }
+  Pt from_2d(dbl x, dbl y) const {
+    return o + u * x + v * y;
+  }
+};
