@@ -37,16 +37,12 @@ ll eval(const vector<ll> &a, ll x) {
 // Если $y_i = P(x_0 + ih)$: передать $X \to (X - x_0) / h$
 ll lagrange(const vector<ll> &y, ll X) {
   int n = y.size();
-  // fi[i] = $1 / i!$. Maybe precomputed?
-  vector<ll> suf(n + 1, 1), fi(n);
-  ll f = 1, pre = 1, res = 0;
-  for (int i = 1; i < n; ++i) f = f * i % MOD;
-  fi[n - 1] = inv(f);
-  for (int i = n - 1; i > 0; --i) fi[i - 1] = fi[i] * i % MOD;
+  vector<ll> suf(n + 1, 1);
+  ll pre = 1, res = 0;
   for (int i = n; i--; ) suf[i] = suf[i + 1] * (i - X) % MOD;
   for (int i = 0; i < n; ++i) {
-    auto t = pre * suf[i + 1] % MOD * fi[i] % MOD;
-    res = (res + y[i] * t % MOD * fi[n - 1 - i]) % MOD;
+    auto t = pre * suf[i + 1] % MOD * ifact[i] % MOD;
+    res = (res + t * ifact[n - 1 - i] % MOD * y[i]) % MOD;
     pre = pre * (X - i) % MOD;
   }
   return res;
