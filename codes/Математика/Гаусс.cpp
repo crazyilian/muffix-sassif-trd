@@ -1,7 +1,7 @@
 // for modular: dbl -> ll, EPS=0
 char sign(dbl x) { return (x>EPS) - (x<-EPS); }
 
-// for double: ll -> dbl, no % mod, inv(x) = 1/x
+// for double: ll -> dbl, no %mod, inv(x) = 1/x
 vector<vector<ll>> gauss(vector<vector<ll>> &a) {
   int n = a.size();
   int m = a[0].size();

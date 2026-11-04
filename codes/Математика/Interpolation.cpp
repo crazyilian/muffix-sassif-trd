@@ -1,7 +1,7 @@
-// for double: ll -> dbl, no % MOD, inv(x) = 1/x;
-// for precision pick x[k] = c*cos(k/(n-1)*pi)
-// x distinct, P(x[i]) = y[i], P(X) = sum res[i] X^i
-// O(n^2). Mod: x, y, res in (-MOD, MOD)
+// for double: ll -> dbl, no %MOD, inv(x) = 1/x;
+// for precision pick $x_k = c \cdot \cos \frac{k \pi}{n-1}$.
+// x distinct, $P(x_i) = y_i$, $P(X) = \sum \text{res}_i X^i$
+// $O(n^2)$. Mod: x, y, $\text{res} \in (-\text{MOD}, \text{MOD})$
 vector<ll> interpolate(vector<ll> x, vector<ll> y) {
   int n = x.size();
   vector<ll> res(n), temp(n), d(n);
@@ -31,13 +31,13 @@ ll eval(const vector<ll> &a, ll x) {
   return r;
 }
 
-// deg P < n задан значениями y[i]=P(i), i = 0..n-1
-// Возвращает P(X) за O(n). 0 < n <= MOD, X in (-MOD, MOD)
-// dbl: нужно (n-1)! в типе: n <= 171 (long double: 1755)
-// Если y[i]=P(x0+i*h): передать X -> (X-x0)/h
+// $\deg P < n$ задан значениями $y_i = P(i)$, $0 \le i < n$
+// Возвращает $P(X)$ за $O(n)$. $0 < n \le$ MOD, $X \in (-\text{MOD}, \text{MOD})$
+// dbl: нужно $(n-1)!$ в типе: $n \le 171$ (long double: 1755)
+// Если $y_i = P(x_0 + ih)$: передать $X \to (X - x_0) / h$
 ll lagrange(const vector<ll> &y, ll X) {
   int n = y.size();
-  // fi[i] = 1 / i!. Maybe precomputed?
+  // fi[i] = $1 / i!$. Maybe precomputed?
   vector<ll> suf(n + 1, 1), fi(n);
   ll f = 1, pre = 1, res = 0;
   for (int i = 1; i < n; ++i) f = f * i % MOD;
