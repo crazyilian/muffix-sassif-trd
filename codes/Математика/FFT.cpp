@@ -3,7 +3,7 @@ const int LOG = 20, MAXN = 1 << LOG;
 
 //using comp = complex<double>;
 struct comp {
-  double x, y; // not dbl: long double is ~3x slower
+  double x, y; // long double is ~3x slower
   comp() : x(0), y(0) {}
   comp(double x, double y) : x(x), y(y) {}
   comp(int x) : x(x), y(0) {}
@@ -21,22 +21,20 @@ bool fftinit = false;
 int gettail(int x, int lg) { return tail[x] >> (LOG - lg); }
 
 // OMEGA[k + j] = $e^{i \pi j / k}$ (j < k): level k in a row
-void calcomega() {
-  for (int k = 1; k < MAXN; k *= 2)
+void precalc() {
+  for (int k = 1; k < MAXN; k *= 2) {
     for (int j = 0; j < k; ++j) {
       double x = PI * j / k;
       OMEGA[k + j] = {cos(x), sin(x)};
     }
-}
-
-void calctail() {
+  }
   tail[0] = 0;
   for (int i = 1; i < MAXN; ++i)
     tail[i] = (tail[i/2]/2) | ((i & 1) << (LOG - 1));
 }
 
 void fft(vector<comp> &A, int lg) {
-  if (!fftinit) calcomega(), calctail(), fftinit = 1;
+  if (!fftinit) precalc(), fftinit = 1;
   int n = A.size();
   for (int i = 0; i < n; ++i)
     if (int j = gettail(i, lg); i < j)

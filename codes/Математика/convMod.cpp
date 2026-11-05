@@ -5,7 +5,6 @@ vector<ll> conv_mod(const vector<ll> &a, const vector<ll> &b) {
   int lg = 32 - __builtin_clz(max<int>(1, res.size() - 1));
   int n = 1 << lg, cut = (int) (sqrt(MOD));
   vector<comp> L(n), R(n), outs(n), outl(n);
-  // x = h * cut + l, |h|, |l| <~ cut / 2: 4x less fft error
   auto sp = [&](ll x) {
     if (x > MOD / 2) x -= MOD;
     ll h = rint((double)x / cut);
