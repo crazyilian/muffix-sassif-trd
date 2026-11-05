@@ -24,8 +24,7 @@ void initNTT() {
 void ntt(int n, vector<int> &a, bool rev) {
   initNTT();
   int lg = 31 - __builtin_clz(n);
-  for (auto &el : a)
-    el = (el % MOD + MOD) % MOD;
+  for (auto &el : a) el = (el % MOD + MOD) % MOD;
   vector<int> rv(n);
   for (int i = 1; i < n; ++i) {
     rv[i] = (rv[i >> 1] >> 1) ^ ((i & 1) << (lg - 1));
@@ -57,25 +56,21 @@ vector<int> conv(vector<int> a, vector<int> b) {
   b.resize(n);
   ntt(n, a, false);
   ntt(n, b, false);
-  for (int i = 0; i < n; ++i)
-    a[i] = mul(a[i], b[i]);
+  for (int i = 0; i < n; ++i) a[i] = mul(a[i], b[i]);
   ntt(n, a, true);
-  while (a.size() > 1 && a.back() == 0)
-    a.pop_back();
+  while (a.size() > 1 && a.back() == 0) a.pop_back();
   return a;
 }
 
 vector<int> add(vector<int> a, vector<int> b) {
   a.resize(max(a.size(), b.size()));
-  for (int i = 0; i < b.size(); ++i)
-    a[i] = add(a[i], b[i]);
+  for (int i = 0; i < b.size(); ++i) a[i] = add(a[i], b[i]);
   return a;
 }
 
 vector<int> sub(vector<int> a, vector<int> b) {
   a.resize(max(a.size(), b.size()));
-  for (int i = 0; i < b.size(); ++i)
-    a[i] = sub(a[i], b[i]);
+  for (int i = 0; i < b.size(); ++i) a[i] = sub(a[i], b[i]);
   return a;
 }
 
@@ -85,8 +80,7 @@ vector<int> inv(const vector<int> &a, int need) {
     vector<int> a1 = a;
     int m = b.size();
     a1.resize(min((int) a1.size(), 2 * m));
-    b = conv(b, sub({2}, conv(a1, b)));
-    b.resize(2 * m);
+    b = conv(b, sub({2}, conv(a1, b))), b.resize(2 * m);
   }
   b.resize(need);
   return b;
@@ -102,38 +96,33 @@ vector<int> div(vector<int> a, vector<int> b) {
   reverse(all(b));
   a.resize(n - m + 1);
   b.resize(n - m + 1);
-  vector<int> c = inv(b, b.size());
-  vector<int> q = conv(a, c);
+  vector<int> c = inv(b, b.size()), q = conv(a, c);
   q.resize(n - m + 1), reverse(all(q));
   return q;
 }
 
 vector<int> mod(vector<int> a, vector<int> b) {
   auto res = sub(a, conv(b, div(a, b)));
-  while (res.size() > 1 && res.back() == 0)
-    res.pop_back();
+  while (res.size() > 1 && res.back() == 0) res.pop_back();
   return res;
 }
 
 vector<int> multipoint(vector<int> a, vector<int> x) {
   int n = x.size();
   vector<vector<int>> tree(2 * n);
-  for (int i = 0; i < n; ++i)
-    tree[i + n] = {x[i], MOD - 1};
+  for (int i = 0; i < n; ++i) tree[i + n] = {x[i], MOD - 1};
   for (int i = n - 1; i; --i)
     tree[i] = conv(tree[2 * i], tree[2 * i + 1]);
   tree[1] = mod(a, tree[1]);
   for (int i = 2; i < 2 * n; ++i)
     tree[i] = mod(tree[i >> 1], tree[i]);
   vector<int> res(n);
-  for (int i = 0; i < n; ++i)
-    res[i] = tree[i + n][0];
+  for (int i = 0; i < n; ++i) res[i] = tree[i + n][0];
   return res;
 }
 
 vector<int> deriv(vector<int> a) {
-  for (int i = 1; i < a.size(); ++i)
-    a[i - 1] = mul(i, a[i]);
+  for (int i = 1; i < a.size(); ++i) a[i - 1] = mul(i, a[i]);
   a.back() = 0;
   if (a.size() > 1) a.pop_back();
   return a;
@@ -162,26 +151,24 @@ vector<int> exp(vector<int> a, int need) {
     int m = b.size();
     a1.resize(min((int) a1.size(), 2 * m));
     a1[0] = add(a1[0], 1);
-    b = conv(b, sub(a1, log(b, 2 * m)));
-    b.resize(2 * m);
+    b = conv(b, sub(a1, log(b, 2 * m))), b.resize(2 * m);
   }
   b.resize(need);
   return b;
 }
 
-vector<int> power_sum_poly(int k) {
+vector<int> power_sum_poly(int k) { // $O(k \log k)$
   vector<int> a(k + 1), p(k + 2);
-  for (int j = 0; j <= k; ++j)
-    a[j] = ifact[j + 1];
+  for (int j = 0; j <= k; ++j) a[j] = ifact[j + 1];
   auto c = inv(a, k + 1);
   for (int j = 0; j <= k; ++j) {
     int v = mul(fact[k], mul(c[j], ifact[k + 1 - j]));
     p[k + 1 - j] = (j & 1) ? sub(0, v) : v;
   }
-  return p; // P(n) = 1^k+ ... +n^k = sum p[i] n^i
+  return p; // $P(n) = 1^k + ... + n^k = \sum_i p_i n^i$
 }
 
-vector<int> power_sums_inv(int n, int k) {
+vector<int> power_sums_inv(int n, int k) { // $O(k \log k)$
   vector<int> a(k + 1), b(k + 1);
   int pw = 1, t = add(n % MOD, 1);
   for (int i = 0; i <= k; ++i) {
@@ -191,7 +178,6 @@ vector<int> power_sums_inv(int n, int k) {
   }
   auto s = conv(a, inv(b, k + 1));
   s.resize(k + 1);
-  for (int i = 0; i <= k; ++i)
-    s[i] = mul(s[i], fact[i]);
-  return s; // s[i]=1^i+...+n^i; O(k log k)
+  for (int i = 0; i <= k; ++i) s[i] = mul(s[i], fact[i]);
+  return s; // $s_i = 1^i+...+n^i = \sum_{x=1}^n x^i$
 }
