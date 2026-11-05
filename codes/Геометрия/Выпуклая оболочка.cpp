@@ -16,6 +16,6 @@ vector<vctr> convex_hull(vector<vctr> p, bool need_all = 0) {
     while (k >= t && bad(ch[k-2], ch[k-1], p[i])) --k;
   ch.resize(k - 1);
 // If hull is seg and need_all: p[0] p[1] .. p[n-1] .. p[1].
-// If need only one entry in this case: ch.resize(min(k-1, n));
+// If need only one entry in this case: ch.resize(min(k-1,n));
   return ch;
 }

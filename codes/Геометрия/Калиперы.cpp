@@ -1,13 +1,10 @@
 // Квадрат диаметра выпуклого многоугольника
 auto calipers(vector<vctr> &pts) {
-  int n = pts.size();
-  int a = 0, b = 0;
+  int n = pts.size(), a = 0, b = 0;
   for (int i = 1; i < n; ++i) {
     auto &v = pts[i];
-    if (tie(v.y, v.x) < tie(pts[a].y, pts[a].x))
-      a = i;
-    if (tie(v.y, v.x) > tie(pts[b].y, pts[b].x))
-      b = i;
+    if (tie(v.y, v.x) < tie(pts[a].y, pts[a].x)) a = i;
+    if (tie(v.y, v.x) > tie(pts[b].y, pts[b].x)) b = i;
   }
   int aa = (a + 1) % n, bb = (b + 1) % n;
   auto d2 = (pts[a] - pts[b]).dist2();

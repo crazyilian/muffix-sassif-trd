@@ -1,7 +1,6 @@
-// graph[v][i] = {u, edge_i}
+// g[v][i] = {u, edge_i}
 void dfs(int v, int pi = -1) {
-  vis[v] = 1;
-  up[v] = tin[v] = timer++;
+  vis[v] = 1, up[v] = tin[v] = timer++;
   for (auto [u, ei] : g[v]) {
     if (!vis[u]) {
       dfs(u, ei);

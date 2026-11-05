@@ -1,6 +1,6 @@
 // (Обобщённый) суфавтомат для кол-ва различных подстрок
 const int SIGMA = 26;
-long long ans = 0;
+ll ans = 0;
 
 struct Map{ //если большой алфавит, просто заменить $ar$ на $Map$
   map<int, int> mp;
@@ -8,19 +8,15 @@ struct Map{ //если большой алфавит, просто замени�
 };
 struct Node {
   ar(SIGMA) go;
-  int s, p, len, firstpos;
-  Node() {
-    go.fill(-1); // remove if Map
-    s=-1, p=-1, len=0, firstpos=-1;
-  }
+  int s=-1, p=-1, len=0, firstpos=-1;
+  Node() { go.fill(-1); } // remove if Map
 };
 
 int add(int A, int ch, vector<Node> &sa) {
   auto clone = [&](int A, int C) {
     int D = sa.size();
     sa.pb(sa[C]);
-    sa[D].p = A;
-    sa[D].len = sa[A].len + 1;
+    sa[D].p = A, sa[D].len = sa[A].len + 1;
     sa[C].s = D;
     for (; A != -1 && sa[A].go[ch] == C; A = sa[A].s)
       sa[A].go[ch] = D;
@@ -31,8 +27,7 @@ int add(int A, int ch, vector<Node> &sa) {
     return sa[C].p == A ? C : clone(A, C);
   int B = sa.size();
   sa.emplace_back();
-  sa[B].p = A;
-  sa[B].len = sa[A].len + 1;
+  sa[B].p = A, sa[B].len = sa[A].len + 1;
   sa[B].firstpos = sa[B].len - 1; // no sense when generalized SAM
   for (; A != -1; A = sa[A].s) {
     if (sa[A].go[ch] == -1) {
@@ -53,7 +48,6 @@ signed main() {
   cin >> s;
   vector<Node> sa(1);
   int A = 0;
-  for (char c : s)
-    A = add(A, c - 'a', sa);
+  for (char c : s) A = add(A, c - 'a', sa);
   cout << ans;
 }

@@ -1,25 +1,12 @@
 struct Node {
-  Node *ch[2];
-  Node *p;
-  bool rev;
-  int sz;
-
-  Node() {
-    ch[0] = nullptr;
-    ch[1] = nullptr;
-    p = nullptr;
-    rev = false;
-    sz = 1;
-  }
+  Node *ch[2] = {}, *p = nullptr;
+  bool rev = false;
+  int sz = 1;
 };
 
-int size(Node *v) {
-  return (v ? v->sz : 0);
-}
+int size(Node *v) { return (v ? v->sz : 0); }
 
-int chnum(Node *v) {
-  return v->p->ch[1] == v;
-}
+int chnum(Node *v) { return v->p->ch[1] == v; }
 
 bool isroot(Node *v) {
   return v->p == nullptr || v->p->ch[chnum(v)] != v;
@@ -27,10 +14,8 @@ bool isroot(Node *v) {
 
 void push(Node *v) {
   if (v->rev) {
-    if (v->ch[0])
-      v->ch[0]->rev ^= 1;
-    if (v->ch[1])
-      v->ch[1]->rev ^= 1;
+    if (v->ch[0]) v->ch[0]->rev ^= 1;
+    if (v->ch[1]) v->ch[1]->rev ^= 1;
     swap(v->ch[0], v->ch[1]);
     v->rev = false;
   }
@@ -41,10 +26,8 @@ void pull(Node *v) {
 }
 
 void attach(Node *v, Node *p, int num) {
-  if (p)
-    p->ch[num] = v;
-  if (v)
-    v->p = p;
+  if (p) p->ch[num] = v;
+  if (v) v->p = p;
 }
 
 void rotate(Node *v) {
@@ -53,10 +36,8 @@ void rotate(Node *v) {
   push(v);
   int num = chnum(v);
   Node *u = v->ch[1 - num];
-  if (!isroot(v->p))
-    attach(v, p->p, chnum(p));
-  else
-    v->p = p->p;
+  if (!isroot(v->p)) attach(v, p->p, chnum(p));
+  else v->p = p->p;
   attach(u, p, num);
   attach(p, v, 1 - num);
   pull(p);
@@ -77,22 +58,15 @@ void splay(Node *v) {
 }
 
 void expose(Node *v) {
-  splay(v);
-  v->ch[1] = nullptr;
-  pull(v);
+  splay(v), v->ch[1] = nullptr, pull(v);
   while (v->p != nullptr) {
     Node *p = v->p;
-    splay(p);
-    attach(v, p, 1);
-    pull(p);
-    splay(v);
+    splay(p), attach(v, p, 1), pull(p), splay(v);
   }
 }
 
 void makeroot(Node *v) {
-  expose(v);
-  v->rev ^= 1;
-  push(v);
+  expose(v), v->rev ^= 1, push(v);
 }
 
 void link(Node *v, Node *u) {
@@ -113,8 +87,7 @@ int get(Node *v, Node *u) {
   makeroot(u);
   makeroot(v);
   Node *w = u;
-  while (!isroot(w))
-    w = w->p;
+  while (!isroot(w)) w = w->p;
   return (w == v ? size(v) - 1 : -1);
 }
 
@@ -127,8 +100,7 @@ int main() {
   while (q--) {
     string s;
     int a, b;
-    cin >> s >> a >> b;
-    a--, b--;
+    cin >> s >> a >> b, a--, b--;
     if (s[0] == 'g')
       cout << get(nds + a, nds + b) << '\n';
     else if (s[0] == 'l')
@@ -137,4 +109,3 @@ int main() {
       cut(nds + a, nds + b);
   }
 }
-

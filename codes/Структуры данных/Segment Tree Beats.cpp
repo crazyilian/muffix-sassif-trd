@@ -19,6 +19,7 @@ struct ST {
 
   ST(vector<int> &a) {
     int n = a.size();
+    assert(n>0);
     st.resize(n * 4), mx.resize(n * 4);
     mx_cnt.resize(n * 4, 0), sec_mx.resize(n * 4, 0);
     build(0, 0, n, a);
@@ -29,23 +30,20 @@ struct ST {
     mx[v] = max(mx[v * 2 + 1], mx[v * 2 + 2]);
     mx_cnt[v] = 0;
     sec_mx[v] = max(sec_mx[v * 2 + 1], sec_mx[v * 2 + 2]);
-    if (mx[v * 2 + 1] == mx[v]) {
+    if (mx[v * 2 + 1] == mx[v])
       mx_cnt[v] += mx_cnt[v * 2 + 1];
-    } else {
+    else
       sec_mx[v] = max(sec_mx[v], mx[v * 2 + 1]);
-    }
-    if (mx[v * 2 + 2] == mx[v]) {
+    if (mx[v * 2 + 2] == mx[v])
       mx_cnt[v] += mx_cnt[v * 2 + 2];
-    } else {
+    else
       sec_mx[v] = max(sec_mx[v], mx[v * 2 + 2]);
-    }
   }
 
   void build(int i, int l, int r, vector<int> &a) {
     if (l + 1 == r) {
       st[i] = mx[i] = a[l];
-      mx_cnt[i] = 1;
-      sec_mx[i] = -INF;
+      mx_cnt[i] = 1, sec_mx[i] = -INF;
       return;
     }
     int m = (r + l) / 2;
@@ -86,6 +84,6 @@ struct ST {
     push(i, l, r);
     if (ql <= l && r <= qr) return st[i];
     int m = (l + r) / 2;
-    return sum(i * 2 + 1, l, m, ql, qr) + sum(i * 2 + 2, m, r, ql, qr);
+    return sum(i*2+1,l,m,ql,qr) + sum(i*2+2,m,r,ql,qr);
   }
 };

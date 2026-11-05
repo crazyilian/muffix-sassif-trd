@@ -6,13 +6,10 @@ vector<int> calc_lis(const vector<int> &a) {
     // upper_bound for non-strict LIS
     int len = lower_bound(all(dp), a[i]) - dp.begin();
     par[i] = len ? ind[len - 1] : -1;
-    if (len == dp.size()) {
-      dp.pb(a[i]);
-      ind.pb(i);
-    } else {
-      dp[len] = a[i];
-      ind[len] = i;
-    }
+    if (len == dp.size())
+      dp.pb(a[i]), ind.pb(i);
+    else
+      dp[len] = a[i], ind[len] = i;
   }
   int len = dp.size();
   vector<int> ans(len);

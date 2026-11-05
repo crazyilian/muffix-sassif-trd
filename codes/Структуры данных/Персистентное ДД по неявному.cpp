@@ -1,11 +1,7 @@
-struct Node;
-int size(int);
-int sum(int);
+int size(int), sum(int);
 
 struct Node {
-  int l, r;
-  int val, sz, sm;
-    
+  int l, r, val, sz, sm;
   Node() : l(0), r(0), val(0), sz(0), sm(0) {}
   Node(int val, int l, int r) : val(val), l(l), r(r) {
     sz = 1 + size(l) + size(r);
@@ -29,12 +25,10 @@ pair<int, int> split(int t, int x) {
   int szl = size(nds[t].l);
   if (szl >= x) {
     auto [l, r] = split(nds[t].l, x);
-    int v = newNode(nds[t].val, r, nds[t].r);
-    return {l, v};
+    return {l, newNode(nds[t].val, r, nds[t].r)};
   } else {
     auto [l, r] = split(nds[t].r, x - szl - 1);
-    int v = newNode(nds[t].val, nds[t].l, l);
-    return {v, r};
+    return {newNode(nds[t].val, nds[t].l, l), r};
   }
 }
 
@@ -46,13 +40,11 @@ int merge(int l, int r) {
   if (!l) return r;
   if (!r) return l;
   if (chooseleft(nds[l].sz, nds[r].sz)) {
-    int rr = merge(nds[l].r, r);
-    int v = newNode(nds[l].val, nds[l].l, rr);
-    return v;
+    int nr = merge(nds[l].r, r);
+    return newNode(nds[l].val, nds[l].l, nr);
   } else {
-    int ll = merge(l, nds[r].l);
-    int v = newNode(nds[r].val, ll, nds[r].r);
-    return v;
+    int nl = merge(l, nds[r].l);
+    return newNode(nds[r].val, nl, nds[r].r);
   }
 }
 

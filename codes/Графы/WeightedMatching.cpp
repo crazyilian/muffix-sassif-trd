@@ -36,21 +36,19 @@ namespace weighted_matching{
   }
   void q_push(int x) {
     if(x <= n) Q.push(x);
-    else for(int i = 0; i < (int)flo[x].size(); ++i)
-        q_push(flo[x][i]);
+    else for(int y : flo[x]) q_push(y);
   }
   void set_st(int x, int b) {
     st[x] = b;
-    if(x > n) for(int i = 0; i < (int)flo[x].size(); ++i)
-        set_st(flo[x][i], b);
+    if(x > n)
+      for(int y : flo[x]) set_st(y, b);
   }
   int get_pr(int b, int xr) {
-    int pr = find(flo[b].begin(), flo[b].end(), xr) - flo[b].begin();
+    int pr = find(all(flo[b]), xr) - flo[b].begin();
     if(pr & 1) {
       reverse(flo[b].begin() + 1, flo[b].end());
-      return (int)flo[b].size() - pr;
-    }
-    else return pr;
+      return ssize(flo[b]) - pr;
+    } else return pr;
   }
   void set_match(int x, int y) {
     match[x] = G[x][y].y;
@@ -75,8 +73,7 @@ namespace weighted_matching{
     for(++t; x || y; swap(x, y)) {
       if(x == 0) continue;
       if(vis[x] == t) return x;
-      vis[x] = t;
-      x = st[match[x]];
+      vis[x] = t, x = st[match[x]];
       if(x) x = st[pa[x]];
     }
     return 0;
@@ -85,10 +82,8 @@ namespace weighted_matching{
     int b = n + 1;
     while(b <= m && st[b]) ++b;
     if(b > m) ++m;
-    lab[b] = 0, S[b] = 0;
-    match[b] = match[l];
-    flo[b].clear();
-    flo[b].pb(l);
+    lab[b] = 0, S[b] = 0, match[b] = match[l];
+    flo[b].clear(), flo[b].pb(l);
     for(int u = x, v; u != l; u = st[pa[v]])
       flo[b].pb(u), flo[b].pb(v = st[match[u]]), q_push(v);
     reverse(flo[b].begin() + 1, flo[b].end());
@@ -97,8 +92,7 @@ namespace weighted_matching{
     set_st(b, b);
     for(int i = 1; i <= m; ++i) G[b][i].w = G[i][b].w = 0;
     for(int i = 1; i <= n; ++i) flo_from[b][i] = 0;
-    for(int i = 0; i < (int)flo[b].size(); ++i) {
-      int us = flo[b][i];
+    for(int us : flo[b]) {
       for(int u = 1; u <= m; ++u)
         if(G[b][u].w == 0 || e_delta(G[us][u]) < e_delta(G[b][u]))
           G[b][u] = G[us][u], G[u][b] = G[u][us];
@@ -109,8 +103,7 @@ namespace weighted_matching{
     set_slack(b);
   }
   void expand_blossom(int b) {
-    for(int i = 0; i < (int)flo[b].size(); ++i)
-      set_st(flo[b][i], flo[b][i]);
+    for(int x : flo[b]) set_st(x, x);
     int xr = flo_from[b][G[b][pa[b]].x], pr = get_pr(b, xr);
     for(int i = 0; i < pr; i += 2) {
       int xs = flo[b][i], xns = flo[b][i + 1];
@@ -120,7 +113,7 @@ namespace weighted_matching{
       q_push(xns);
     }
     S[xr] = 1, pa[xr] = pa[b];
-    for(int i = pr + 1; i < (int)flo[b].size(); ++i) {
+    for(int i = pr + 1; i < flo[b].size(); ++i) {
       int xs = flo[b][i];
       S[xs] = -1, set_slack(xs);
     }
@@ -133,8 +126,7 @@ namespace weighted_matching{
       int ny = st[match[y]];
       slack[y] = slack[ny] = 0;
       S[ny] = 0, q_push(ny);
-    }
-    else if(S[y] == 0) {
+    } else if(S[y] == 0) {
       int l = get_lca(x, y);
       if(!l) return augment(x, y), augment(y, x), true;
       else add_blossom(x, l, y);
@@ -156,8 +148,7 @@ namespace weighted_matching{
           if(G[x][y].w > 0 && st[x] != st[y]) {
             if(e_delta(G[x][y]) == 0) {
               if(on_found_edge(G[x][y])) return true;
-            }
-            else update_slack(x, st[y]);
+            } else update_slack(x, st[y]);
           }
         }
       }
@@ -173,8 +164,7 @@ namespace weighted_matching{
         if(S[st[x]] == 0) {
           if(lab[x] <= d) return 0;
           lab[x] -= d;
-        }
-        else if(S[st[x]] == 1) lab[x] += d;
+        } else if(S[st[x]] == 1) lab[x] += d;
       }
       for(int b = n + 1; b <= m; ++b)
         if(st[b] == b) {
@@ -194,9 +184,8 @@ namespace weighted_matching{
   pair<ll, int> solve(vector<pair<int, int>> &ans) {
     fill(match + 1, match + n + 1, 0);
     m = n;
-    int cnt = 0; ll sum = 0;
+    int cnt = 0; ll sum = 0, mx = 0;
     for(int u = 0; u <= n; ++u) st[u] = u, flo[u].clear();
-    ll mx = 0;
     for(int x = 1; x <= n; ++x)
       for(int y = 1; y <= n; ++y){
         flo_from[x][y] = (x == y ? x : 0);

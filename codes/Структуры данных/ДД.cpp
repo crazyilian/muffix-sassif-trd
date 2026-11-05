@@ -5,9 +5,7 @@ struct Node {
   int val, mx, mod;
 
   // value of empty set
-  Node() : val(-INF), mx(-INF) {
-    l = r = 0, mod = 0;
-  }
+  Node() : val(-INF), mx(-INF) { l = r = 0, mod = 0; }
   Node(int x, int val) : x(x), val(val), mx(val) {
     l = r = 0, mod = 0, y = rnd();
   }
@@ -25,10 +23,8 @@ void push(int t) {
   nds[t].mod = 0;
 }
 
-int getmx(int t) {
-  push(t); // delete if sure (faster)
-  return nds[t].mx;
-}
+// delete push(t) if sure (faster)
+int getmx(int t) { push(t); return nds[t].mx; }
 
 void pull(int t) {
   if (!t) return;
@@ -41,13 +37,11 @@ pair<int, int> split(int t, int x) {
   push(t);
   if (x <= nds[t].x) {
     auto [l, r] = split(nds[t].l, x);
-    nds[t].l = r;
-    pull(t);
+    nds[t].l = r, pull(t);
     return {l, t};
   } else {
     auto [l, r] = split(nds[t].r, x);
-    nds[t].r = l;
-    pull(t);
+    nds[t].r = l, pull(t);
     return {t, r};
   }
 }
@@ -57,12 +51,10 @@ int merge(int l, int r) {
   if (!l) return r;
   if (!r) return l;
   if (nds[l].y < nds[r].y) {
-    nds[l].r = merge(nds[l].r, r);
-    pull(l);
+    nds[l].r = merge(nds[l].r, r), pull(l);
     return l;
   } else {
-    nds[r].l = merge(l, nds[r].l);
-    pull(r);
+    nds[r].l = merge(l, nds[r].l), pull(r);
     return r;
   }
 }
@@ -96,4 +88,3 @@ void update(int &root, int ql, int qr, int qx) {
   if (m) nds[m].mod += qx;
   root = merge(merge(l, m), r);
 }
-

@@ -5,7 +5,7 @@ struct Fenwick {
   Fenwick(int n) : n(n), f(n+1) {}
 
   void build(const vector<int> &a) { // O(n)
-    n=size(a), f.assign(n+1, 0);
+    n=a.size(), f.assign(n+1, 0);
     for (int i = 1; i <= n; ++i) {
       f[i] += a[i-1];
       int j = i + (i & -i);
@@ -55,6 +55,4 @@ void update(int l, int r, int x) {
   T2.add(r, x * r);
 }
 // sum a[0..i)
-int get(int i) {
-  return T1.get(i) * i + T2.get(i);
-}
+int get(int i) { return T1.get(i) * i + T2.get(i); }

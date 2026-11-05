@@ -1,10 +1,9 @@
 const double PI = acos(-1);
-const int LOG = 20;
-const int MAXN = 1 << LOG;
+const int LOG = 20, MAXN = 1 << LOG;
 
 //using comp = complex<double>;
 struct comp {
-  double x, y;
+  double x, y; // not dbl: long double is ~3x slower
   comp() : x(0), y(0) {}
   comp(double x, double y) : x(x), y(y) {}
   comp(int x) : x(x), y(0) {}
@@ -19,13 +18,9 @@ comp OMEGA[MAXN + 10];
 int tail[MAXN + 10];
 bool fftinit = false;
 
-comp omega(int n, int k) {
-  return OMEGA[MAXN / n * k];
-}
+comp omega(int n, int k) { return OMEGA[MAXN / n * k]; }
 
-int gettail(int x, int lg) {
-  return tail[x] >> (LOG - lg);
-}
+int gettail(int x, int lg) { return tail[x] >> (LOG - lg); }
 
 void calcomega() {
   for (int i = 0; i < MAXN; ++i) {
@@ -43,11 +38,9 @@ void calctail() {
 void fft(vector<comp> &A, int lg) {
   if (!fftinit) calcomega(), calctail(), fftinit = 1;
   int n = A.size();
-  for (int i = 0; i < n; ++i) {
-    int j = gettail(i, lg);
-    if (i < j)
+  for (int i = 0; i < n; ++i)
+    if (int j = gettail(i, lg); i < j)
       swap(A[i], A[j]);
-  }
   for (int len = 2; len <= n; len *= 2) {
     for (int i = 0; i < n; i += len) {
       for (int j = 0; j < len / 2; ++j) {
@@ -69,7 +62,7 @@ void fft2(vector<comp> &A, vector<comp> &B, int lg) {
     C[i].y = B[i].x;
   }
   fft(C, lg);
-  C.push_back(C[0]);
+  C.pb(C[0]);
   for (int i = 0; i < n; ++i) {
     A[i] = (C[i] + C[n - i].conj()) / 2;
     B[i] = (C[i] - C[n - i].conj()) / 2 * comp(0, -1);
@@ -79,14 +72,12 @@ void fft2(vector<comp> &A, vector<comp> &B, int lg) {
 void invfft(vector<comp> &A, int lg) {
   int n = 1 << lg;
   fft(A, lg);
-  for (auto &el : A)
-    el = el / n;
+  for (auto &el : A) el = el / n;
   reverse(A.begin() + 1, A.end());
 }
 
 vector<int> mul(vector<int> &a, vector<int> &b) {
-  if (a.empty() || b.empty())
-    return {};
+  if (a.empty() || b.empty()) return {};
   int lg = 32-__builtin_clz(max<int>(1,a.size()+b.size()-2));
   int n = 1 << lg;
   vector<comp> A(n, 0), B(n, 0);
@@ -94,7 +85,7 @@ vector<int> mul(vector<int> &a, vector<int> &b) {
     A[i] = a[i];
   for (int i = 0; i < b.size(); ++i)
     B[i] = b[i];
-//  fft2(A, B, lg);
+  // fft2(A, B, lg);
   fft(A, lg);
   fft(B, lg);
   for (int i = 0; i < n; ++i)
@@ -107,4 +98,3 @@ vector<int> mul(vector<int> &a, vector<int> &b) {
     c.pop_back();
   return c;
 }
-

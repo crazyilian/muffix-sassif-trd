@@ -10,7 +10,7 @@ size_t mpos = 0;
 void *operator new(size_t n) {
   n = ((n ? n : 1) + ALIGN - 1) & ~(ALIGN - 1);
   mpos += n;
-//  assert(mpos <= MAX_MEM);
+  // assert(mpos <= MAX_MEM);
   return (void *)(mem + mpos - n);
 }
 void operator delete(void *) noexcept {}

@@ -32,7 +32,7 @@ struct Hashmap {
     // Use =V() if need default constructor and erase
     //   (e.g. `cnt.erase(x); cnt[y]++;`)
     if (k[i]!=x) k[i]=x; //, v[i]=V();
-    return v[i]; 
+    return v[i];
   }
   bool erase(cK &x) {
     int i = pos(x);

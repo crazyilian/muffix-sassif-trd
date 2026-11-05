@@ -11,9 +11,9 @@ struct line {
   }
   void operator*=(dbl x) { a *= x, b *= x, c *= x; }
   void operator/=(dbl x) { a /= x, b /= x, c /= x; }
-  dbl get(const vctr P) const { return a * P.x + b * P.y + c; }
+  dbl get(const vctr P) const { return a*P.x + b*P.y + c; }
   // requires dbl vctr
-  vctr anyPoint() const {
+  vctr any_point() const {
     dbl d = a * a + b * b;
     return {-a * c / d, -b * c / d};
   }
@@ -41,4 +41,3 @@ line bisection(const vctr A, const vctr B) {
   vctr d = (A - B) * 2;
   return line(d.x, d.y, B.dist2() - A.dist2());
 }
-

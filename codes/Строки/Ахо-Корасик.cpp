@@ -15,8 +15,7 @@ struct AhoCorasick {
     for (char el : s) {
       if (go[v][el - 'a'] == 0) {
         go[v][el - 'a'] = cntv;
-        par[cntv] = v;
-        par_c[cntv] = el;
+        par[cntv] = v, par_c[cntv] = el;
         cntv++;
       }
       v = go[v][el - 'a'];
@@ -30,7 +29,7 @@ struct AhoCorasick {
     for (int l = 0, r = 1; l < r; ++l) {
       int v = q[l];
       if (v > 0) g[suf[v]].pb(v);
-      for (int c = 0; c < SIGMA; c++) {
+      for (int c = 0; c < SIGMA; ++c) {
         int &u = go[v][c];
         if (u == 0) u = go[suf[v]][c];
         else suf[u] = v ? go[suf[v]][c] : 0, q[r++] = u;

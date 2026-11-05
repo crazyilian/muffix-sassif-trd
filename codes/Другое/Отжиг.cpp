@@ -2,10 +2,8 @@ const double lambda = 0.999;
 double temperature = 1;
 mt19937 rnd(777);
 
-double gen_rand_01() {
-  return rnd() / (double) mt19937::max();
-}
-bool f(int delta) {
+double gen_rand_01() { return rnd()/(double) mt19937::max(); }
+bool f(int delta) { // exp is much slower on long double
   return exp(-delta / temperature) > gen_rand_01();
 }
 void make_change() {

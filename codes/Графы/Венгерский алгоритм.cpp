@@ -38,13 +38,11 @@ pair<ll, vector<int>> venger(vector<vector<ll>> a) {
     } while (p[y] != 0);
     do {
       int z = way[y];
-      p[y] = p[z];
-      y = z;
+      p[y] = p[z], y = z;
     } while (y);
   }
   ll cost = -v[0];
   vector<int> ans(n + 1);
-  for (int j = 1; j <= m; ++j)
-    ans[p[j]] = j;
+  for (int j = 1; j <= m; ++j) ans[p[j]] = j;
   return {cost, ans};
 }

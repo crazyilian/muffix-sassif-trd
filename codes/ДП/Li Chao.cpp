@@ -5,10 +5,7 @@ struct Line {
 
 // LiChao for maximum at x
 struct LiChao {
-  struct Node {
-    int l, r;
-    Line ln;
-  };
+  struct Node { int l, r; Line ln; };
   ll L, R;
   int root;
   vector<Node> t;
@@ -17,11 +14,11 @@ struct LiChao {
     t.reserve(maxsz + 1);
     t.pb({0, 0, {0, -INF}}); // t[0] = empty. +INF for min
   }
-  
+
   int add_on_seg(int v, ll l, ll r, ll ql, ll qr, Line ln) {
-    if (qr <= l || r <= ql) { return v; }
-    if (ql <= l && r <= qr) { return add(v, l, r, ln); }
-    if (!v) { v = t.size(), t.pb({0, 0, {0, -INF}}); }
+    if (qr <= l || r <= ql) return v;
+    if (ql <= l && r <= qr) return add(v, l, r, ln);
+    if (!v) v = t.size(), t.pb({0, 0, {0, -INF}});
     ll m = (l + r) >> 1; // NOT (l+r)/2
     t[v].l = add_on_seg(t[v].l, l, m, ql, qr, ln);
     t[v].r = add_on_seg(t[v].r, m, r, ql, qr, ln);
@@ -33,8 +30,7 @@ struct LiChao {
 
   int add(int v, ll l, ll r, Line ln) {
     if (!v) {
-      v = t.size();
-      t.pb({0, 0, ln});
+      v = t.size(), t.pb({0, 0, ln});
       return v;
     }
     ll m = (l + r) >> 1; // NOT (l+r)/2

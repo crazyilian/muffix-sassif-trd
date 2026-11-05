@@ -1,9 +1,8 @@
 vector<int> z_func(const string &s) {
-  int n = s.size();
+  int n = s.size(), l = 0, r = 0;
   vector<int> z(n, 0);
   if (n) z[0] = n;
-  int l = 0, r = 0;
-  for (int i = 1; i < n; i++) {
+  for (int i = 1; i < n; ++i) {
     if (i < r) z[i] = min(z[i-l], r-i);
     while (i+z[i] < n && s[z[i]] == s[i+z[i]]) z[i]++;
     if (i+z[i] > r) l = i, r = i+z[i];
@@ -14,7 +13,7 @@ vector<int> z_func(const string &s) {
 vector<int> prefix_func(const string &s) {
   int n = s.size(), a = 0;
   vector<int> pref(n, 0);
-  for (int i = 1; i < n; i++) {
+  for (int i = 1; i < n; ++i) {
     while (a > 0 && s[a] != s[i]) a = pref[a-1];
     pref[i] = a += s[i] == s[a];
   }

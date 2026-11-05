@@ -1,16 +1,12 @@
-int len[MAXN], suf[MAXN];
-int go[MAXN][ALPH];
+int len[MAXN], suf[MAXN], go[MAXN][ALPH];
 char s[MAXN];
-
 int n, last, sz;
 
 void init() {
-  for (int v = 0; v < sz; v++) fill(go[v], go[v] + ALPH, 0);
-  n = 0, last = 0;
-  s[n++] = -1;
+  for (int v = 0; v < sz; ++v) fill(go[v], go[v] + ALPH, 0);
+  n = 0, last = 0, s[n++] = -1;
   suf[0] = 1; // root of suflink tree = 1
-  len[1] = -1;
-  sz = 2;
+  len[1] = -1, sz = 2;
 }
 
 int get_link(int v) {
@@ -20,8 +16,7 @@ int get_link(int v) {
 }
 
 void add_char(char c) {
-  c -= 'a';
-  s[n++] = c;
+  c -= 'a', s[n++] = c;
   last = get_link(last);
   if (!go[last][c]) {
     len[sz] = len[last] + 2;

@@ -28,4 +28,3 @@ int get(int l, int r) {
   int i = floorlog2[l ^ r];
   return min(tree[i][l], tree[i][r]);
 }
-

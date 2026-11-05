@@ -1,32 +1,26 @@
-int par[MAXN], sizes[MAXN];
-int pathup[MAXN];
-int tin[MAXN], tout[MAXN];
-int timer;
+int par[MAXN], sizes[MAXN], pathup[MAXN];
+int tin[MAXN], tout[MAXN], timer;
 
 int dfs1_hld(int v, int p) {
   par[v] = p;
   int sz = 1;
-  for (int i = 0; i < graph[v].size(); ++i) {
-    int u = graph[v][i];
+  for (int i = 0; i < g[v].size(); ++i) {
+    int u = g[v][i];
     if (u == p) {
-      swap(graph[v][i--], graph[v].back());
-      graph[v].pop_back();
-      continue;
-    }
-    sz += dfs1_hld(u, v);
+      swap(g[v][i--], g[v].back());
+      g[v].pop_back();
+    } else sz += dfs1_hld(u, v);
   }
   return sizes[v] = sz;
 }
 
 void dfs2_hld(int v, int up) {
-  tin[v] = timer++;
-  pathup[v] = up;
-  for (int i = 1; i < graph[v].size(); ++i) {
-    if (sizes[graph[v][i]] > sizes[graph[v][0]])
-      swap(graph[v][i], graph[v][0]);
-  }
-  for (int u : graph[v])
-    dfs2_hld(u, u == graph[v][0] ? up : u);
+  tin[v] = timer++, pathup[v] = up;
+  for (int i = 1; i < g[v].size(); ++i)
+    if (sizes[g[v][i]] > sizes[g[v][0]])
+      swap(g[v][i], g[v][0]);
+  for (int u : g[v])
+    dfs2_hld(u, u == g[v][0] ? up : u);
   tout[v] = timer;
 }
 
@@ -44,8 +38,7 @@ void update_hld(int v, int u, int ARG) {
     }
     swap(v, u);
   }
-  if (tin[v] > tin[u])
-    swap(v, u);
+  if (tin[v] > tin[u]) swap(v, u);
   // v = lca
   ST.update(0, 0, timer, tin[v], tin[u] + 1, ARG);
 }

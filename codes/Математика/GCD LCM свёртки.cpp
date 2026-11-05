@@ -10,7 +10,7 @@ vector<int> gcd_convolution(vector<int> a, vector<int> b) {
       if (b[i] >= mod) b[i] -= mod;
     }
   }
-  for (int i = 1; i <= n; ++i) a[i] = (a[i] * b[i]) % mod;
+  for (int i = 1; i <= n; ++i) a[i] = (ll)a[i] * b[i] % mod;
   for (int p = 2; p <= n; ++p) {
     if (!isprime[p]) continue;
     for (int i = 1; i * p <= n; ++i) {
@@ -32,7 +32,7 @@ vector<int> lcm_convolution(vector<int> a, vector<int> b) {
       if (b[i * p] >= mod) b[i * p] -= mod;
     }
   }
-  for (int i = 1; i <= n; ++i) a[i] = (a[i] * b[i]) % mod;
+  for (int i = 1; i <= n; ++i) a[i] = (ll)a[i] * b[i] % mod;
   for (int p = 2; p <= n; ++p) {
     if (!isprime[p]) continue;
     for (int i = n / p; i > 0; --i) {

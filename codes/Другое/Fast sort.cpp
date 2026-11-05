@@ -14,7 +14,7 @@ void radix_sort(vector<ll> &a) {
 #define PASS(key) { \
   memset(c, 0, sizeof c); \
   for (auto x : a) ++c[(key)+1]; \
-  for (signed i = 1; i <= B; ++i) { c[i]+=c[i-1]; } \
+  for (signed i = 1; i <= B; ++i) c[i]+=c[i-1]; \
   for (auto x : a) b[c[key]++] = x; \
   swap(a,b); \
 }

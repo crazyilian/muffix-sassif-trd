@@ -3,7 +3,7 @@
 pair<int, int> tangents_from_point(vctr &a, vector<vctr> &p) {
   int n = p.size();
   int logn = 31 - __builtin_clz(n);
-  auto findWithSign = [&](int sgn) {
+  auto find_with_sign = [&](int sgn) {
     int i = 0;
     for (int k = logn; k >= 0; --k) {
       int i1 = (i - (1 << k) + n) % n;
@@ -13,15 +13,14 @@ pair<int, int> tangents_from_point(vctr &a, vector<vctr> &p) {
     }
     return i;
   };
-  return {findWithSign(1), findWithSign(-1)};
+  return {find_with_sign(1), find_with_sign(-1)};
 }
 
 // p convex, no 3 collinear. Point with max (sgn=1) or
 // min (sgn=-1) signed distance to line
 int tangent_parallel_line(const vector<vctr> &p, line l, int sgn) {
   l *= sgn;
-  int n = p.size();
-  int i = 0;
+  int n = p.size(), i = 0;
   int logn = 31 - __builtin_clz(n);
   for (int k = logn; k >= 0; --k) {
     int i1 = (i - (1 << k) + n) % n;

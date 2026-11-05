@@ -1,6 +1,5 @@
 Node nds[MAX];
-int ndsz = 1;
-// nds[0] is default (empty) value
+int ndsz = 1; // nds[0] is default (empty) value
 
 int sum(int v) { return nds[v].sm; }
 
@@ -11,8 +10,7 @@ int update(int v, int l, int r, int qi, int qx) {
     nds[ndsz++] = Node(qx);
     return ndsz - 1;
   }
-  int m = (l + r) / 2;
-  int u = ndsz++;
+  int m = (l + r) / 2, u = ndsz++;
   nds[u].l = update(nds[v].l, l, m, qi, qx);
   nds[u].r = update(nds[v].r, m, r, qi, qx);
   nds[u].sm = sum(nds[u].l) + sum(nds[u].r);
@@ -27,4 +25,3 @@ int get(int v, int l, int r, int ql, int qr) {
   auto b = get(nds[v].r, m, r, ql, qr);
   return a + b;
 }
-

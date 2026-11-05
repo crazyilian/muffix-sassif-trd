@@ -6,8 +6,7 @@ struct circle {
   circle(vctr C, dbl r) : C(C), r(r) {}
   // requires dbl vctr
   circle(const vctr A, const vctr B) {
-    C = (A + B) / 2;
-    r = (A - B).dist() / 2;
+    C = (A + B) / 2, r = (A - B).dist() / 2;
   }
   circle(const vctr A, const vctr B, const vctr D) {
     vctr u = B-A, v = D-A;
@@ -37,8 +36,7 @@ vector<vctr> intersection_line_circ(line l, circle c) {
 
 vector<vctr> intersection_circ_circ(circle A, circle B) {
   vctr d = B.C - A.C; // better precision
-  line l(2*d.x, 2*d.y,
-         (B.r-A.r) * (B.r+A.r) - d.dist2());
+  line l(2*d.x, 2*d.y, (B.r-A.r) * (B.r+A.r) - d.dist2());
   if (sign(l.a) == 0 && sign(l.b) == 0) return {};
   auto c = A.r<B.r ? circle(0,0,A.r) : circle(d,B.r); // better precision
   auto res = intersection_line_circ(l, c);

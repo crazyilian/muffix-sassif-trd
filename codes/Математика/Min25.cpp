@@ -19,9 +19,7 @@ struct Min25 {
   vector<ll> primes;
   bool built = false;
 
-  int id(ll x) {
-    return x <= sq ? id_small[x] : id_large[n / x];
-  }
+  int id(ll x) { return x<=sq ? id_small[x] : id_large[n/x]; }
 
   ll sum_power(int d, ll x) {
     x %= mod;
@@ -39,50 +37,39 @@ struct Min25 {
   }
 
   ll prime_poly(ll x) {
-    if (x < 2) return 0;
-    return prime_poly_at_index(id(x));
+    return x < 2 ? 0 : prime_poly_at_index(id(x));
   }
 
   // Value f(p^e). Args are (p, e, p^e mod mod, p^{e-1} mod mod).
-  ll f_prime_power(ll p, int e, ll pe, ll prev) {
-    return pe;
-  }
+  ll f_prime_power(ll p, int e, ll pe, ll prev) { return pe; }
 
   void build(ll _n) {
-    if (built) {
-      assert(n == _n);
-      return;
-    }
-    built = true;
-    n = _n;
-    val.clear();
-    primes.clear();
+    if (built) { assert(n == _n); return; }
+    built = true, n = _n;
+    val.clear(), primes.clear();
     sq = sqrtl(n);
     while ((sq + 1) * (sq + 1) <= n) ++sq;
     while (sq * sq > n) --sq;
     id_small.assign(sq + 1, -1);
     id_large.assign(sq + 1, -1);
-
     for (ll l = 1, r; l <= n; l = r + 1) {
       ll x = n / l;
       r = n / x;
       int i = val.size();
-      val.push_back(x);
+      val.pb(x);
       if (x <= sq) id_small[x] = i;
       else id_large[n / x] = i;
     }
-
     g.assign(D + 1, vector<ll>(val.size()));
     for (int d = 0; d <= D; ++d)
-      for (int i = 0; i < (int)val.size(); ++i)
+      for (int i = 0; i < val.size(); ++i)
         g[d][i] = (sum_power(d, val[i]) - 1 + mod) % mod;
-
+    vector<ll> ppow(D + 1, 1); // ppow[d] = p^d
     for (ll p = 2; p <= sq; ++p) {
       if (g[0][id(p)] == g[0][id(p - 1)]) continue;
-      primes.push_back(p);
-      vector<ll> ppow(D + 1, 1);
-      for (int d = 1; d <= D; ++d) ppow[d] = mul(ppow[d - 1], p);
-      for (int i = 0; i < (int)val.size() && val[i] >= p * p; ++i) {
+      primes.pb(p);
+      for (int d = 1; d<=D; ++d) ppow[d] = mul(ppow[d-1], p);
+      for (int i = 0; i < val.size() && val[i] >= p*p; ++i) {
         int ip = id(val[i] / p);
         int before_p = id(p - 1);
         for (int d = 0; d <= D; ++d) {
@@ -98,8 +85,8 @@ struct Min25 {
     ll last = pos ? primes[pos - 1] : 1;
     ll res = (prime_poly(limit) - prime_poly(last)) % mod;
     if (res < 0) res += mod;
-    if (limit >= 2 && pos < (int)primes.size()) {
-      for (int i = pos; i < (int)primes.size(); ++i) {
+    if (limit >= 2 && pos < primes.size()) {
+      for (int i = pos; i < primes.size(); ++i) {
         ll p = primes[i];
         if ((__int128)p * p > limit) break;
         ll pe_int = p, pe_mod = p % mod, prev_mod = 1;
@@ -108,8 +95,7 @@ struct Min25 {
           ll cur = f_prime_power(p, e, pe_mod, prev_mod);
           ll nxt = f_prime_power(p, e + 1, nxt_mod, pe_mod);
           res = (res + mul(cur, dfs(limit / pe_int, i + 1)) + nxt) % mod;
-          prev_mod = pe_mod;
-          pe_mod = nxt_mod;
+          prev_mod = pe_mod, pe_mod = nxt_mod;
           pe_int *= p;
         }
       }
@@ -131,13 +117,12 @@ struct Min25 {
   vector<ll> all_prefix_sums() {
     assert(built);
     vector<ll> prime_sum(val.size()), r(val.size()), ans(val.size());
-    for (int i = 0; i < (int)val.size(); ++i)
+    for (int i = 0; i < val.size(); ++i)
       prime_sum[i] = r[i] = prime_poly_at_index(i);
-
-    for (int ui = (int)primes.size() - 1; ui >= 0; --ui) {
+    for (int ui = ssize(primes) - 1; ui >= 0; --ui) {
       ll p = primes[ui];
       ll before = prime_sum[id(p)];
-      for (int i = 0; i < (int)val.size() && val[i] >= p * p; ++i) {
+      for (int i = 0; i < val.size() && val[i] >= p*p; ++i) {
         ll pe_int = p, pe_mod = p % mod, prev_mod = 1;
         for (int e = 1; (__int128)pe_int * p <= val[i]; ++e) {
           ll nxt_mod = mul(pe_mod, p);
@@ -146,14 +131,12 @@ struct Min25 {
           ll tail = r[id(val[i] / pe_int)] - before;
           if (tail < 0) tail += mod;
           r[i] = (r[i] + mul(cur, tail) + nxt) % mod;
-          prev_mod = pe_mod;
-          pe_mod = nxt_mod;
+          prev_mod = pe_mod, pe_mod = nxt_mod;
           pe_int *= p;
         }
       }
     }
-
-    for (int i = 0; i < (int)val.size(); ++i)
+    for (int i = 0; i < val.size(); ++i)
       ans[i] = (1 + r[i]) % mod; // f(1) = 1
     return ans;
   }

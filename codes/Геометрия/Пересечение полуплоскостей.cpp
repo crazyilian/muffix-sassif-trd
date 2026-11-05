@@ -2,13 +2,12 @@
 // $O(\log)$ `compare` needs $2N^2$ and $2NK$ fit into type;
 // cross-multiplication `compare` needs $4N^3K$.
 
-
 // Half plane: ax+by+c >= 0. Bounding box MUST HAVE.
 vector<int> calc_hpi_inds(const vector<line> &ls) {
   int n = ls.size(), m=0, l=0, r=0;
   vector<int> q(n);
   vector<char> h(n);
-  iota(q.begin(), q.end(), 0);
+  iota(all(q), 0);
   auto cr = [&](int i, int j) {
     return ls[i].a*ls[j].b-ls[i].b*ls[j].a;
   };
@@ -33,7 +32,7 @@ vector<int> calc_hpi_inds(const vector<line> &ls) {
   };
   for (int i = 0; i < n; ++i)
     h[i] = sign(ls[i].b)<0||(!sign(ls[i].b)&&ls[i].a<0);
-  sort(q.begin(), q.end(), [&](int i, int j) { // 70% of time
+  sort(all(q), [&](int i, int j) { // 70% of time
     return h[i] != h[j] ? h[i] < h[j] : cr(i,j) > 0;
   });
   for (int i : q) {
@@ -63,8 +62,7 @@ vector<int> calc_hpi_inds(const vector<line> &ls) {
 vector<vctr> half_plane_intersection(const vector<line> &ls) {
   vector<int> inds = calc_hpi_inds(ls);
   int n = inds.size();
-  vector<vctr> pts;
-  pts.reserve(n);
+  vector<vctr> pts; pts.reserve(n);
   for (int i = 0; i < n; ++i) {
     vctr P = intersection(ls[inds[i]],ls[inds[(i+1)%n]]);
     if (pts.empty() || !(pts.back() == P)) pts.pb(P);
@@ -75,4 +73,3 @@ vector<vctr> half_plane_intersection(const vector<line> &ls) {
 // (4 lines), and "point" (3 lines, or 4 if 2 and 2 parallel)
   return pts;
 }
-

@@ -15,7 +15,7 @@ struct vctr {
   bool operator==(const vctr &o)const{ return !sign(x-o.x) && !sign(y-o.y); }
   dbl dist2() const { return x * x + y * y; }
   dbl dist() const { return sqrtl(dist2()); }
-  vctr rotate_ccw_90() const {  return {-y, x}; }
+  vctr rotate_ccw_90() const { return {-y, x}; }
   // requires dbl vctr
   vctr norm() const { return *this / dist(); }
 };
@@ -51,4 +51,3 @@ vctr rotate_ccw(const vctr &a, dbl phi) {
   dbl sn = sinl(phi);
   return {a.x * cs - a.y * sn, a.y * cs + a.x * sn};
 }
-

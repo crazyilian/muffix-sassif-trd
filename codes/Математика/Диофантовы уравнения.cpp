@@ -13,17 +13,16 @@ pair<int, int> ext_gcd(int a, int b) {
 
 // solve $ax+by=c$ with minimum $x \geq 0$
 bool cool_ext_gcd(int a, int b, int c, int &x, int &y) {
-    if (b == 0) {
-        y = 0;
-        if (a == 0)
-            return x = 0, c == 0;
-        return x = c / a, c % a == 0 && x >= 0;
-    }
-    auto [x0, y0] = ext_gcd(a, b);
-    int g = (ll)x0 * a + (ll)y0 * b;
-    if (c % g != 0) return false;
-    x = (ll)x0 * (c / g) % (b / g);
-    if (x < 0) x += abs(b / g);
-    y = (c - (ll)a * x) / b;
-    return true;
+  if (b == 0) {
+    y = 0;
+    if (a == 0) return x = 0, c == 0;
+    return x = c / a, c % a == 0 && x >= 0;
+  }
+  auto [x0, y0] = ext_gcd(a, b);
+  int g = (ll)x0 * a + (ll)y0 * b;
+  if (c % g != 0) return false;
+  x = (ll)x0 * (c / g) % (b / g);
+  if (x < 0) x += abs(b / g);
+  y = (c - (ll)a * x) / b;
+  return true;
 }

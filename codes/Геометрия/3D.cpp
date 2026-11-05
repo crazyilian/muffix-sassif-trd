@@ -2,33 +2,21 @@ struct Pt {
   dbl x, y, z;
   Pt() : x(0), y(0), z(0) {}
   Pt(dbl x, dbl y, dbl z) : x(x), y(y), z(z) {}
-  Pt operator-(const Pt& o) const {
-    return {x - o.x, y - o.y, z - o.z};
-  }
-  Pt operator+(const Pt& o) const {
-    return {x + o.x, y + o.y, z + o.z};
-  }
-  Pt operator/(const dbl& a) const {
-    return {x / a, y / a, z / a};
-  }
-  Pt operator*(const dbl& a) const {
-    return {x * a, y * a, z * a};
-  }
+  Pt operator-(const Pt& o)const{return{x-o.x,y-o.y,z-o.z};}
+  Pt operator+(const Pt& o)const{return{x+o.x,y+o.y,z+o.z};}
+  Pt operator/(const dbl& a) const { return {x/a, y/a, z/a}; }
+  Pt operator*(const dbl& a) const { return {x*a, y*a, z*a}; }
   Pt cross(const Pt& o) const {
     dbl nx = y * o.z - z * o.y;
     dbl ny = z * o.x - x * o.z;
     dbl nz = x * o.y - y * o.x;
     return {nx, ny, nz};
   }
-  dbl dot(const Pt &o) const {
-    return x * o.x + y * o.y + z * o.z;
-  }
+  dbl dot(const Pt &o) const { return x*o.x + y*o.y + z*o.z; }
   bool operator==(const Pt& o) const {
-    return abs(x - o.x) < EPS && abs(y - o.y) < EPS && abs(z - o.z) < EPS;
+    return abs(x-o.x)<EPS && abs(y-o.y)<EPS && abs(z-o.z)<EPS;
   }
-  dbl dist() {
-    return sqrtl(x * x + y * y + z * z);
-  }
+  dbl dist() { return sqrtl(x * x + y * y + z * z); }
 };
 
 struct Plane {
@@ -38,13 +26,10 @@ struct Plane {
     if (z < EPS) return;
     a /= z, b /= z, c /= z, d /= z;
   }
-  dbl get_val(const Pt &p) const {
-    // НЕ СТАВИТЬ МОДУЛЬ
+  dbl get_val(const Pt &p) const { // НЕ СТАВИТЬ МОДУЛЬ
     return a * p.x + b * p.y + c * p.z + d;
   }
-  dbl dist(const Pt &p) const {
-    return abs(get_val(p));
-  }
+  dbl dist(const Pt &p) const { return abs(get_val(p)); }
   bool on_plane(const Pt &p) const {
     return dist(p) / sqrtl(a * a + b * b + c * c) < EPS;
   }
@@ -143,7 +128,5 @@ struct Basis {
     p = p - o;
     return {p.dot(u), p.dot(v)};
   }
-  Pt from_2d(dbl x, dbl y) const {
-    return o + u * x + v * y;
-  }
+  Pt from_2d(dbl x, dbl y) const { return o + u * x + v * y; }
 };

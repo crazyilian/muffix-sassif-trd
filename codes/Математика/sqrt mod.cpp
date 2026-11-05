@@ -26,4 +26,3 @@ ll sqrt(ll a, ll p) {
     b = b * g % p;
   }
 }
-

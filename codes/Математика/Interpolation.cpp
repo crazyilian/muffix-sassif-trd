@@ -27,7 +27,7 @@ vector<ll> interpolate(vector<ll> x, vector<ll> y) {
 
 ll eval(const vector<ll> &a, ll x) {
   ll r = 0;
-  for (int i = ssize(a)-1; i>= 0; --i) r = (r*x+a[i]) % MOD;
+  for (int i = ssize(a)-1; i >= 0; --i) r = (r*x+a[i]) % MOD;
   return r;
 }
 

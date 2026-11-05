@@ -7,7 +7,7 @@ struct LRFlow {
   LRFlow(int n, int S, int T, int Sx, int Tx)
     : dinic(n), S(S), T(T), Sx(Sx), Tx(Tx), dem(n) {}
 
-  // returns id: real flow = dinic.graph[v][id].f + mincap
+  // returns id: real flow = dinic.g[v][id].f + mincap
   int addedge(int v, int u, flow_t mincap, flow_t maxcap) {
     dem[v] -= mincap, dem[u] += mincap;
     return dinic.addedge(v, u, maxcap - mincap);
@@ -15,7 +15,7 @@ struct LRFlow {
 
   // returns true if found flow is feasible.
   // size of flow (after aux edges are removed below):
-  // sum e.f over dinic.graph[S] - dem[S]
+  // sum e.f over dinic.g[S] - dem[S]
   bool run() {
     ll totaldem = 0;
     for (int v = 0; v < dem.size(); ++v) {
@@ -30,16 +30,15 @@ struct LRFlow {
     dinic.addedge(S, T, totaldem); // for total flow < 0
     dinic.run(Sx, Tx);
     ll flow = 0;
-    for (auto &e : dinic.graph[Sx]) flow += e.f;
+    for (auto &e : dinic.g[Sx]) flow += e.f;
     if (flow != totaldem) return false;
     // return true; // if want ONLY feasibility
-    for (int v = 0; v < dem.size(); ++v) {
-      if (dem[v]) dinic.graph[v].pop_back();
-    }
-    dinic.graph[Sx].clear();
-    dinic.graph[Tx].clear();
+    for (int v = 0; v < dem.size(); ++v)
+      if (dem[v]) dinic.g[v].pop_back();
+    dinic.g[Sx].clear();
+    dinic.g[Tx].clear();
     for (int i = 0; i < 2; ++i) // T->S, S->T
-      dinic.graph[S].pop_back(), dinic.graph[T].pop_back();
+      dinic.g[S].pop_back(), dinic.g[T].pop_back();
     dinic.run(S, T); // if we want max lr-flow (not any lr-flow)
     return true;
   }

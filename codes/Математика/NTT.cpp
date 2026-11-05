@@ -1,24 +1,20 @@
-const int MOD = 998244353; // $7 \cdot 17 \cdot 2^{23} + 1$
-const int G = 3;
-//const int MOD = 7340033; // $7 \cdot 2^{20} + 1$
-//const int G = 5;
-//const int MOD = 469762049; // $7 \cdot  2^{26} + 1$
-//const int G = 30;
+const int MOD = 998244353, G = 3; // $7 \cdot 17 \cdot 2^{23} + 1$
+//const int MOD = 7340033, G = 5; // $7 \cdot 2^{20} + 1$
+//const int MOD = 469762049, G = 30; // $7 \cdot  2^{26} + 1$
 const int MAXLOG = 23;
 int W[(1 << MAXLOG) + 10];
 bool nttinit = false;
 vector<int> pws;
 
-// int add(), int sub(), int mul(),
-// int binpow(), int inv()
+// int add(), int sub(), int mul(), int binpow(), int inv()
 
 void initNTT() {
   if (nttinit) return;
   nttinit = true;
   assert((MOD - 1) % (1 << MAXLOG) == 0);
-  pws.push_back(binpow(G, (MOD - 1) / (1 << MAXLOG)));
+  pws.pb(binpow(G, (MOD - 1) / (1 << MAXLOG)));
   for (int i = 0; i < MAXLOG - 1; ++i)
-    pws.push_back(mul(pws.back(), pws.back()));
+    pws.pb(mul(pws.back(), pws.back()));
   assert(pws.back() == MOD - 1);
   W[0] = 1;
   for (int i = 1; i < (1 << MAXLOG); ++i)
@@ -28,9 +24,8 @@ void initNTT() {
 void ntt(int n, vector<int> &a, bool rev) {
   initNTT();
   int lg = 31 - __builtin_clz(n);
-  for (auto &el : a) {
+  for (auto &el : a)
     el = (el % MOD + MOD) % MOD;
-  }
   vector<int> rv(n);
   for (int i = 1; i < n; ++i) {
     rv[i] = (rv[i >> 1] >> 1) ^ ((i & 1) << (lg - 1));
@@ -55,8 +50,7 @@ void ntt(int n, vector<int> &a, bool rev) {
 }
 
 vector<int> conv(vector<int> a, vector<int> b) {
-  if (a.empty() || b.empty())
-    return {};
+  if (a.empty() || b.empty()) return {};
   int lg = 32-__builtin_clz(max<int>(1,a.size()+b.size()-2));
   int n = 1 << lg;
   a.resize(n);
@@ -73,21 +67,21 @@ vector<int> conv(vector<int> a, vector<int> b) {
 
 vector<int> add(vector<int> a, vector<int> b) {
   a.resize(max(a.size(), b.size()));
-  for (int i = 0; i < (int) b.size(); ++i)
+  for (int i = 0; i < b.size(); ++i)
     a[i] = add(a[i], b[i]);
   return a;
 }
 
 vector<int> sub(vector<int> a, vector<int> b) {
   a.resize(max(a.size(), b.size()));
-  for (int i = 0; i < (int) b.size(); ++i)
+  for (int i = 0; i < b.size(); ++i)
     a[i] = sub(a[i], b[i]);
   return a;
 }
 
 vector<int> inv(const vector<int> &a, int need) {
   vector<int> b = {inv(a[0])};
-  while ((int) b.size() < need) {
+  while (b.size() < need) {
     vector<int> a1 = a;
     int m = b.size();
     a1.resize(min((int) a1.size(), 2 * m));
@@ -99,21 +93,18 @@ vector<int> inv(const vector<int> &a, int need) {
 }
 
 vector<int> div(vector<int> a, vector<int> b) {
-  if (count(all(a), 0) == a.size())
-    return {0};
+  if (count(all(a), 0) == a.size()) return {0};
   assert(a.back() != 0 && b.back() != 0);
   int n = a.size() - 1;
   int m = b.size() - 1;
-  if (n < m)
-    return {0};
+  if (n < m) return {0};
   reverse(all(a));
   reverse(all(b));
   a.resize(n - m + 1);
   b.resize(n - m + 1);
   vector<int> c = inv(b, b.size());
   vector<int> q = conv(a, c);
-  q.resize(n - m + 1);
-  reverse(all(q));
+  q.resize(n - m + 1), reverse(all(q));
   return q;
 }
 
@@ -141,17 +132,16 @@ vector<int> multipoint(vector<int> a, vector<int> x) {
 }
 
 vector<int> deriv(vector<int> a) {
-  for (int i = 1; i < (int) a.size(); ++i)
+  for (int i = 1; i < a.size(); ++i)
     a[i - 1] = mul(i, a[i]);
   a.back() = 0;
-  if (a.size() > 1)
-    a.pop_back();
+  if (a.size() > 1) a.pop_back();
   return a;
 }
 
 vector<int> integ(vector<int> a) {
-  a.push_back(0);
-  for (int i = (int) a.size() - 1; i; --i)
+  a.pb(0);
+  for (int i = a.size() - 1; i; --i)
     a[i] = mul(a[i - 1], inv(i));
   a[0] = 0;
   return a;
@@ -167,7 +157,7 @@ vector<int> log(vector<int> a, int n) {
 vector<int> exp(vector<int> a, int need) {
   assert(a[0] == 0);
   vector<int> b = {1};
-  while ((int) b.size() < need) {
+  while (b.size() < need) {
     vector<int> a1 = a;
     int m = b.size();
     a1.resize(min((int) a1.size(), 2 * m));

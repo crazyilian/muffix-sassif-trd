@@ -27,12 +27,12 @@ pair<int, int> find_path_through_specified(int n,
       if (k == 0) return {1, t};
       continue;
     }
-    if (v == s || u == s) from.push_back(v ^ u ^ s);
-    if (v == t || u == t) to.push_back(v ^ u ^ t);
+    if (v == s || u == s) from.pb(v ^ u ^ s);
+    if (v == t || u == t) to.pb(v ^ u ^ t);
     if (v != s && v != t && u != s && u != t) {
       ull w = rnd();
-      es.push_back({v, u, w});
-      es.push_back({u, v, w});
+      es.pb({v, u, w});
+      es.pb({u, v, w});
     }
   }
   int m = es.size();
@@ -42,9 +42,8 @@ pair<int, int> find_path_through_specified(int n,
   for (auto v : to) dp[bit[v]][v] = rnd();
   for (int len = 1; len < n; ++len) {
     if (s != t || len >= 2) {
-      for (auto v : from) {
+      for (auto v : from)
         if (dp[masks - 1][v]) return {len + 1, v};
-      }
     }
     if (len + 1 == n) break;
     for (auto &r : ndp) fill(all(r), 0);
