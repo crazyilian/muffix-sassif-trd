@@ -18,15 +18,15 @@ comp OMEGA[MAXN + 10];
 int tail[MAXN + 10];
 bool fftinit = false;
 
-comp omega(int n, int k) { return OMEGA[MAXN / n * k]; }
-
 int gettail(int x, int lg) { return tail[x] >> (LOG - lg); }
 
+// OMEGA[k + j] = $e^{i \pi j / k}$ (j < k): level k in a row
 void calcomega() {
-  for (int i = 0; i < MAXN; ++i) {
-    double x = 2 * PI * i / MAXN;
-    OMEGA[i] = {cos(x), sin(x)};
-  }
+  for (int k = 1; k < MAXN; k *= 2)
+    for (int j = 0; j < k; ++j) {
+      double x = PI * j / k;
+      OMEGA[k + j] = {cos(x), sin(x)};
+    }
 }
 
 void calctail() {
@@ -41,16 +41,14 @@ void fft(vector<comp> &A, int lg) {
   for (int i = 0; i < n; ++i)
     if (int j = gettail(i, lg); i < j)
       swap(A[i], A[j]);
-  for (int len = 2; len <= n; len *= 2) {
-    for (int i = 0; i < n; i += len) {
-      for (int j = 0; j < len / 2; ++j) {
+  for (int k = 1; k < n; k *= 2)
+    for (int i = 0; i < n; i += 2 * k)
+      for (int j = 0; j < k; ++j) {
         auto v = A[i + j];
-        auto u = A[i + j + len / 2] * omega(len, j);
+        auto u = A[i + j + k] * OMEGA[k + j];
         A[i + j] = v + u;
-        A[i + j + len / 2] = v - u;
+        A[i + j + k] = v - u;
       }
-    }
-  }
 }
 
 // optional, can be skipped
