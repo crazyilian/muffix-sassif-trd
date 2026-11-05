@@ -1,28 +1,27 @@
 // flow_t: capacity of one edge, total flow is ll
 // undirected edges: flow_t must fit 2c
 using flow_t = int;
-const int LOG = 29; // масштабирование, =0 если не нужно
+const int LOG = 0; // масштабирование, =0 если не нужно. Обычно =0 в 2-10 раз быстрее.
 struct Edge { int u, r; flow_t f, c; };
 
 struct Dinic {
   vector<vector<Edge>> g;
-  vector<char> vis;
-  vector<int> inds, dist, Q;
+  vector<int> inds, dist, Q; // dist < 0: unreached or dead
   int ql, qr, S, T;
   flow_t BIT; // 2^LOG must fit flow_t
-  Dinic(int n) : g(n), vis(n), inds(n), dist(n), Q(n) {}
+  Dinic(int n) : g(n), inds(n), dist(n), Q(n) {}
 
   bool bfs() {
-    memset(vis.data(), 0, vis.size());
+    fill(all(dist), -1);
     ql = 0, qr = 0;
-    dist[S] = 0, vis[S] = true, Q[qr++] = S;
+    dist[S] = 0, Q[qr++] = S;
     while (ql < qr) {
       int v = Q[ql++];
       for (auto &e : g[v]) {
         int u = e.u;
-        if (vis[u] || e.c - e.f < BIT)
+        if (dist[u] >= 0 || e.c - e.f < BIT)
           continue;
-        vis[u] = true, dist[u] = dist[v] + 1;
+        dist[u] = dist[v] + 1;
         Q[qr++] = u;
         if (u == T) return true;
       }
@@ -36,8 +35,8 @@ struct Dinic {
     for (int &i = inds[v]; i < g[v].size(); ++i) {
       auto &e = g[v][i];
       auto cc = min(maxF - ans, e.c - e.f);
-      if (dist[e.u] <= dist[v] || !vis[e.u] ||
-          inds[e.u] == g[e.u].size() || cc < BIT)
+      // one random access per edge: x1.2
+      if (dist[e.u] != dist[v] + 1 || cc < BIT)
         continue;
       auto f = dfs(e.u, cc);
       if (f != 0) {
@@ -48,6 +47,7 @@ struct Dinic {
       if (maxF - ans < 1) break;
       // if (maxF - ans < BIT) break;
     }
+    if (inds[v] == g[v].size()) dist[v] = -1; // dead end
     return ans;
   }
 
@@ -59,7 +59,7 @@ struct Dinic {
       while (bfs()) {
         memset(inds.data(), 0, inds.size() * sizeof(int));
         for (auto &e : g[S]) {
-          if (inds[e.u] == g[e.u].size() || e.c - e.f < BIT)
+          if (dist[e.u] != 1 || e.c - e.f < BIT)
             continue;
           flow_t f = dfs(e.u, e.c - e.f);
           e.f += f, g[e.u][e.r].f -= f;
@@ -91,7 +91,7 @@ void use_example() {
   vector<int> cut;
   for (int i = 0; i < m; ++i) {
     auto &e = edges[i];
-    if (dinic.vis[e.v] && !dinic.vis[e.u])
+    if (dinic.dist[e.v] >= 0 && dinic.dist[e.u] < 0)
       cut.pb(i);
   }
 }
