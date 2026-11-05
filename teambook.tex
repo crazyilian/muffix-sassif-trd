@@ -156,6 +156,54 @@
         {Ґ}{{\selectfont\char128}}1 
 }
 
+%% Extended C++ highlighting, inserted into template_header.tex by `sh gen.sh --new-colors`:
+%% keywords blue, types hltype, functions hlfn, numbers hlnum
+\definecolor{hltype}{rgb}{0.000,0.502,0.502}
+\definecolor{hlfn}{rgb}{0.545,0.271,0.075}
+\definecolor{hlnum}{rgb}{0.878,0.063,0.063}
+\makeatletter
+% function: identifier followed by '(' (peek next char before flushing the identifier)
+\let\lst@lparen=(
+\let\lst@nextother\relax
+\def\lst@AppendOther{%
+  \lst@ifletter\expandafter\lst@AppendOtherId\else\expandafter\lst@AppendOtherNoId\fi}
+\def\lst@AppendOtherId{\futurelet\lst@nextother\lst@AppendOtherIdA}
+\def\lst@AppendOtherIdA{\lst@Output\lst@letterfalse\let\lst@nextother\relax
+  \lst@AppendOtherNoId}
+\def\lst@AppendOtherNoId{\futurelet\lst@lastother\lst@Append}
+% number: a digit not inside an identifier starts a token (with suffixes: 1ll, 1e9, 0x3f)
+\gdef\lst@isnum{0}\gdef\lst@curisnum{0}
+\def\lst@ProcessDigit{\lst@whitespacefalse
+  \lst@ifletter\expandafter\lst@AppendLetter\else\expandafter\lst@AppendNum\fi}
+\def\lst@AppendNum{\gdef\lst@isnum{1}\lst@AppendLetter}
+\lst@AddToHook{Output}{\xdef\lst@curisnum{\lst@isnum}\gdef\lst@isnum{0}}
+\newcommand\lstidstyle{%
+  \ifnum\lst@curisnum=1 \color{hlnum}%
+  \else\ifx\lst@nextother\lst@lparen\color{hlfn}\fi\fi}
+\makeatother
+
+\lstdefinelanguage[TRD]{C++}[ISO]{C++}{
+  deletekeywords={int,long,short,char,bool,void,auto,unsigned,signed,float,%
+    double,dbl,ll,ull,size_t,__int128,string,vector,pair,array,set,map,multiset,%
+    unordered_map,unordered_set,queue,deque,priority_queue,stack,bitset,complex,%
+    tuple,function,mt19937,mt19937_64,uint32_t,uint64_t,int64_t,uint8_t,uint16_t},
+  morekeywords=[1]{nullptr,constexpr,typename,template,using,namespace,operator,%
+    inline,static,const,struct,class,true,false,this,new,delete,sizeof,typedef,%
+    mutable,public,private},
+  morekeywords=[2]{int,long,short,char,bool,void,auto,unsigned,signed,float,%
+    double,dbl,ll,ull,size_t,__int128,string,vector,pair,array,set,map,multiset,%
+    unordered_map,unordered_set,queue,deque,priority_queue,stack,bitset,complex,%
+    tuple,function,mt19937,mt19937_64,uint32_t,uint64_t,int64_t,uint8_t,uint16_t},
+  moredirectives={pragma},
+}
+\lstset{
+  defaultdialect=[TRD]C++,
+  identifierstyle=\lstidstyle,
+  keywordstyle=[1]{\color{blue}},
+  keywordstyle=[2]{\color{hltype}},
+}
+
+
 \newcommand{\dollar}{\mbox{\textdollar}}
 
 \setlength{\columnsep}{0.1in}
@@ -192,33 +240,21 @@ struct Pt {
   dbl x, y, z;
   Pt() : x(0), y(0), z(0) {}
   Pt(dbl x, dbl y, dbl z) : x(x), y(y), z(z) {}
-  Pt operator-(const Pt& o) const {
-    return {x - o.x, y - o.y, z - o.z};
-  }
-  Pt operator+(const Pt& o) const {
-    return {x + o.x, y + o.y, z + o.z};
-  }
-  Pt operator/(const dbl& a) const {
-    return {x / a, y / a, z / a};
-  }
-  Pt operator*(const dbl& a) const {
-    return {x * a, y * a, z * a};
-  }
+  Pt operator-(const Pt& o)const{return{x-o.x,y-o.y,z-o.z};}
+  Pt operator+(const Pt& o)const{return{x+o.x,y+o.y,z+o.z};}
+  Pt operator/(const dbl& a) const { return {x/a, y/a, z/a}; }
+  Pt operator*(const dbl& a) const { return {x*a, y*a, z*a}; }
   Pt cross(const Pt& o) const {
     dbl nx = y * o.z - z * o.y;
     dbl ny = z * o.x - x * o.z;
     dbl nz = x * o.y - y * o.x;
     return {nx, ny, nz};
   }
-  dbl dot(const Pt &o) const {
-    return x * o.x + y * o.y + z * o.z;
-  }
+  dbl dot(const Pt &o) const { return x*o.x + y*o.y + z*o.z; }
   bool operator==(const Pt& o) const {
-    return abs(x - o.x) < EPS && abs(y - o.y) < EPS && abs(z - o.z) < EPS;
+    return abs(x-o.x)<EPS && abs(y-o.y)<EPS && abs(z-o.z)<EPS;
   }
-  dbl dist() {
-    return sqrtl(x * x + y * y + z * z);
-  }
+  dbl dist() { return sqrtl(x * x + y * y + z * z); }
 };
 
 struct Plane {
@@ -228,13 +264,10 @@ struct Plane {
     if (z < EPS) return;
     a /= z, b /= z, c /= z, d /= z;
   }
-  dbl get_val(const Pt &p) const {
-    // НЕ СТАВИТЬ МОДУЛЬ
+  dbl get_val(const Pt &p) const { // НЕ СТАВИТЬ МОДУЛЬ
     return a * p.x + b * p.y + c * p.z + d;
   }
-  dbl dist(const Pt &p) const {
-    return abs(get_val(p));
-  }
+  dbl dist(const Pt &p) const { return abs(get_val(p)); }
   bool on_plane(const Pt &p) const {
     return dist(p) / sqrtl(a * a + b * b + c * c) < EPS;
   }
@@ -282,6 +315,59 @@ Pt vector_perp(Pt v) {
 Plane plane_perp(Pt p, Pt v) {
   return Plane(v.x, v.y, v.z, -v.dot(p));
 }
+
+// ближайшая к p точка прямой ab; при |a-b| < EPS ответ a
+Pt closest_line(Pt p, Pt a, Pt b) {
+  Pt v = b - a;
+  dbl len2 = v.dot(v);
+  if (len2 < EPS * EPS) return a;
+  return a + v * ((p - a).dot(v) / len2);
+}
+
+// ближайшая к p точка луча из a в сторону b
+Pt closest_ray(Pt p, Pt a, Pt b) {
+  if ((p - a).dot(b - a) < EPS) return a;
+  return closest_line(p, a, b);
+}
+
+// ближайшая к p точка отрезка ab
+Pt closest_seg(Pt p, Pt a, Pt b) {
+  if ((p - b).dot(a - b) < EPS) return b;
+  return closest_ray(p, a, b);
+}
+
+// прямая a + (b - a) * t; |b-a| и длина нормали > EPS
+// 0 -- нет, 1 -- точка, 2 -- прямая лежит в плоскости
+// t записывается при ответе 1
+// луч: t >= 0; отрезок: 0 <= t <= 1
+int intersect(Pt a, Pt b, Plane pl, dbl &t) {
+  Pt v = b - a, n(pl.a, pl.b, pl.c);
+  dbl len = n.dist(), den = n.dot(v), val = pl.get_val(a);
+  assert(len > EPS && v.dot(v) > EPS * EPS);
+  if (abs(den) < EPS * max<dbl>(1, len * v.dist()))
+    return abs(val) < EPS * len ? 2 : 0;
+  t = -val / den;
+  return 1;
+}
+
+// ортонормированный базис плоскости через o; |n| > EPS
+struct Basis {
+  Pt o, u, v;
+  Basis(Pt o, Pt n) : o(o) {
+    dbl len = n.dist();
+    assert(len > EPS);
+    n = n / len;
+    u = vector_perp(n);
+    u = u / u.dist();
+    v = n.cross(u);
+  }
+  // для точки вне плоскости -- координаты её проекции
+  pair<dbl, dbl> to_2d(Pt p) const {
+    p = p - o;
+    return {p.dot(u), p.dot(v)};
+  }
+  Pt from_2d(dbl x, dbl y) const { return o + u * x + v * y; }
+};
 \end{lstlisting}
 
 \subsection{База 1 - вектор}
@@ -303,7 +389,7 @@ struct vctr {
   bool operator==(const vctr &o)const{ return !sign(x-o.x) && !sign(y-o.y); }
   dbl dist2() const { return x * x + y * y; }
   dbl dist() const { return sqrtl(dist2()); }
-  vctr rotate_ccw_90() const {  return {-y, x}; }
+  vctr rotate_ccw_90() const { return {-y, x}; }
   // requires dbl vctr
   vctr norm() const { return *this / dist(); }
 };
@@ -339,7 +425,6 @@ vctr rotate_ccw(const vctr &a, dbl phi) {
   dbl sn = sinl(phi);
   return {a.x * cs - a.y * sn, a.y * cs + a.x * sn};
 }
-
 \end{lstlisting}
 
 \subsection{База 2 - прямая}
@@ -357,9 +442,9 @@ struct line {
   }
   void operator*=(dbl x) { a *= x, b *= x, c *= x; }
   void operator/=(dbl x) { a /= x, b /= x, c /= x; }
-  dbl get(const vctr P) const { return a * P.x + b * P.y + c; }
+  dbl get(const vctr P) const { return a*P.x + b*P.y + c; }
   // requires dbl vctr
-  vctr anyPoint() const {
+  vctr any_point() const {
     dbl d = a * a + b * b;
     return {-a * c / d, -b * c / d};
   }
@@ -387,7 +472,6 @@ line bisection(const vctr A, const vctr B) {
   vctr d = (A - B) * 2;
   return line(d.x, d.y, B.dist2() - A.dist2());
 }
-
 \end{lstlisting}
 
 \subsection{База 3 - окружность}
@@ -400,8 +484,7 @@ struct circle {
   circle(vctr C, dbl r) : C(C), r(r) {}
   // requires dbl vctr
   circle(const vctr A, const vctr B) {
-    C = (A + B) / 2;
-    r = (A - B).dist() / 2;
+    C = (A + B) / 2, r = (A - B).dist() / 2;
   }
   circle(const vctr A, const vctr B, const vctr D) {
     vctr u = B-A, v = D-A;
@@ -431,8 +514,7 @@ vector<vctr> intersection_line_circ(line l, circle c) {
 
 vector<vctr> intersection_circ_circ(circle A, circle B) {
   vctr d = B.C - A.C; // better precision
-  line l(2*d.x, 2*d.y,
-         (B.r-A.r) * (B.r+A.r) - d.dist2());
+  line l(2*d.x, 2*d.y, (B.r-A.r) * (B.r+A.r) - d.dist2());
   if (sign(l.a) == 0 && sign(l.b) == 0) return {};
   auto c = A.r<B.r ? circle(0,0,A.r) : circle(d,B.r); // better precision
   auto res = intersection_line_circ(l, c);
@@ -496,68 +578,66 @@ vector<vctr> convex_hull(vector<vctr> p, bool need_all = 0) {
     while (k >= t && bad(ch[k-2], ch[k-1], p[i])) --k;
   ch.resize(k - 1);
 // If hull is seg and need_all: p[0] p[1] .. p[n-1] .. p[1].
-// If need only one entry in this case: ch.resize(min(k-1, n));
+// If need only one entry in this case: ch.resize(min(k-1,n));
   return ch;
 }
 \end{lstlisting}
 
 \subsection{Задача 16}
 \begin{lstlisting}[language=C++]
-bool isInSameHalf(vctr p, vctr r1, vctr r2) {
+bool is_in_same_half(vctr p, vctr r1, vctr r2) {
   return sign((r2 - r1) % (p - r1)) >= 0;
 }
 
-dbl distPointPoint(vctr a, vctr b) {
-  return (a - b).dist();
-}
+dbl dist_point_point(vctr a, vctr b) { return (a-b).dist(); }
 
-dbl distPointLine(vctr a, vctr l1, vctr l2) {
+dbl dist_point_line(vctr a, vctr l1, vctr l2) {
   return abs((l2 - l1) * (a - l1)) / (l2 - l1).dist();
 }
 
-dbl distPointRay(vctr a, vctr r1, vctr r2) {
-  if (r1 == r2 || !isInSameHalf(a, r1, r2))
-    return distPointPoint(a, r1);
-  return distPointLine(a, r1, r2);
+dbl dist_point_ray(vctr a, vctr r1, vctr r2) {
+  if (r1 == r2 || !is_in_same_half(a, r1, r2))
+    return dist_point_point(a, r1);
+  return dist_point_line(a, r1, r2);
 }
 
-dbl distPointSeg(vctr a, vctr s1, vctr s2) {
-  return max(distPointRay(a, s1, s2),
-             distPointRay(a, s2, s1));
+dbl dist_point_seg(vctr a, vctr s1, vctr s2) {
+  return max(dist_point_ray(a, s1, s2),
+             dist_point_ray(a, s2, s1));
 }
 
-dbl distLineLine(vctr l1a, vctr l1b, vctr l2a, vctr l2b) {
+dbl dist_line_line(vctr l1a, vctr l1b, vctr l2a, vctr l2b) {
   if (sign((l1b - l1a) * (l2b - l2a))) return 0;
-  return distPointLine(l1a, l2a, l2b);
+  return dist_point_line(l1a, l2a, l2b);
 }
 
-dbl distRayLine(vctr r1, vctr r2, vctr l1, vctr l2) {
+dbl dist_ray_line(vctr r1, vctr r2, vctr l1, vctr l2) {
   vctr d = l2 - l1;
   if (sign(d * (r1 - l1)) * sign(d * (r2 - r1)) < 0) return 0;
-  return distPointLine(r1, l1, l2);
+  return dist_point_line(r1, l1, l2);
 }
 
-dbl distSegLine(vctr s1, vctr s2, vctr l1, vctr l2) {
-  return max(distRayLine(s1, s2, l1, l2),
-             distRayLine(s2, s1, l1, l2));
+dbl dist_seg_line(vctr s1, vctr s2, vctr l1, vctr l2) {
+  return max(dist_ray_line(s1, s2, l1, l2),
+             dist_ray_line(s2, s1, l1, l2));
 }
 
-dbl distRayRay(vctr r1a, vctr r1b, vctr r2a, vctr r2b) {
+dbl dist_ray_ray(vctr r1a, vctr r1b, vctr r2a, vctr r2b) {
   vctr u = r1b - r1a, v = r2b - r2a, w = r2a - r1a;
   int c = sign(u * v); // cross not at the ray starts:
   if (sign(w * v) * c > 0 && sign(w * u) * c > 0) return 0;
-  return min(distPointRay(r1a, r2a, r2b),
-             distPointRay(r2a, r1a, r1b));
+  return min(dist_point_ray(r1a, r2a, r2b),
+             dist_point_ray(r2a, r1a, r1b));
 }
 
-dbl distSegRay(vctr s1, vctr s2, vctr r1, vctr r2) {
-  return max(distRayRay(s1, s2, r1, r2),
-             distRayRay(s2, s1, r1, r2));
+dbl dist_seg_ray(vctr s1, vctr s2, vctr r1, vctr r2) {
+  return max(dist_ray_ray(s1, s2, r1, r2),
+             dist_ray_ray(s2, s1, r1, r2));
 }
 
-dbl distSegSeg(vctr s1a, vctr s1b, vctr s2a, vctr s2b) {
-  return max(distSegRay(s1a, s1b, s2a, s2b),
-             distSegRay(s1a, s1b, s2b, s2a));
+dbl dist_seg_seg(vctr s1a, vctr s1b, vctr s2a, vctr s2b) {
+  return max(dist_seg_ray(s1a, s1b, s2a, s2b),
+             dist_seg_ray(s1a, s1b, s2b, s2a));
 }
 \end{lstlisting}
 
@@ -565,14 +645,11 @@ dbl distSegSeg(vctr s1a, vctr s1b, vctr s2a, vctr s2b) {
 \begin{lstlisting}[language=C++]
 // Квадрат диаметра выпуклого многоугольника
 auto calipers(vector<vctr> &pts) {
-  int n = pts.size();
-  int a = 0, b = 0;
+  int n = pts.size(), a = 0, b = 0;
   for (int i = 1; i < n; ++i) {
     auto &v = pts[i];
-    if (tie(v.y, v.x) < tie(pts[a].y, pts[a].x))
-      a = i;
-    if (tie(v.y, v.x) > tie(pts[b].y, pts[b].x))
-      b = i;
+    if (tie(v.y, v.x) < tie(pts[a].y, pts[a].x)) a = i;
+    if (tie(v.y, v.x) > tie(pts[b].y, pts[b].x)) b = i;
   }
   int aa = (a + 1) % n, bb = (b + 1) % n;
   auto d2 = (pts[a] - pts[b]).dist2();
@@ -622,7 +699,7 @@ vector<pair<int, int>> tangents_polys(vector<vctr> &A,
 pair<int, int> tangents_from_point(vctr &a, vector<vctr> &p) {
   int n = p.size();
   int logn = 31 - __builtin_clz(n);
-  auto findWithSign = [&](int sgn) {
+  auto find_with_sign = [&](int sgn) {
     int i = 0;
     for (int k = logn; k >= 0; --k) {
       int i1 = (i - (1 << k) + n) % n;
@@ -632,15 +709,14 @@ pair<int, int> tangents_from_point(vctr &a, vector<vctr> &p) {
     }
     return i;
   };
-  return {findWithSign(1), findWithSign(-1)};
+  return {find_with_sign(1), find_with_sign(-1)};
 }
 
 // p convex, no 3 collinear. Point with max (sgn=1) or
 // min (sgn=-1) signed distance to line
 int tangent_parallel_line(const vector<vctr> &p, line l, int sgn) {
   l *= sgn;
-  int n = p.size();
-  int i = 0;
+  int n = p.size(), i = 0;
   int logn = 31 - __builtin_clz(n);
   for (int k = logn; k >= 0; --k) {
     int i1 = (i - (1 << k) + n) % n;
@@ -687,32 +763,28 @@ bool is_point_in_any_poly(vctr a, const vector<vctr> &p,
 // requires dbl vctr
 circle MinDisk2(vector<vctr> &p, vctr A, vctr B, int sz) {
   circle w(A, B);
-  for (int i = 0; i < sz; ++i) {
-    if (w.isin(p[i])) continue;
-    w = circle(A, B, p[i]);
-  }
+  for (int i = 0; i < sz; ++i)
+    if (!w.isin(p[i]))
+      w = circle(A, B, p[i]);
   return w;
 }
 circle MinDisk1(vector<vctr> &p, vctr A, int sz) {
   circle w(A, p[0]);
-  for (int i = 1; i < sz; ++i) {
-    if (w.isin(p[i])) continue;
-    w = MinDisk2(p, A, p[i], i);
-  }
+  for (int i = 1; i < sz; ++i)
+    if (!w.isin(p[i]))
+      w = MinDisk2(p, A, p[i], i);
   return w;
 }
 circle MinDisk(vector<vctr> &p) {
   int sz = p.size();
   if (sz == 1) return circle(p[0], 0);
-  shuffle(p.begin(), p.end(), rnd);
+  shuffle(all(p), rnd);
   circle w(p[0], p[1]);
-  for (int i = 2; i < sz; ++i) {
-    if (w.isin(p[i])) continue;
-    w = MinDisk1(p, p[i], i);
-  }
+  for (int i = 2; i < sz; ++i)
+    if (!w.isin(p[i]))
+      w = MinDisk1(p, p[i], i);
   return w;
 }
-
 \end{lstlisting}
 
 \subsection{Пересечение полуплоскостей}
@@ -721,13 +793,12 @@ circle MinDisk(vector<vctr> &p) {
 // $O(\log)$ `compare` needs $2N^2$ and $2NK$ fit into type;
 // cross-multiplication `compare` needs $4N^3K$.
 
-
 // Half plane: ax+by+c >= 0. Bounding box MUST HAVE.
 vector<int> calc_hpi_inds(const vector<line> &ls) {
   int n = ls.size(), m=0, l=0, r=0;
   vector<int> q(n);
   vector<char> h(n);
-  iota(q.begin(), q.end(), 0);
+  iota(all(q), 0);
   auto cr = [&](int i, int j) {
     return ls[i].a*ls[j].b-ls[i].b*ls[j].a;
   };
@@ -752,7 +823,7 @@ vector<int> calc_hpi_inds(const vector<line> &ls) {
   };
   for (int i = 0; i < n; ++i)
     h[i] = sign(ls[i].b)<0||(!sign(ls[i].b)&&ls[i].a<0);
-  sort(q.begin(), q.end(), [&](int i, int j) { // 70% of time
+  sort(all(q), [&](int i, int j) { // 70% of time
     return h[i] != h[j] ? h[i] < h[j] : cr(i,j) > 0;
   });
   for (int i : q) {
@@ -782,8 +853,7 @@ vector<int> calc_hpi_inds(const vector<line> &ls) {
 vector<vctr> half_plane_intersection(const vector<line> &ls) {
   vector<int> inds = calc_hpi_inds(ls);
   int n = inds.size();
-  vector<vctr> pts;
-  pts.reserve(n);
+  vector<vctr> pts; pts.reserve(n);
   for (int i = 0; i < n; ++i) {
     vctr P = intersection(ls[inds[i]],ls[inds[(i+1)%n]]);
     if (pts.empty() || !(pts.back() == P)) pts.pb(P);
@@ -794,7 +864,6 @@ vector<vctr> half_plane_intersection(const vector<line> &ls) {
 // (4 lines), and "point" (3 lines, or 4 if 2 and 2 parallel)
   return pts;
 }
-
 \end{lstlisting}
 
 \subsection{Проверка на пересечение отрезков}
@@ -841,15 +910,11 @@ struct TwoSat {
   vector<int> comp, topsort;
   vector<char> used;
 
-  TwoSat(int n) : n(n) {
-    g.resize(2 * n);
-    rg.resize(2 * n);
+  TwoSat(int n) : n(n), g(2 * n), rg(2 * n) {
     topsort.reserve(2 * n);
   }
 
-  int neg(int v) {
-    return 2 * n - 1 - v;
-  }
+  int neg(int v) { return 2 * n - 1 - v; }
 
   void add(int v, int u) {
     g[v].pb(u);
@@ -860,40 +925,31 @@ struct TwoSat {
     add(neg(v), u), add(neg(u), v);
   }
 
-  void add_IMPL(int v, int u) { // v -> u
-    add_OR(neg(v), u);
-  }
+  void add_IMPL(int v, int u) { add_OR(neg(v), u); } // v -> u
 
   void dfs1(int v) {
     used[v] = 1;
-    for (auto u: g[v]) {
-      if (!used[u])
-        dfs1(u);
-    }
-    topsort.push_back(v);
+    for (auto u: g[v])
+      if (!used[u]) dfs1(u);
+    topsort.pb(v);
   }
 
   void dfs2(int v, int col) {
     comp[v] = col;
-    for (auto u: rg[v]) {
-      if (comp[u] == -1)
-        dfs2(u, col);
-    }
+    for (auto u: rg[v])
+      if (comp[u] == -1) dfs2(u, col);
   }
 
   void SCC() {
     used.assign(2 * n, 0), comp.assign(2 * n, -1);
     topsort.clear();
-    for (int v = 0; v < 2 * n; ++v) {
-      if (!used[v])
-        dfs1(v);
-    }
+    for (int v = 0; v < 2 * n; ++v)
+      if (!used[v]) dfs1(v);
     reverse(all(topsort));
     int cc = 0;
-    for (int i = 0; i < 2 * n; ++i) {
+    for (int i = 0; i < 2 * n; ++i)
       if (comp[topsort[i]] == -1)
         dfs2(topsort[i], cc++);
-    }
   }
 
   vector<char> solution() {
@@ -921,7 +977,7 @@ struct LRFlow {
   LRFlow(int n, int S, int T, int Sx, int Tx)
     : dinic(n), S(S), T(T), Sx(Sx), Tx(Tx), dem(n) {}
 
-  // returns id: real flow = dinic.graph[v][id].f + mincap
+  // returns id: real flow = dinic.g[v][id].f + mincap
   int addedge(int v, int u, flow_t mincap, flow_t maxcap) {
     dem[v] -= mincap, dem[u] += mincap;
     return dinic.addedge(v, u, maxcap - mincap);
@@ -929,7 +985,7 @@ struct LRFlow {
 
   // returns true if found flow is feasible.
   // size of flow (after aux edges are removed below):
-  // sum e.f over dinic.graph[S] - dem[S]
+  // sum e.f over dinic.g[S] - dem[S]
   bool run() {
     ll totaldem = 0;
     for (int v = 0; v < dem.size(); ++v) {
@@ -944,16 +1000,15 @@ struct LRFlow {
     dinic.addedge(S, T, totaldem); // for total flow < 0
     dinic.run(Sx, Tx);
     ll flow = 0;
-    for (auto &e : dinic.graph[Sx]) flow += e.f;
+    for (auto &e : dinic.g[Sx]) flow += e.f;
     if (flow != totaldem) return false;
     // return true; // if want ONLY feasibility
-    for (int v = 0; v < dem.size(); ++v) {
-      if (dem[v]) dinic.graph[v].pop_back();
-    }
-    dinic.graph[Sx].clear();
-    dinic.graph[Tx].clear();
+    for (int v = 0; v < dem.size(); ++v)
+      if (dem[v]) dinic.g[v].pop_back();
+    dinic.g[Sx].clear();
+    dinic.g[Tx].clear();
     for (int i = 0; i < 2; ++i) // T->S, S->T
-      dinic.graph[S].pop_back(), dinic.graph[T].pop_back();
+      dinic.g[S].pop_back(), dinic.g[T].pop_back();
     dinic.run(S, T); // if we want max lr-flow (not any lr-flow)
     return true;
   }
@@ -1000,21 +1055,19 @@ namespace weighted_matching{
   }
   void q_push(int x) {
     if(x <= n) Q.push(x);
-    else for(int i = 0; i < (int)flo[x].size(); ++i)
-        q_push(flo[x][i]);
+    else for(int y : flo[x]) q_push(y);
   }
   void set_st(int x, int b) {
     st[x] = b;
-    if(x > n) for(int i = 0; i < (int)flo[x].size(); ++i)
-        set_st(flo[x][i], b);
+    if(x > n)
+      for(int y : flo[x]) set_st(y, b);
   }
   int get_pr(int b, int xr) {
-    int pr = find(flo[b].begin(), flo[b].end(), xr) - flo[b].begin();
+    int pr = find(all(flo[b]), xr) - flo[b].begin();
     if(pr & 1) {
       reverse(flo[b].begin() + 1, flo[b].end());
-      return (int)flo[b].size() - pr;
-    }
-    else return pr;
+      return ssize(flo[b]) - pr;
+    } else return pr;
   }
   void set_match(int x, int y) {
     match[x] = G[x][y].y;
@@ -1039,8 +1092,7 @@ namespace weighted_matching{
     for(++t; x || y; swap(x, y)) {
       if(x == 0) continue;
       if(vis[x] == t) return x;
-      vis[x] = t;
-      x = st[match[x]];
+      vis[x] = t, x = st[match[x]];
       if(x) x = st[pa[x]];
     }
     return 0;
@@ -1049,10 +1101,8 @@ namespace weighted_matching{
     int b = n + 1;
     while(b <= m && st[b]) ++b;
     if(b > m) ++m;
-    lab[b] = 0, S[b] = 0;
-    match[b] = match[l];
-    flo[b].clear();
-    flo[b].pb(l);
+    lab[b] = 0, S[b] = 0, match[b] = match[l];
+    flo[b].clear(), flo[b].pb(l);
     for(int u = x, v; u != l; u = st[pa[v]])
       flo[b].pb(u), flo[b].pb(v = st[match[u]]), q_push(v);
     reverse(flo[b].begin() + 1, flo[b].end());
@@ -1061,8 +1111,7 @@ namespace weighted_matching{
     set_st(b, b);
     for(int i = 1; i <= m; ++i) G[b][i].w = G[i][b].w = 0;
     for(int i = 1; i <= n; ++i) flo_from[b][i] = 0;
-    for(int i = 0; i < (int)flo[b].size(); ++i) {
-      int us = flo[b][i];
+    for(int us : flo[b]) {
       for(int u = 1; u <= m; ++u)
         if(G[b][u].w == 0 || e_delta(G[us][u]) < e_delta(G[b][u]))
           G[b][u] = G[us][u], G[u][b] = G[u][us];
@@ -1073,8 +1122,7 @@ namespace weighted_matching{
     set_slack(b);
   }
   void expand_blossom(int b) {
-    for(int i = 0; i < (int)flo[b].size(); ++i)
-      set_st(flo[b][i], flo[b][i]);
+    for(int x : flo[b]) set_st(x, x);
     int xr = flo_from[b][G[b][pa[b]].x], pr = get_pr(b, xr);
     for(int i = 0; i < pr; i += 2) {
       int xs = flo[b][i], xns = flo[b][i + 1];
@@ -1084,7 +1132,7 @@ namespace weighted_matching{
       q_push(xns);
     }
     S[xr] = 1, pa[xr] = pa[b];
-    for(int i = pr + 1; i < (int)flo[b].size(); ++i) {
+    for(int i = pr + 1; i < flo[b].size(); ++i) {
       int xs = flo[b][i];
       S[xs] = -1, set_slack(xs);
     }
@@ -1097,8 +1145,7 @@ namespace weighted_matching{
       int ny = st[match[y]];
       slack[y] = slack[ny] = 0;
       S[ny] = 0, q_push(ny);
-    }
-    else if(S[y] == 0) {
+    } else if(S[y] == 0) {
       int l = get_lca(x, y);
       if(!l) return augment(x, y), augment(y, x), true;
       else add_blossom(x, l, y);
@@ -1120,8 +1167,7 @@ namespace weighted_matching{
           if(G[x][y].w > 0 && st[x] != st[y]) {
             if(e_delta(G[x][y]) == 0) {
               if(on_found_edge(G[x][y])) return true;
-            }
-            else update_slack(x, st[y]);
+            } else update_slack(x, st[y]);
           }
         }
       }
@@ -1137,8 +1183,7 @@ namespace weighted_matching{
         if(S[st[x]] == 0) {
           if(lab[x] <= d) return 0;
           lab[x] -= d;
-        }
-        else if(S[st[x]] == 1) lab[x] += d;
+        } else if(S[st[x]] == 1) lab[x] += d;
       }
       for(int b = n + 1; b <= m; ++b)
         if(st[b] == b) {
@@ -1158,9 +1203,8 @@ namespace weighted_matching{
   pair<ll, int> solve(vector<pair<int, int>> &ans) {
     fill(match + 1, match + n + 1, 0);
     m = n;
-    int cnt = 0; ll sum = 0;
+    int cnt = 0; ll sum = 0, mx = 0;
     for(int u = 0; u <= n; ++u) st[u] = u, flo[u].clear();
-    ll mx = 0;
     for(int x = 1; x <= n; ++x)
       for(int y = 1; y <= n; ++y){
         flo_from[x][y] = (x == y ? x : 0);
@@ -1227,21 +1271,19 @@ pair<ll, vector<int>> venger(vector<vector<ll>> a) {
     } while (p[y] != 0);
     do {
       int z = way[y];
-      p[y] = p[z];
-      y = z;
+      p[y] = p[z], y = z;
     } while (y);
   }
   ll cost = -v[0];
   vector<int> ans(n + 1);
-  for (int j = 1; j <= m; ++j)
-    ans[p[j]] = j;
+  for (int j = 1; j <= m; ++j) ans[p[j]] = j;
   return {cost, ans};
 }
 \end{lstlisting}
 
 \subsection{Вершинная двусвязность}
 \begin{lstlisting}[language=C++]
-vector<pair<int, int>> graph[MAX_V];
+vector<pair<int, int>> g[MAX_V];
 bitset<MAX_V> vis;
 int st[MAX_E], col[MAX_E], tin[MAX_V], up[MAX_V];
 int sti = 0, cc = 0, tt = 0;
@@ -1249,7 +1291,7 @@ int sti = 0, cc = 0, tt = 0;
 void dfs(int v, int pei) {
   vis[v] = true;
   int upv = tin[v] = tt++;
-  for (auto [u, ei] : graph[v]) {
+  for (auto [u, ei] : g[v]) {
     if (ei == pei) continue;
     if (!vis[u]) {
       int pt = sti;
@@ -1257,25 +1299,20 @@ void dfs(int v, int pei) {
       dfs(u, ei);
       upv = min(upv, up[u]);
       if (up[u] >= tin[v]) {
-        while (sti > pt)
-          col[st[--sti]] = cc;
+        while (sti > pt) col[st[--sti]] = cc;
         cc++;
       }
-    } else if (tin[u] < tin[v]) {
-      st[sti++] = ei;
-      upv = min(upv, tin[u]);
-    }
+    } else if (tin[u] < tin[v])
+      st[sti++] = ei, upv = min(upv, tin[u]);
   }
   up[v] = upv;
 }
 
-// graph[v].emplace_back(u, i);
-// graph[u].emplace_back(v, i);
+// g[v].emplace_back(u, i);
+// g[u].emplace_back(v, i);
 fill(col, col + m, -1);
-for (int v = 0; v < n; ++v) {
-  if (!vis[v])
-    dfs(v, -1);
-}
+for (int v = 0; v < n; ++v)
+  if (!vis[v]) dfs(v, -1);
 // col[i] - компонента i-го ребра (у петель -1)
 // cc - итоговое кол-во компонент
 \end{lstlisting}
@@ -1289,26 +1326,24 @@ const int LOG = 29; // масштабирование, =0 если не нужн
 struct Edge { int u, r; flow_t f, c; };
 
 struct Dinic {
-  vector<vector<Edge>> graph;
+  vector<vector<Edge>> g;
   vector<char> vis;
   vector<int> inds, dist, Q;
   int ql, qr, S, T;
   flow_t BIT; // 2^LOG must fit flow_t
-  Dinic(int n) : graph(n), vis(n), inds(n), dist(n), Q(n) {}
+  Dinic(int n) : g(n), vis(n), inds(n), dist(n), Q(n) {}
 
   bool bfs() {
     memset(vis.data(), 0, vis.size());
     ql = 0, qr = 0;
-    dist[S] = 0, vis[S] = true;
-    Q[qr++] = S;
+    dist[S] = 0, vis[S] = true, Q[qr++] = S;
     while (ql < qr) {
       int v = Q[ql++];
-      for (auto &e : graph[v]) {
+      for (auto &e : g[v]) {
         int u = e.u;
         if (vis[u] || e.c - e.f < BIT)
           continue;
-        vis[u] = true;
-        dist[u] = dist[v] + 1;
+        vis[u] = true, dist[u] = dist[v] + 1;
         Q[qr++] = u;
         if (u == T) return true;
       }
@@ -1319,15 +1354,16 @@ struct Dinic {
   flow_t dfs(int v, flow_t maxF) {
     if (v == T) return maxF;
     flow_t ans = 0;
-    for (int &i = inds[v]; i < graph[v].size(); ++i) {
-      auto &e = graph[v][i];
+    for (int &i = inds[v]; i < g[v].size(); ++i) {
+      auto &e = g[v][i];
       auto cc = min(maxF - ans, e.c - e.f);
-      if (dist[e.u] <= dist[v] || !vis[e.u] || inds[e.u] == graph[e.u].size() || cc < BIT)
+      if (dist[e.u] <= dist[v] || !vis[e.u] ||
+          inds[e.u] == g[e.u].size() || cc < BIT)
         continue;
       auto f = dfs(e.u, cc);
       if (f != 0) {
         e.f += f, ans += f;
-        graph[e.u][e.r].f -= f;
+        g[e.u][e.r].f -= f;
       }
       // иногда быстрее один иф, иногда другой
       if (maxF - ans < 1) break;
@@ -1343,21 +1379,21 @@ struct Dinic {
     for (BIT = (1ll << LOG); BIT > 0; BIT >>= 1) {
       while (bfs()) {
         memset(inds.data(), 0, inds.size() * sizeof(int));
-        for (auto &e : graph[S]) {
-          if (inds[e.u] == graph[e.u].size() || e.c - e.f < BIT)
+        for (auto &e : g[S]) {
+          if (inds[e.u] == g[e.u].size() || e.c - e.f < BIT)
             continue;
           flow_t f = dfs(e.u, e.c - e.f);
-          e.f += f, graph[e.u][e.r].f -= f;
+          e.f += f, g[e.u][e.r].f -= f;
         }
       }
     }
   }
 
-  int addedge(int v, int u, flow_t c) { // index in graph[v]
-    int i = graph[v].size();
-    graph[v].pb({u, (int)graph[u].size(), 0, c});
+  int addedge(int v, int u, flow_t c) { // index in g[v]
+    int i = g[v].size();
+    g[v].pb({u, (int)g[u].size(), 0, c});
     // если не ориентированно, то обратная capacity = c
-    graph[u].pb({v, i, 0, 0});
+    g[u].pb({v, i, 0, 0});
     return i;
   }
 };
@@ -1371,13 +1407,10 @@ void use_example() {
     dinic.addedge(v, u, c);
   }
   dinic.run(s, t);
-
   ll maxflow = 0; // may not fit flow_t
-  for (auto &e : dinic.graph[s])
-    maxflow += e.f;
-
+  for (auto &e : dinic.g[s]) maxflow += e.f;
   vector<int> cut;
-  for (int i = 0; i < m; i++) {
+  for (int i = 0; i < m; ++i) {
     auto &e = edges[i];
     if (dinic.vis[e.v] && !dinic.vis[e.u])
       cut.pb(i);
@@ -1389,36 +1422,29 @@ void use_example() {
 \begin{lstlisting}[language=C++]
 void dfs1(int v, vector<char> &used, vector<int> &topsort) {
   used[v] = 1;
-  for (auto u : g[v]) {
-    if (!used[u])
-      dfs1(u, used, topsort);
-  }
-  topsort.push_back(v);
+  for (auto u : g[v])
+    if (!used[u]) dfs1(u, used, topsort);
+  topsort.pb(v);
 }
 
 void dfs2(int v, int col, vector<int> &comp) {
   comp[v] = col;
-  for (auto u : rg[v]) {
-    if (comp[u] == -1)
-      dfs2(u, col, comp);
-  }
+  for (auto u : rg[v])
+    if (comp[u] == -1) dfs2(u, col, comp);
 }
 
 signed main() {
   vector<int> topsort;
   topsort.reserve(n);
   vector<char> used(n, 0);
-  for (int v = 0; v < n; ++v) {
-    if (!used[v])
-      dfs1(v, used, topsort);
-  }
+  for (int v = 0; v < n; ++v)
+    if (!used[v]) dfs1(v, used, topsort);
   reverse(all(topsort));
   int cc = 0;
   vector<int> comp(n, -1);
-  for (int i = 0; i < n; ++i) {
+  for (int i = 0; i < n; ++i)
     if (comp[topsort[i]] == -1)
       dfs2(topsort[i], cc++, comp);
-  }
 }
 \end{lstlisting}
 
@@ -1426,11 +1452,9 @@ signed main() {
 \begin{lstlisting}[language=C++]
 // кратные рёбра можно, петли нельзя
 void cactus_dfs(int v, int pei, vector<vector<int>> &c2vs, vector<int> &e2c, vector<vector<pair<int, int>>> &g, vector<char> &used, vector<pair<int, int>> &st) {
-  st.pb({v, pei});
-  used[v] = 1;
+  st.pb({v, pei}), used[v] = 1;
   for (auto [u, ei] : g[v]) {
-    if (ei == pei || e2c[ei] != -1)
-        continue;
+    if (ei == pei || e2c[ei] != -1) continue;
     if (used[u]) {
       int c = c2vs.size();
       c2vs.emplace_back();
@@ -1438,8 +1462,7 @@ void cactus_dfs(int v, int pei, vector<vector<int>> &c2vs, vector<int> &e2c, vec
         c2vs[c].pb(st[j].first);
         e2c[st[j].second] = c;
       }
-      c2vs[c].pb(u);
-      e2c[ei] = c;
+      c2vs[c].pb(u), e2c[ei] = c;
       continue;
     }
     cactus_dfs(u, ei, c2vs, e2c, g, used, st);
@@ -1451,25 +1474,22 @@ signed main() {
   // g[v][i] = {u, ei}, граф
   // e2c[ei] = номер цикла ребра ei (либо -1)
   // c2vs[c] = список вершин цикла c (в порядке обхода)
-  vector<int> e2c(m, -1); 
+  vector<int> e2c(m, -1);
   vector<vector<int>> c2vs;
   c2vs.reserve(m - n + 1); // 1 заменить на #комп.связ.
   {
     vector<char> used(n, 0);
     vector<pair<int, int>> st;
     st.reserve(n);
-    for (int v = 0; v < n; ++v) {
+    for (int v = 0; v < n; ++v)
       if (!used[v])
         cactus_dfs(v, -1, c2vs, e2c, g, used, st);
-    }
   }
   // создание дерева по кактусу
   vector<vector<int>> ngraph(n + c2vs.size());
   for (int v = 0; v < n; ++v) {
-    for (auto [u, ei] : g[v]) {
-      if (e2c[ei] == -1)
-        ngraph[v].pb(u);
-    }
+    for (auto [u, ei] : g[v])
+      if (e2c[ei] == -1) ngraph[v].pb(u);
   }
   for (int c = 0; c < c2vs.size(); ++c) {
     for (int v : c2vs[c]) {
@@ -1492,13 +1512,12 @@ const flow_t INFf = 2e9;
 struct MinCost {
   struct Edge { int v, u; flow_t f, c; cost_t w; };
   vector<Edge> edg; // edg[i ^ 1] is reverse of edg[i]
-  vector<vector<int>> graph;
+  vector<vector<int>> g;
   vector<cost_t> dist, pot;
   vector<int> pre;
   vector<char> inQ;
   int S, T;
-  MinCost(int n)
-    : graph(n), dist(n), pot(n), pre(n), inQ(n) {}
+  MinCost(int n) : g(n), dist(n), pot(n), pre(n), inQ(n) {}
 
   flow_t get_flow() {
     int v = T;
@@ -1529,20 +1548,16 @@ struct MinCost {
     inQ[S] = true;
     while (!Q.empty()) {
       int v = Q.front();
-      Q.pop_front();
-      inQ[v] = false;
+      Q.pop_front(), inQ[v] = false;
       cost_t d = dist[v];
-      for (int ei : graph[v]) {
+      for (int ei : g[v]) {
         Edge &e = edg[ei];
         if (e.f == e.c) continue;
         cost_t w = e.w + pot[v] - pot[e.u];
         if (dist[e.u] <= d + w) continue;
-        pre[e.u] = ei;
-        dist[e.u] = d + w;
-        if (!inQ[e.u]) {
-          inQ[e.u] = true;
-          Q.pb(e.u);
-        }
+        pre[e.u] = ei, dist[e.u] = d + w;
+        if (!inQ[e.u])
+          inQ[e.u] = true, Q.pb(e.u);
       }
     }
     for (int i = 0; i < dist.size(); ++i)
@@ -1574,8 +1589,8 @@ struct MinCost {
     int i = edg.size();
     edg.pb({v, u, 0, c, w});
     edg.pb({u, v, 0, 0, -w});
-    graph[v].pb(i);
-    graph[u].pb(i + 1);
+    g[v].pb(i);
+    g[u].pb(i + 1);
     return i;
   }
 };
@@ -1594,10 +1609,9 @@ void use_example() {
 
 \subsection{Мосты}
 \begin{lstlisting}[language=C++]
-// graph[v][i] = {u, edge_i}
+// g[v][i] = {u, edge_i}
 void dfs(int v, int pi = -1) {
-  vis[v] = 1;
-  up[v] = tin[v] = timer++;
+  vis[v] = 1, up[v] = tin[v] = timer++;
   for (auto [u, ei] : g[v]) {
     if (!vis[u]) {
       dfs(u, ei);
@@ -1617,18 +1631,16 @@ void dfs(int v, int pi = -1) {
 bool dfs(int v, int c) {
   if (used[v] == c) return 0;
   used[v] = c;
-  for (auto u : g[v]) {
+  for (auto u : g[v])
     if (res[u] == -1) {
       res[u] = v;
       return 1;
     }
-  }
-  for (auto u : g[v]) {
+  for (auto u : g[v])
     if (dfs(res[u], c)) {
       res[u] = v;
       return 1;
     }
-  }
   return 0;
 }
 
@@ -1637,9 +1649,8 @@ signed main() {
   fill(res, res + m, -1);
   fill(used, used + n, 0);
   int ans = 0;
-  for (int i = 0; i < n; ++i) {
+  for (int i = 0; i < n; ++i)
     ans += dfs(i, ans + 1);
-  }
 }
 \end{lstlisting}
 
@@ -1662,14 +1673,12 @@ vector<T> matroid_intersection(const std::vector<T> &ground_set, const A &matroi
     B m2 = matroid2;
     left.clear();
     right.clear();
-    for (int i = 0; i < n; i++)
+    for (int i = 0; i < n; ++i)
       if (in_set[i]) {
         m1.add(ground_set[i]);
         m2.add(ground_set[i]);
-        left.push_back(i);
-      } else {
-        right.push_back(i);
-      }
+        left.pb(i);
+      } else right.pb(i);
     fill(all(inm1), 0);
     fill(all(inm2), 0);
     // bool found = false; // unweighted
@@ -1690,52 +1699,47 @@ vector<T> matroid_intersection(const std::vector<T> &ground_set, const A &matroi
     for (int i: right)
       if (inm1[i]) {
         dist[i] = {ground_set[i].w, 0};
-        que.push_back(i);
-        inQ[i] = 1;
+        que.pb(i), inQ[i] = 1;
       }
     while (!que.empty()) {
       // if (found) break; // unweighted
       int v = que.front();
       auto [smw, cnte] = dist[v];
-      que.pop_front();
-      inQ[v] = 0;
+      que.pop_front(), inQ[v] = 0;
       if (in_set[v]) {
         A m = matroid1;
         for (int i: left) if (i != v) m.add(ground_set[i]);
         for (int u: right) {
-          auto newdist = pair{smw + ground_set[u].w, cnte + 1};
+          auto newdist = pair{smw + ground_set[u].w, cnte+1};
           if (dist[u] > newdist && m.independed_with(ground_set[u])) {
-            par[u] = v;
-            dist[u] = newdist;
+            par[u] = v, dist[u] = newdist;
             // if (inm2[u]) found = true; // unweighted
-            if (!inQ[u]) {
-              que.push_back(u);
-              inQ[u] = 1;
-        }}}
+            if (!inQ[u])
+              que.pb(u), inQ[u] = 1;
+        }}
       } else {
         B m = m2;
         m.add_extra(ground_set[v]);
         for (auto u: left) {
-          auto newdist = pair{smw - ground_set[u].w, cnte + 1};
+          auto newdist = pair{smw - ground_set[u].w, cnte+1};
           if (dist[u] > newdist && m.independed_without(ground_set[u])) {
-            par[u] = v;
-            dist[u] = newdist;
-            if (!inQ[u]) {
-              que.push_back(u);
-              inQ[u] = 1;
-      }}}}
+            par[u] = v, dist[u] = newdist;
+            if (!inQ[u])
+              que.pb(u), inQ[u] = 1;
+      }}}
     }
     int bestv = -1;
     for (int v : right) {
-      if (inm2[v] && dist[v].first != INF) {
-        if (bestv == -1 || dist[bestv] > dist[v]) {
+      if (inm2[v] && dist[v].first != INF)
+        if (bestv == -1 || dist[bestv] > dist[v])
           bestv = v;
-    }}}
+    }
     if (bestv == -1) break;
-    for (; bestv != -1; bestv = par[bestv]) in_set[bestv] ^= 1;
+    for (; bestv!=-1; bestv = par[bestv]) in_set[bestv] ^= 1;
   }
   vector<T> res;
-  for (int i = 0; i < n; i++) if (in_set[i]) res.push_back(ground_set[i]);
+  for (int i = 0; i < n; ++i)
+    if (in_set[i]) res.pb(ground_set[i]);
   return res;
 }
 \end{lstlisting}
@@ -1771,12 +1775,12 @@ pair<int, int> find_path_through_specified(int n,
       if (k == 0) return {1, t};
       continue;
     }
-    if (v == s || u == s) from.push_back(v ^ u ^ s);
-    if (v == t || u == t) to.push_back(v ^ u ^ t);
+    if (v == s || u == s) from.pb(v ^ u ^ s);
+    if (v == t || u == t) to.pb(v ^ u ^ t);
     if (v != s && v != t && u != s && u != t) {
       ull w = rnd();
-      es.push_back({v, u, w});
-      es.push_back({u, v, w});
+      es.pb({v, u, w});
+      es.pb({u, v, w});
     }
   }
   int m = es.size();
@@ -1786,9 +1790,8 @@ pair<int, int> find_path_through_specified(int n,
   for (auto v : to) dp[bit[v]][v] = rnd();
   for (int len = 1; len < n; ++len) {
     if (s != t || len >= 2) {
-      for (auto v : from) {
+      for (auto v : from)
         if (dp[masks - 1][v]) return {len + 1, v};
-      }
     }
     if (len + 1 == n) break;
     for (auto &r : ndp) fill(all(r), 0);
@@ -1815,8 +1818,7 @@ pair<int, int> find_path_through_specified(int n,
 \subsection{Точки сочленения}
 \begin{lstlisting}[language=C++]
 void dfs(int v, int p = -1) {
-  vis[v] = 1;
-  up[v] = tin[v] = timer++;
+  vis[v] = 1, up[v] = tin[v] = timer++;
   bool is_artic = false;
   int child = 0;
   for (auto u : g[v]) {
@@ -1825,12 +1827,10 @@ void dfs(int v, int p = -1) {
       dfs(u, v);
       up[v] = min(up[v], up[u]);
       is_artic |= p != -1 && up[u] >= tin[v];
-    } else
-      up[v] = min(up[v], tin[u]);
+    } else up[v] = min(up[v], tin[u]);
   }
   is_artic |= p == -1 && child >= 2;
-  if (is_artic)
-    articulation_points.insert(v);
+  if (is_artic) articulation_points.insert(v);
 }
 \end{lstlisting}
 
@@ -1838,19 +1838,19 @@ void dfs(int v, int p = -1) {
 \begin{lstlisting}[language=C++]
 // Эйлеров путь/цикл в компоненте связности s. Возвращает индексы рёбер. Если пути/цикла нет, то алгос найдёт фигню.
 // Если неориентированный граф, то edges[ei] и edges[ei ^ 1] - обратные друг к другу рёбра.
-// edges[graph[v][i]] = {v, u}
-vector<int> eulerpath1(int s, vector<vector<int>> &graph, vector<pair<int, int>> &edges, vector<char> &used, vector<int> &start) {
+// edges[g[v][i]] = {v, u}
+vector<int> eulerpath1(int s, vector<vector<int>> &g, vector<pair<int, int>> &edges, vector<char> &used, vector<int> &start) {
   vector<pair<int, int>> st = {{-1, s}};
   vector<int> res;
   while (!st.empty()) {
     auto [ei, v] = st.back();
-    while (start[v] < graph[v].size() && used[graph[v][start[v]]])
+    while (start[v] < g[v].size() && used[g[v][start[v]]])
       start[v]++;
-    if (start[v] == graph[v].size()) {
-      if (ei != -1) res.push_back(ei);
+    if (start[v] == g[v].size()) {
+      if (ei != -1) res.pb(ei);
       st.pop_back();
     } else {
-      int ej = graph[v][start[v]++];
+      int ej = g[v][start[v]++];
       used[ej] = true;
       used[ej ^ 1] = true; // Удалить если ориент. граф
       st.emplace_back(ej, edges[ej].second);
@@ -1861,19 +1861,17 @@ vector<int> eulerpath1(int s, vector<vector<int>> &graph, vector<pair<int, int>>
 }
 
 vector<char> used(edges.size(), false);
-vector<int> start(graph.size(), 0);
-for (int v = 0; v < graph.size(); ++v) {
+vector<int> start(g.size(), 0);
+for (int v = 0; v < g.size(); ++v) {
   // Если ориентированный граф, второе условие заменить на cnt_in[v] >= cnt_out[v]
-  if (start[v]==graph[v].size() || graph[v].size()%2==0)
+  if (start[v] == g[v].size() || g[v].size() % 2 == 0)
     continue;
-  auto path = eulerpath1(v, graph, edges, used, start);
+  auto path = eulerpath1(v, g, edges, used, start);
 }
-for (int v = 0; v < graph.size(); ++v) {
-  if (start[v] == graph[v].size())
-    continue;
-  auto cycle = eulerpath1(v, graph, edges, used, start);
+for (int v = 0; v < g.size(); ++v) {
+  if (start[v] == g[v].size()) continue;
+  auto cycle = eulerpath1(v, g, edges, used, start);
 }
-
 \end{lstlisting}
 
 \section{ДП}
@@ -1916,7 +1914,7 @@ struct ConvexHull {
     int l = -1, r = ssize(st) - 1;
     while (r - l > 1) {
       int m = (l + r) / 2;
-      if (st[m].eval(x) < st[m + 1].eval(x)) l = m; // > for min
+      if (st[m].eval(x) < st[m+1].eval(x)) l = m; // > for min
       else r = m;
     }
     return st[r].eval(x);
@@ -1933,10 +1931,7 @@ struct Line {
 
 // LiChao for maximum at x
 struct LiChao {
-  struct Node {
-    int l, r;
-    Line ln;
-  };
+  struct Node { int l, r; Line ln; };
   ll L, R;
   int root;
   vector<Node> t;
@@ -1945,11 +1940,11 @@ struct LiChao {
     t.reserve(maxsz + 1);
     t.pb({0, 0, {0, -INF}}); // t[0] = empty. +INF for min
   }
-  
+
   int add_on_seg(int v, ll l, ll r, ll ql, ll qr, Line ln) {
-    if (qr <= l || r <= ql) { return v; }
-    if (ql <= l && r <= qr) { return add(v, l, r, ln); }
-    if (!v) { v = t.size(), t.pb({0, 0, {0, -INF}}); }
+    if (qr <= l || r <= ql) return v;
+    if (ql <= l && r <= qr) return add(v, l, r, ln);
+    if (!v) v = t.size(), t.pb({0, 0, {0, -INF}});
     ll m = (l + r) >> 1; // NOT (l+r)/2
     t[v].l = add_on_seg(t[v].l, l, m, ql, qr, ln);
     t[v].r = add_on_seg(t[v].r, m, r, ql, qr, ln);
@@ -1961,8 +1956,7 @@ struct LiChao {
 
   int add(int v, ll l, ll r, Line ln) {
     if (!v) {
-      v = t.size();
-      t.pb({0, 0, ln});
+      v = t.size(), t.pb({0, 0, ln});
       return v;
     }
     ll m = (l + r) >> 1; // NOT (l+r)/2
@@ -1992,25 +1986,22 @@ struct LiChao {
 \subsection{SOS-dp}
 \begin{lstlisting}[language=C++]
 // dp initial fill, a[] is given array, mb extra zeros
-for (int i = 0; i < (1 << N); i++) {
+for (int i = 0; i < (1 << N); ++i)
   dp[i] = a[i];
-}
 
 // Classic SOS-dp, goal: dp[mask] = \sum a[submasks of mask]
-for (int i = 0; i < N; i++) {
-  for (int mask = 0; mask < (1 << N); mask++) {
-    if ((mask >> i) & 1) {
+for (int i = 0; i < N; ++i) {
+  for (int mask = 0; mask < (1 << N); ++mask) {
+    if ((mask >> i) & 1)
       dp[mask] += dp[mask ^ (1 << i)];
-    }
   }
 }
 
 // Overmasks SOS-dp, goal: dp[mask] = \sum a[overmasks of mask]
-for (int i = 0; i < N; i++) {
-  for (int mask = (1 << N) - 1; mask >= 0; mask--) {
-    if (((mask >> i) & 1) == 0) {
+for (int i = 0; i < N; ++i) {
+  for (int mask = (1 << N) - 1; mask >= 0; --mask) {
+    if (((mask >> i) & 1) == 0)
       dp[mask] += dp[mask ^ (1 << i)];
-    }
   }
 }
 
@@ -2024,19 +2015,17 @@ void unlimited_knapsack(int n, int T, vector<int> &v) {
   // O(n^2 log n + T)
   // v[1..n], v[i] --- best value of a single item with weight=i (-inf for non-existent)
   vector<int> items;
-  for (int i = 1; i <= n; i++)
+  for (int i = 1; i <= n; ++i)
     if (v[i] > -inf) items.pb(i);
   sort(all(items), [&](int i, int j) {
     return v[i] * j > v[j] * i;
   });
-  v.resize(T + 1, -inf);
-  v[0] = 0;
-  for (int i = 2; i <= T; i++) {
+  v.resize(T + 1, -inf), v[0] = 0;
+  for (int i = 2; i <= T; ++i) {
     int tick = 0;
     for (auto j: items) {
-      if (i > j) {
+      if (i > j)
         v[i] = max(v[i], v[j] + v[i - j]);
-      }
       if (tick * i > 3 * n * n) break; // apparently 2 works as well, but proved bound is 3
       tick++;
     }
@@ -2056,13 +2045,10 @@ vector<int> calc_lis(const vector<int> &a) {
     // upper_bound for non-strict LIS
     int len = lower_bound(all(dp), a[i]) - dp.begin();
     par[i] = len ? ind[len - 1] : -1;
-    if (len == dp.size()) {
-      dp.pb(a[i]);
-      ind.pb(i);
-    } else {
-      dp[len] = a[i];
-      ind[len] = i;
-    }
+    if (len == dp.size())
+      dp.pb(a[i]), ind.pb(i);
+    else
+      dp[len] = a[i], ind[len] = i;
   }
   int len = dp.size();
   vector<int> ans(len);
@@ -2079,7 +2065,7 @@ vector<int> calc_lis(const vector<int> &a) {
 \begin{lstlisting}[language=C++]
 // g: tree or forest
 // par[v] = parent in centroid trees; -1 for roots
-// level[root] = 1
+// levels[root] = 1
 struct Centroid {
   const vector<vector<int>> &g;
   vector<int> levels, _szs, par;
@@ -2091,10 +2077,9 @@ struct Centroid {
 
   int _calcsizes(int v, int p) {
     int sz = 1;
-    for (int u : g[v]) {
+    for (int u : g[v])
       if (u != p && levels[u] == 0)
         sz += _calcsizes(u, v);
-    }
     return _szs[v] = sz;
   }
 
@@ -2103,17 +2088,13 @@ struct Centroid {
     int nxt = v, prv;
     while (nxt != -1) {
       prv = v, v = nxt, nxt = -1;
-      for (int u : g[v]) {
+      for (int u : g[v])
         if (u != prv && levels[u] == 0 && _szs[u] * 2 >= sz)
           nxt = u;
-      }
     }
-    levels[v] = lvl;
-    par[v] = p;
-    for (int u : g[v]) {
-      if (levels[u] == 0)
-        build(u, lvl + 1, v);
-    }
+    levels[v] = lvl, par[v] = p;
+    for (int u : g[v])
+      if (levels[u] == 0) build(u, lvl+1, v);
     // calc smth for centroid v: dfs by levels[u]>=lvl
     // _szs[] are NOT subtree sizes (it's trash)
   }
@@ -2122,35 +2103,29 @@ struct Centroid {
 
 \subsection{HLD}
 \begin{lstlisting}[language=C++]
-int par[MAXN], sizes[MAXN];
-int pathup[MAXN];
-int tin[MAXN], tout[MAXN];
-int timer;
+int par[MAXN], sizes[MAXN], pathup[MAXN];
+int tin[MAXN], tout[MAXN], timer;
 
 int dfs1_hld(int v, int p) {
   par[v] = p;
   int sz = 1;
-  for (int i = 0; i < graph[v].size(); ++i) {
-    int u = graph[v][i];
+  for (int i = 0; i < g[v].size(); ++i) {
+    int u = g[v][i];
     if (u == p) {
-      swap(graph[v][i--], graph[v].back());
-      graph[v].pop_back();
-      continue;
-    }
-    sz += dfs1_hld(u, v);
+      swap(g[v][i--], g[v].back());
+      g[v].pop_back();
+    } else sz += dfs1_hld(u, v);
   }
   return sizes[v] = sz;
 }
 
 void dfs2_hld(int v, int up) {
-  tin[v] = timer++;
-  pathup[v] = up;
-  for (int i = 1; i < graph[v].size(); ++i) {
-    if (sizes[graph[v][i]] > sizes[graph[v][0]])
-      swap(graph[v][i], graph[v][0]);
-  }
-  for (int u : graph[v])
-    dfs2_hld(u, u == graph[v][0] ? up : u);
+  tin[v] = timer++, pathup[v] = up;
+  for (int i = 1; i < g[v].size(); ++i)
+    if (sizes[g[v][i]] > sizes[g[v][0]])
+      swap(g[v][i], g[v][0]);
+  for (int u : g[v])
+    dfs2_hld(u, u == g[v][0] ? up : u);
   tout[v] = timer;
 }
 
@@ -2168,8 +2143,7 @@ void update_hld(int v, int u, int ARG) {
     }
     swap(v, u);
   }
-  if (tin[v] > tin[u])
-    swap(v, u);
+  if (tin[v] > tin[u]) swap(v, u);
   // v = lca
   ST.update(0, 0, timer, tin[v], tin[u] + 1, ARG);
 }
@@ -2185,27 +2159,14 @@ signed main() {
 \subsection{Link-cut}
 \begin{lstlisting}[language=C++]
 struct Node {
-  Node *ch[2];
-  Node *p;
-  bool rev;
-  int sz;
-
-  Node() {
-    ch[0] = nullptr;
-    ch[1] = nullptr;
-    p = nullptr;
-    rev = false;
-    sz = 1;
-  }
+  Node *ch[2] = {}, *p = nullptr;
+  bool rev = false;
+  int sz = 1;
 };
 
-int size(Node *v) {
-  return (v ? v->sz : 0);
-}
+int size(Node *v) { return (v ? v->sz : 0); }
 
-int chnum(Node *v) {
-  return v->p->ch[1] == v;
-}
+int chnum(Node *v) { return v->p->ch[1] == v; }
 
 bool isroot(Node *v) {
   return v->p == nullptr || v->p->ch[chnum(v)] != v;
@@ -2213,10 +2174,8 @@ bool isroot(Node *v) {
 
 void push(Node *v) {
   if (v->rev) {
-    if (v->ch[0])
-      v->ch[0]->rev ^= 1;
-    if (v->ch[1])
-      v->ch[1]->rev ^= 1;
+    if (v->ch[0]) v->ch[0]->rev ^= 1;
+    if (v->ch[1]) v->ch[1]->rev ^= 1;
     swap(v->ch[0], v->ch[1]);
     v->rev = false;
   }
@@ -2227,10 +2186,8 @@ void pull(Node *v) {
 }
 
 void attach(Node *v, Node *p, int num) {
-  if (p)
-    p->ch[num] = v;
-  if (v)
-    v->p = p;
+  if (p) p->ch[num] = v;
+  if (v) v->p = p;
 }
 
 void rotate(Node *v) {
@@ -2239,10 +2196,8 @@ void rotate(Node *v) {
   push(v);
   int num = chnum(v);
   Node *u = v->ch[1 - num];
-  if (!isroot(v->p))
-    attach(v, p->p, chnum(p));
-  else
-    v->p = p->p;
+  if (!isroot(v->p)) attach(v, p->p, chnum(p));
+  else v->p = p->p;
   attach(u, p, num);
   attach(p, v, 1 - num);
   pull(p);
@@ -2263,22 +2218,15 @@ void splay(Node *v) {
 }
 
 void expose(Node *v) {
-  splay(v);
-  v->ch[1] = nullptr;
-  pull(v);
+  splay(v), v->ch[1] = nullptr, pull(v);
   while (v->p != nullptr) {
     Node *p = v->p;
-    splay(p);
-    attach(v, p, 1);
-    pull(p);
-    splay(v);
+    splay(p), attach(v, p, 1), pull(p), splay(v);
   }
 }
 
 void makeroot(Node *v) {
-  expose(v);
-  v->rev ^= 1;
-  push(v);
+  expose(v), v->rev ^= 1, push(v);
 }
 
 void link(Node *v, Node *u) {
@@ -2299,8 +2247,7 @@ int get(Node *v, Node *u) {
   makeroot(u);
   makeroot(v);
   Node *w = u;
-  while (!isroot(w))
-    w = w->p;
+  while (!isroot(w)) w = w->p;
   return (w == v ? size(v) - 1 : -1);
 }
 
@@ -2313,8 +2260,7 @@ int main() {
   while (q--) {
     string s;
     int a, b;
-    cin >> s >> a >> b;
-    a--, b--;
+    cin >> s >> a >> b, a--, b--;
     if (s[0] == 'g')
       cout << get(nds + a, nds + b) << '\n';
     else if (s[0] == 'l')
@@ -2323,7 +2269,6 @@ int main() {
       cut(nds + a, nds + b);
   }
 }
-
 \end{lstlisting}
 
 \section{Другое}
@@ -2364,7 +2309,7 @@ struct Hashmap {
     // Use =V() if need default constructor and erase
     //   (e.g. `cnt.erase(x); cnt[y]++;`)
     if (k[i]!=x) k[i]=x; //, v[i]=V();
-    return v[i]; 
+    return v[i];
   }
   bool erase(cK &x) {
     int i = pos(x);
@@ -2386,9 +2331,9 @@ struct FastMod {
   ull b, m;
   FastMod(ull b) : b(b), m(-1ULL / b) {}
   ull mod(ull a) const {
-      ull r = a - (ull)((__uint128_t(m) * a) >> 64) * b;
-      return r;  // r in [0, 2b) // $\approx$ x3.5 speed
-      return r >= b ? r - b : r; // $\approx$ x3 speed
+    ull r = a - (ull)((__uint128_t(m) * a) >> 64) * b;
+    return r;  // r in [0, 2b) // $\approx$ x3.5 speed
+    return r >= b ? r - b : r; // $\approx$ x3 speed
   }
 }; // Usage:
 // FastMod F(m);
@@ -2413,7 +2358,7 @@ void radix_sort(vector<ll> &a) {
 #define PASS(key) { \
   memset(c, 0, sizeof c); \
   for (auto x : a) ++c[(key)+1]; \
-  for (signed i = 1; i <= B; ++i) { c[i]+=c[i-1]; } \
+  for (signed i = 1; i <= B; ++i) c[i]+=c[i-1]; \
   for (auto x : a) b[c[key]++] = x; \
   swap(a,b); \
 }
@@ -2449,23 +2394,19 @@ struct custom_bitset {
 
   custom_bitset(int bb = 0) { init(bb); }
   void init(int bb) {
-    b = bb, n = (b + 63) / 64;
+    b = bb, n = (b+63)/64;
     bits.assign(n, 0);
   }
   void clear() { b = n = 0, bits.clear(); }
   void reset() { bits.assign(n, 0); }
-  void _clean() {
-    // Reset all bits after `b`.
-    if (b % 64)
-      bits.back() &= (1LLU << (b % 64)) - 1;
+  void _clean() { // Reset all bits after `b`.
+    if (b%64)
+      bits.back() &= (1LLU << (b%64)) - 1;
   }
-  bool get(int i) const {
-    return bits[i / 64] >> (i % 64) & 1;
-  }
-  void set(int i, bool value) {
-    // assert(0 <= i && i < b);
-    bits[i / 64] &= ~(1LLU << (i % 64));
-    bits[i / 64] |= uint64_t(value) << (i % 64);
+  bool get(int i) const { return bits[i/64] >> (i%64) & 1; }
+  void set(int i, bool value) { // assert(0 <= i && i < b);
+    bits[i/64] &= ~(1LLU << (i%64));
+    bits[i/64] |= uint64_t(value) << (i%64);
   }
 
   // Simulates `bs1 |= bs2 << s;`
@@ -2480,8 +2421,7 @@ struct custom_bitset {
     } else {
       for (int i = n-1; i >= d+1; --i)
         bits[i] |= o.bits[i-d-1]>>(64-r) | o.bits[i-d]<<r;
-      if (d < n)
-        bits[d] |= o.bits[0]<<r;
+      if (d < n) bits[d] |= o.bits[0]<<r;
     }
     // if `&=`, `=`
     //fill(bits.begin(), bits.begin() + min(d, n), 0);
@@ -2500,8 +2440,7 @@ struct custom_bitset {
     } else {
       for (int i = 0; i < n-d-1; ++i)
         bits[i] |= o.bits[i+d+1]<<(64-r) | o.bits[i+d]>>r;
-      if (d < n)
-        bits[n-d-1] |= o.bits[n-1]>>r;
+      if (d < n) bits[n-d-1] |= o.bits[n-1]>>r;
     }
     // if `&=`, `=`
     //fill(bits.end() - min(d, n), bits.end(), 0);
@@ -2514,19 +2453,17 @@ struct custom_bitset {
     if (i >= b) return b;
     int d = i/64, r = i%64;
     auto x = bits[d]>>r;
-    if (x != 0)
-      return i + __builtin_ctzll(x);
-    for (auto k = d+1; k < n; ++k) {
+    if (x != 0) return i + __builtin_ctzll(x);
+    for (auto k = d+1; k < n; ++k)
       if (bits[k] != 0)
         return 64*k + __builtin_ctzll(bits[k]);
-    }
     return b;
   }
 
   // `|=` can be replaced with `&=`, `^=`
   custom_bitset &operator|=(const custom_bitset &other){
     // assert(b == other.b);
-    for (int i = 0; i < n; i++)
+    for (int i = 0; i < n; ++i)
       bits[i] |= other.bits[i];
     return *this;
   }
@@ -2547,7 +2484,7 @@ size_t mpos = 0;
 void *operator new(size_t n) {
   n = ((n ? n : 1) + ALIGN - 1) & ~(ALIGN - 1);
   mpos += n;
-//  assert(mpos <= MAX_MEM);
+  // assert(mpos <= MAX_MEM);
   return (void *)(mem + mpos - n);
 }
 void operator delete(void *) noexcept {}
@@ -2586,10 +2523,8 @@ const double lambda = 0.999;
 double temperature = 1;
 mt19937 rnd(777);
 
-double gen_rand_01() {
-  return rnd() / (double) mt19937::max();
-}
-bool f(int delta) {
+double gen_rand_01() { return rnd()/(double) mt19937::max(); }
+bool f(int delta) { // exp is much slower on long double
   return exp(-delta / temperature) > gen_rand_01();
 }
 void make_change() {
@@ -2628,18 +2563,15 @@ int getkfps(vector<ll> p, vector<ll> q, ll k) {
   // assert(q[0] != 0);
   while (k) {
     auto f = q;
-    for (int i = 1; i < (int) f.size(); i += 2) {
+    for (int i = 1; i < f.size(); i += 2)
       f[i] = (MOD - f[i] % MOD) % MOD;
-    }
-    auto p2 = convMod(p, f);
-    auto q2 = convMod(q, f);
+    auto p2 = conv_mod(p, f);
+    auto q2 = conv_mod(q, f);
     p.clear(), q.clear();
-    for (int i = k % 2; i < (int) p2.size(); i += 2) {
+    for (int i = k % 2; i < p2.size(); i += 2)
       p.pb(p2[i]);
-    }
-    for (int i = 0; i < (int) q2.size(); i += 2) {
+    for (int i = 0; i < q2.size(); i += 2)
       q.pb(q2[i]);
-    }
     k >>= 1;
   }
   return p.empty() ? 0 : (p[0] * inverse(q[0])) % MOD;
@@ -2649,53 +2581,44 @@ int getkfps(vector<ll> p, vector<ll> q, ll k) {
 int kth_term(vector<ll> &a, vector<ll> s, ll k) {
   int d = ssize(s) - 1;
   s[0] = MOD - 1;
-  while (s.back() == 0) {
-    s.pop_back();
-  }
-  for (auto &el: s) {
+  while (s.back() == 0) s.pop_back();
+  for (auto &el: s)
     el = (MOD - el % MOD) % MOD;
-  }
   vector<ll> p(d);
   copy(a.begin(), a.begin() + d, p.begin());
-  p = convMod(p, s);
+  p = conv_mod(p, s);
   p.resize(d);
   return getkfps(p, s, k);
 }
 
 vector<ll> berlekamp_massey(vector<ll> a) {
-  // given a[0]...a[n], returns sequence s[1]..s[k] s.t a[i] = a[i-1] \cdot s[1] + \ldots + a[i-k] \cdot s[k]
-  vector <ll> ls, s;
+  // given a[0..n], returns s[1..k]: $a_i = \sum_{j=1}^k a_{i-j} s_j$
+  vector<ll> ls, s;
   int lf = 0, d = 0;
   for (int i = 0; i < a.size(); ++i) {
     ll t = 0;
-    for (int j = 0; j < s.size(); ++j) {
+    for (int j = 0; j < s.size(); ++j)
       t = (t + 1ll * a[i - j - 1] * s[j]) % MOD;
-    }
-    if ((t - a[i]) % MOD == 0)continue;
+    if ((t - a[i]) % MOD == 0) continue;
     if (s.empty()) {
       s.resize(i + 1);
-      lf = i;
-      d = (t - a[i]) % MOD;
+      lf = i, d = (t - a[i]) % MOD;
       continue;
     }
     ll k = -(a[i] - t) * inverse(d) % MOD;
     vector<ll> c(i - lf - 1);
-    c.push_back(k);
-    for (auto &j: ls)
-      c.push_back(-j * k % MOD);
+    c.pb(k);
+    for (auto &j: ls) c.pb(-j * k % MOD);
     if (c.size() < s.size())
       c.resize(s.size());
-    for (int j = 0; j < s.size(); ++j) {
+    for (int j = 0; j < s.size(); ++j)
       c[j] = (c[j] + s[j]) % MOD;
-    }
-    if (i - lf + (int) ls.size() >= (int) s.size()) {
+    if (i - lf + ssize(ls) >= ssize(s))
       tie(ls, lf, d) = make_tuple(s, i, (t - a[i]) % MOD);
-    }
     s = c;
   }
   s.insert(s.begin(), 0); // fictive s[0] = 0
-  for (auto &i: s)
-    i = (i % MOD + MOD) % MOD;
+  for (auto &i: s) i = (i % MOD + MOD) % MOD;
   return s;
 }
 \end{lstlisting}
@@ -2703,12 +2626,11 @@ vector<ll> berlekamp_massey(vector<ll> a) {
 \subsection{FFT}
 \begin{lstlisting}[language=C++]
 const double PI = acos(-1);
-const int LOG = 20;
-const int MAXN = 1 << LOG;
+const int LOG = 20, MAXN = 1 << LOG;
 
 //using comp = complex<double>;
 struct comp {
-  double x, y;
+  double x, y; // not dbl: long double is ~3x slower
   comp() : x(0), y(0) {}
   comp(double x, double y) : x(x), y(y) {}
   comp(int x) : x(x), y(0) {}
@@ -2723,13 +2645,9 @@ comp OMEGA[MAXN + 10];
 int tail[MAXN + 10];
 bool fftinit = false;
 
-comp omega(int n, int k) {
-  return OMEGA[MAXN / n * k];
-}
+comp omega(int n, int k) { return OMEGA[MAXN / n * k]; }
 
-int gettail(int x, int lg) {
-  return tail[x] >> (LOG - lg);
-}
+int gettail(int x, int lg) { return tail[x] >> (LOG - lg); }
 
 void calcomega() {
   for (int i = 0; i < MAXN; ++i) {
@@ -2747,11 +2665,9 @@ void calctail() {
 void fft(vector<comp> &A, int lg) {
   if (!fftinit) calcomega(), calctail(), fftinit = 1;
   int n = A.size();
-  for (int i = 0; i < n; ++i) {
-    int j = gettail(i, lg);
-    if (i < j)
+  for (int i = 0; i < n; ++i)
+    if (int j = gettail(i, lg); i < j)
       swap(A[i], A[j]);
-  }
   for (int len = 2; len <= n; len *= 2) {
     for (int i = 0; i < n; i += len) {
       for (int j = 0; j < len / 2; ++j) {
@@ -2773,7 +2689,7 @@ void fft2(vector<comp> &A, vector<comp> &B, int lg) {
     C[i].y = B[i].x;
   }
   fft(C, lg);
-  C.push_back(C[0]);
+  C.pb(C[0]);
   for (int i = 0; i < n; ++i) {
     A[i] = (C[i] + C[n - i].conj()) / 2;
     B[i] = (C[i] - C[n - i].conj()) / 2 * comp(0, -1);
@@ -2783,14 +2699,12 @@ void fft2(vector<comp> &A, vector<comp> &B, int lg) {
 void invfft(vector<comp> &A, int lg) {
   int n = 1 << lg;
   fft(A, lg);
-  for (auto &el : A)
-    el = el / n;
+  for (auto &el : A) el = el / n;
   reverse(A.begin() + 1, A.end());
 }
 
 vector<int> mul(vector<int> &a, vector<int> &b) {
-  if (a.empty() || b.empty())
-    return {};
+  if (a.empty() || b.empty()) return {};
   int lg = 32-__builtin_clz(max<int>(1,a.size()+b.size()-2));
   int n = 1 << lg;
   vector<comp> A(n, 0), B(n, 0);
@@ -2798,7 +2712,7 @@ vector<int> mul(vector<int> &a, vector<int> &b) {
     A[i] = a[i];
   for (int i = 0; i < b.size(); ++i)
     B[i] = b[i];
-//  fft2(A, B, lg);
+  // fft2(A, B, lg);
   fft(A, lg);
   fft(B, lg);
   for (int i = 0; i < n; ++i)
@@ -2811,7 +2725,6 @@ vector<int> mul(vector<int> &a, vector<int> &b) {
     c.pop_back();
   return c;
 }
-
 \end{lstlisting}
 
 \subsection{Floor Sum, Min Rem}
@@ -2939,7 +2852,7 @@ vector<int> gcd_convolution(vector<int> a, vector<int> b) {
       if (b[i] >= mod) b[i] -= mod;
     }
   }
-  for (int i = 1; i <= n; ++i) a[i] = (a[i] * b[i]) % mod;
+  for (int i = 1; i <= n; ++i) a[i] = (ll)a[i] * b[i] % mod;
   for (int p = 2; p <= n; ++p) {
     if (!isprime[p]) continue;
     for (int i = 1; i * p <= n; ++i) {
@@ -2961,7 +2874,7 @@ vector<int> lcm_convolution(vector<int> a, vector<int> b) {
       if (b[i * p] >= mod) b[i * p] -= mod;
     }
   }
-  for (int i = 1; i <= n; ++i) a[i] = (a[i] * b[i]) % mod;
+  for (int i = 1; i <= n; ++i) a[i] = (ll)a[i] * b[i] % mod;
   for (int p = 2; p <= n; ++p) {
     if (!isprime[p]) continue;
     for (int i = n / p; i > 0; --i) {
@@ -2975,46 +2888,52 @@ vector<int> lcm_convolution(vector<int> a, vector<int> b) {
 
 \subsection{Interpolation}
 \begin{lstlisting}[language=C++]
-struct poly {
-  int n = 0;
-  vector<ll> a = {0};
-  poly() = default;
-  poly(vector<ll> a) : a(a), n((int)a.size()-1) {}
-  poly(int n) : n(n), a(n+1, 0) {}
+// for double: ll -> dbl, no %MOD, inv(x) = 1/x;
+// for precision pick $x_k = c \cdot \cos \frac{k \pi}{n-1}$.
+// x distinct, $P(x_i) = y_i$, $P(X) = \sum \text{res}_i X^i$
+// $O(n^2)$. Mod: x, y, $\text{res} \in (-\text{MOD}, \text{MOD})$
+vector<ll> interpolate(vector<ll> x, vector<ll> y) {
+  int n = x.size();
+  vector<ll> res(n), temp(n), d(n);
+  for (int k = 0; k + 1 < n; ++k) {
+    ll p = 1;
+    for (int i = k + 1; i < n; ++i)
+      d[i] = p, p = p * (x[i] - x[k]) % MOD;
+    p = inv(p);
+    for (int i = n - 1; i > k; --i) {
+      y[i] = (y[i] - y[k]) * (d[i] * p % MOD) % MOD;
+      p = p * (x[i] - x[k]) % MOD;
+    }
+  }
+  ll last = 0; temp[0] = 1;
+  for (int k = 0; k < n; ++k)
+    for (int i = 0; i < min(n, k + 2); ++i) {
+      res[i] = (res[i] + y[k] * temp[i]) % MOD;
+      swap(last, temp[i]);
+      temp[i] = (temp[i] - last * x[k]) % MOD;
+    }
+  return res;
+}
 
-  ll evaluate(int x) {
-    ll val = 0, y = 1;
-    for (int i = 0; i <= n; i++) {
-      val = (val + a[i] * y) % MOD;
-      y = (y * x) % MOD;
-    }
-    return val;
-  }
-};
+ll eval(const vector<ll> &a, ll x) {
+  ll r = 0;
+  for (int i = ssize(a)-1; i >= 0; --i) r = (r*x+a[i]) % MOD;
+  return r;
+}
 
-poly interpolate(int deg, vector<int> x, vector<int> y) {
-  assert(x.size() >= deg + 1 && y.size() >= deg + 1);
-  int n = deg + 1;
-  vector<ll> xs(n), c(n), cur(n);
-  for (int i = 0; i < n; i++) {
-    xs[i] = (x[i] % MOD + MOD) % MOD;
-    c[i] = (y[i] % MOD + MOD) % MOD;
-  }
-  for (int k = 0; k + 1 < n; k++) {
-    for (int i = k + 1; i < n; i++) {
-      c[i] = (c[i] - c[k] + MOD) * inv((xs[i] - xs[k] + MOD) % MOD) % MOD;
-    }
-  }
-  poly res(deg);
-  cur[0] = 1;
-  for (int k = 0; k < n; k++) {
-    for (int i = 0; i <= k; i++) {
-      res.a[i] = (res.a[i] + c[k] * cur[i]) % MOD;
-    }
-    if (k + 1 == n) break;
-    for (int i = k + 1; i >= 0; i--) {
-      cur[i] = ((i ? cur[i - 1] : 0) + (i <= k ? MOD - cur[i] * xs[k] % MOD : 0)) % MOD;
-    }
+// $\deg P < n$ задан значениями $y_i = P(i)$, $0 \le i < n$
+// Возвращает $P(X)$ за $O(n)$. $0 < n \le$ MOD, $X \in (-\text{MOD}, \text{MOD})$
+// dbl: нужно $(n-1)!$ в типе: $n \le 171$ (long double: 1755)
+// Если $y_i = P(x_0 + ih)$: передать $X \to (X - x_0) / h$
+ll lagrange(const vector<ll> &y, ll X) {
+  int n = y.size();
+  vector<ll> suf(n + 1, 1);
+  ll pre = 1, res = 0;
+  for (int i = n; i--; ) suf[i] = suf[i + 1] * (i - X) % MOD;
+  for (int i = 0; i < n; ++i) {
+    auto t = pre * suf[i + 1] % MOD * ifact[i] % MOD;
+    res = (res + t * ifact[n - 1 - i] % MOD * y[i]) % MOD;
+    pre = pre * (X - i) % MOD;
   }
   return res;
 }
@@ -3043,9 +2962,7 @@ struct Min25 {
   vector<ll> primes;
   bool built = false;
 
-  int id(ll x) {
-    return x <= sq ? id_small[x] : id_large[n / x];
-  }
+  int id(ll x) { return x<=sq ? id_small[x] : id_large[n/x]; }
 
   ll sum_power(int d, ll x) {
     x %= mod;
@@ -3063,50 +2980,39 @@ struct Min25 {
   }
 
   ll prime_poly(ll x) {
-    if (x < 2) return 0;
-    return prime_poly_at_index(id(x));
+    return x < 2 ? 0 : prime_poly_at_index(id(x));
   }
 
   // Value f(p^e). Args are (p, e, p^e mod mod, p^{e-1} mod mod).
-  ll f_prime_power(ll p, int e, ll pe, ll prev) {
-    return pe;
-  }
+  ll f_prime_power(ll p, int e, ll pe, ll prev) { return pe; }
 
   void build(ll _n) {
-    if (built) {
-      assert(n == _n);
-      return;
-    }
-    built = true;
-    n = _n;
-    val.clear();
-    primes.clear();
+    if (built) { assert(n == _n); return; }
+    built = true, n = _n;
+    val.clear(), primes.clear();
     sq = sqrtl(n);
     while ((sq + 1) * (sq + 1) <= n) ++sq;
     while (sq * sq > n) --sq;
     id_small.assign(sq + 1, -1);
     id_large.assign(sq + 1, -1);
-
     for (ll l = 1, r; l <= n; l = r + 1) {
       ll x = n / l;
       r = n / x;
       int i = val.size();
-      val.push_back(x);
+      val.pb(x);
       if (x <= sq) id_small[x] = i;
       else id_large[n / x] = i;
     }
-
     g.assign(D + 1, vector<ll>(val.size()));
     for (int d = 0; d <= D; ++d)
-      for (int i = 0; i < (int)val.size(); ++i)
+      for (int i = 0; i < val.size(); ++i)
         g[d][i] = (sum_power(d, val[i]) - 1 + mod) % mod;
-
+    vector<ll> ppow(D + 1, 1); // ppow[d] = p^d
     for (ll p = 2; p <= sq; ++p) {
       if (g[0][id(p)] == g[0][id(p - 1)]) continue;
-      primes.push_back(p);
-      vector<ll> ppow(D + 1, 1);
-      for (int d = 1; d <= D; ++d) ppow[d] = mul(ppow[d - 1], p);
-      for (int i = 0; i < (int)val.size() && val[i] >= p * p; ++i) {
+      primes.pb(p);
+      for (int d = 1; d<=D; ++d) ppow[d] = mul(ppow[d-1], p);
+      for (int i = 0; i < val.size() && val[i] >= p*p; ++i) {
         int ip = id(val[i] / p);
         int before_p = id(p - 1);
         for (int d = 0; d <= D; ++d) {
@@ -3122,8 +3028,8 @@ struct Min25 {
     ll last = pos ? primes[pos - 1] : 1;
     ll res = (prime_poly(limit) - prime_poly(last)) % mod;
     if (res < 0) res += mod;
-    if (limit >= 2 && pos < (int)primes.size()) {
-      for (int i = pos; i < (int)primes.size(); ++i) {
+    if (limit >= 2 && pos < primes.size()) {
+      for (int i = pos; i < primes.size(); ++i) {
         ll p = primes[i];
         if ((__int128)p * p > limit) break;
         ll pe_int = p, pe_mod = p % mod, prev_mod = 1;
@@ -3132,8 +3038,7 @@ struct Min25 {
           ll cur = f_prime_power(p, e, pe_mod, prev_mod);
           ll nxt = f_prime_power(p, e + 1, nxt_mod, pe_mod);
           res = (res + mul(cur, dfs(limit / pe_int, i + 1)) + nxt) % mod;
-          prev_mod = pe_mod;
-          pe_mod = nxt_mod;
+          prev_mod = pe_mod, pe_mod = nxt_mod;
           pe_int *= p;
         }
       }
@@ -3155,13 +3060,12 @@ struct Min25 {
   vector<ll> all_prefix_sums() {
     assert(built);
     vector<ll> prime_sum(val.size()), r(val.size()), ans(val.size());
-    for (int i = 0; i < (int)val.size(); ++i)
+    for (int i = 0; i < val.size(); ++i)
       prime_sum[i] = r[i] = prime_poly_at_index(i);
-
-    for (int ui = (int)primes.size() - 1; ui >= 0; --ui) {
+    for (int ui = ssize(primes) - 1; ui >= 0; --ui) {
       ll p = primes[ui];
       ll before = prime_sum[id(p)];
-      for (int i = 0; i < (int)val.size() && val[i] >= p * p; ++i) {
+      for (int i = 0; i < val.size() && val[i] >= p*p; ++i) {
         ll pe_int = p, pe_mod = p % mod, prev_mod = 1;
         for (int e = 1; (__int128)pe_int * p <= val[i]; ++e) {
           ll nxt_mod = mul(pe_mod, p);
@@ -3170,14 +3074,12 @@ struct Min25 {
           ll tail = r[id(val[i] / pe_int)] - before;
           if (tail < 0) tail += mod;
           r[i] = (r[i] + mul(cur, tail) + nxt) % mod;
-          prev_mod = pe_mod;
-          pe_mod = nxt_mod;
+          prev_mod = pe_mod, pe_mod = nxt_mod;
           pe_int *= p;
         }
       }
     }
-
-    for (int i = 0; i < (int)val.size(); ++i)
+    for (int i = 0; i < val.size(); ++i)
       ans[i] = (1 + r[i]) % mod; // f(1) = 1
     return ans;
   }
@@ -3192,27 +3094,23 @@ struct Min25 {
 
 \subsection{NTT}
 \begin{lstlisting}[language=C++]
-const int MOD = 998244353; // $7 \cdot 17 \cdot 2^{23} + 1$
-const int G = 3;
-//const int MOD = 7340033; // $7 \cdot 2^{20} + 1$
-//const int G = 5;
-//const int MOD = 469762049; // $7 \cdot  2^{26} + 1$
-//const int G = 30;
+const int MOD = 998244353, G = 3; // $7 \cdot 17 \cdot 2^{23} + 1$
+//const int MOD = 7340033, G = 5; // $7 \cdot 2^{20} + 1$
+//const int MOD = 469762049, G = 30; // $7 \cdot  2^{26} + 1$
 const int MAXLOG = 23;
 int W[(1 << MAXLOG) + 10];
 bool nttinit = false;
 vector<int> pws;
 
-// int add(), int sub(), int mul(),
-// int binpow(), int inv()
+// int add(), int sub(), int mul(), int binpow(), int inv()
 
 void initNTT() {
   if (nttinit) return;
   nttinit = true;
   assert((MOD - 1) % (1 << MAXLOG) == 0);
-  pws.push_back(binpow(G, (MOD - 1) / (1 << MAXLOG)));
+  pws.pb(binpow(G, (MOD - 1) / (1 << MAXLOG)));
   for (int i = 0; i < MAXLOG - 1; ++i)
-    pws.push_back(mul(pws.back(), pws.back()));
+    pws.pb(mul(pws.back(), pws.back()));
   assert(pws.back() == MOD - 1);
   W[0] = 1;
   for (int i = 1; i < (1 << MAXLOG); ++i)
@@ -3222,9 +3120,7 @@ void initNTT() {
 void ntt(int n, vector<int> &a, bool rev) {
   initNTT();
   int lg = 31 - __builtin_clz(n);
-  for (auto &el : a) {
-    el = (el % MOD + MOD) % MOD;
-  }
+  for (auto &el : a) el = (el % MOD + MOD) % MOD;
   vector<int> rv(n);
   for (int i = 1; i < n; ++i) {
     rv[i] = (rv[i >> 1] >> 1) ^ ((i & 1) << (lg - 1));
@@ -3249,103 +3145,88 @@ void ntt(int n, vector<int> &a, bool rev) {
 }
 
 vector<int> conv(vector<int> a, vector<int> b) {
-  if (a.empty() || b.empty())
-    return {};
+  if (a.empty() || b.empty()) return {};
   int lg = 32-__builtin_clz(max<int>(1,a.size()+b.size()-2));
   int n = 1 << lg;
   a.resize(n);
   b.resize(n);
   ntt(n, a, false);
   ntt(n, b, false);
-  for (int i = 0; i < n; ++i)
-    a[i] = mul(a[i], b[i]);
+  for (int i = 0; i < n; ++i) a[i] = mul(a[i], b[i]);
   ntt(n, a, true);
-  while (a.size() > 1 && a.back() == 0)
-    a.pop_back();
+  while (a.size() > 1 && a.back() == 0) a.pop_back();
   return a;
 }
 
 vector<int> add(vector<int> a, vector<int> b) {
   a.resize(max(a.size(), b.size()));
-  for (int i = 0; i < (int) b.size(); ++i)
-    a[i] = add(a[i], b[i]);
+  for (int i = 0; i < b.size(); ++i) a[i] = add(a[i], b[i]);
   return a;
 }
 
 vector<int> sub(vector<int> a, vector<int> b) {
   a.resize(max(a.size(), b.size()));
-  for (int i = 0; i < (int) b.size(); ++i)
-    a[i] = sub(a[i], b[i]);
+  for (int i = 0; i < b.size(); ++i) a[i] = sub(a[i], b[i]);
   return a;
 }
 
 vector<int> inv(const vector<int> &a, int need) {
   vector<int> b = {inv(a[0])};
-  while ((int) b.size() < need) {
+  while (b.size() < need) {
     vector<int> a1 = a;
     int m = b.size();
     a1.resize(min((int) a1.size(), 2 * m));
-    b = conv(b, sub({2}, conv(a1, b)));
-    b.resize(2 * m);
+    b = conv(b, sub({2}, conv(a1, b))), b.resize(2 * m);
   }
   b.resize(need);
   return b;
 }
 
 vector<int> div(vector<int> a, vector<int> b) {
-  if (count(all(a), 0) == a.size())
-    return {0};
+  if (count(all(a), 0) == a.size()) return {0};
   assert(a.back() != 0 && b.back() != 0);
   int n = a.size() - 1;
   int m = b.size() - 1;
-  if (n < m)
-    return {0};
+  if (n < m) return {0};
   reverse(all(a));
   reverse(all(b));
   a.resize(n - m + 1);
   b.resize(n - m + 1);
-  vector<int> c = inv(b, b.size());
-  vector<int> q = conv(a, c);
-  q.resize(n - m + 1);
-  reverse(all(q));
+  vector<int> c = inv(b, b.size()), q = conv(a, c);
+  q.resize(n - m + 1), reverse(all(q));
   return q;
 }
 
 vector<int> mod(vector<int> a, vector<int> b) {
   auto res = sub(a, conv(b, div(a, b)));
-  while (res.size() > 1 && res.back() == 0)
-    res.pop_back();
+  while (res.size() > 1 && res.back() == 0) res.pop_back();
   return res;
 }
 
 vector<int> multipoint(vector<int> a, vector<int> x) {
   int n = x.size();
   vector<vector<int>> tree(2 * n);
-  for (int i = 0; i < n; ++i)
-    tree[i + n] = {x[i], MOD - 1};
+  for (int i = 0; i < n; ++i) tree[i + n] = {x[i], MOD - 1};
   for (int i = n - 1; i; --i)
     tree[i] = conv(tree[2 * i], tree[2 * i + 1]);
   tree[1] = mod(a, tree[1]);
   for (int i = 2; i < 2 * n; ++i)
     tree[i] = mod(tree[i >> 1], tree[i]);
   vector<int> res(n);
-  for (int i = 0; i < n; ++i)
-    res[i] = tree[i + n][0];
+  for (int i = 0; i < n; ++i) res[i] = tree[i + n][0];
   return res;
 }
 
 vector<int> deriv(vector<int> a) {
-  for (int i = 1; i < (int) a.size(); ++i)
-    a[i - 1] = mul(i, a[i]);
+  for (int i = 1; i < a.size(); ++i) a[i - 1] = mul(i, a[i]);
   a.back() = 0;
-  if (a.size() > 1)
-    a.pop_back();
+  if (a.size() > 1) a.pop_back();
   return a;
 }
 
 vector<int> integ(vector<int> a) {
-  a.push_back(0);
-  for (int i = (int) a.size() - 1; i; --i)
+  a.pb(0);
+  for (int i = a.size() - 1; i; --i)
     a[i] = mul(a[i - 1], inv(i));
   a[0] = 0;
   return a;
@@ -3361,31 +3242,29 @@ vector<int> log(vector<int> a, int n) {
 vector<int> exp(vector<int> a, int need) {
   assert(a[0] == 0);
   vector<int> b = {1};
-  while ((int) b.size() < need) {
+  while (b.size() < need) {
     vector<int> a1 = a;
     int m = b.size();
     a1.resize(min((int) a1.size(), 2 * m));
     a1[0] = add(a1[0], 1);
-    b = conv(b, sub(a1, log(b, 2 * m)));
-    b.resize(2 * m);
+    b = conv(b, sub(a1, log(b, 2 * m))), b.resize(2 * m);
   }
   b.resize(need);
   return b;
 }
 
-vector<int> power_sum_poly(int k) {
+vector<int> power_sum_poly(int k) { // $O(k \log k)$
   vector<int> a(k + 1), p(k + 2);
-  for (int j = 0; j <= k; ++j)
-    a[j] = ifact[j + 1];
+  for (int j = 0; j <= k; ++j) a[j] = ifact[j + 1];
   auto c = inv(a, k + 1);
   for (int j = 0; j <= k; ++j) {
     int v = mul(fact[k], mul(c[j], ifact[k + 1 - j]));
     p[k + 1 - j] = (j & 1) ? sub(0, v) : v;
   }
-  return p; // P(n) = 1^k+ ... +n^k = sum p[i] n^i
+  return p; // $P(n) = 1^k + ... + n^k = \sum_i p_i n^i$
 }
 
-vector<int> power_sums_inv(int n, int k) {
+vector<int> power_sums_inv(int n, int k) { // $O(k \log k)$
   vector<int> a(k + 1), b(k + 1);
   int pw = 1, t = add(n % MOD, 1);
   for (int i = 0; i <= k; ++i) {
@@ -3395,17 +3274,16 @@ vector<int> power_sums_inv(int n, int k) {
   }
   auto s = conv(a, inv(b, k + 1));
   s.resize(k + 1);
-  for (int i = 0; i <= k; ++i)
-    s[i] = mul(s[i], fact[i]);
-  return s; // s[i]=1^i+...+n^i; O(k log k)
+  for (int i = 0; i <= k; ++i) s[i] = mul(s[i], fact[i]);
+  return s; // $s_i = 1^i+...+n^i = \sum_{x=1}^n x^i$
 }
 \end{lstlisting}
 
 \subsection{OR XOR AND свёртки}
 \begin{lstlisting}[language=C++]
 vector<int> or_conv(int n, vector<int> a, vector<int> b) { // $|a| = |b| = 2^n$
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < (1 << n); j++) {
+  for (int i = 0; i < n; ++i) {
+    for (int j = 0; j < (1 << n); ++j) {
       if ((j >> i) & 1) {
         a[j] = (a[j] + a[j ^ (1 << i)]) % MOD;
         b[j] = (b[j] + b[j ^ (1 << i)]) % MOD;
@@ -3413,15 +3291,12 @@ vector<int> or_conv(int n, vector<int> a, vector<int> b) { // $|a| = |b| = 2^n$
     }
   }
   vector<int> c(1 << n);
-  for (int i = 0; i < (1 << n); i++) {
-    c[i] = (a[i] * b[i]) % MOD;
-  }
-  for (int i = n - 1; i >= 0; i--) {
-    for (int j = (1 << n) - 1; j >= 0; j--) {
-      if ((j >> i) & 1) {
+  for (int i = 0; i < (1 << n); ++i)
+    c[i] = (ll)a[i] * b[i] % MOD;
+  for (int i = n - 1; i >= 0; --i) {
+    for (int j = (1 << n) - 1; j >= 0; --j)
+      if ((j >> i) & 1)
         c[j] = (c[j] - c[j ^ (1 << i)] + MOD) % MOD;
-      }
-    }
   }
   return c;
 }
@@ -3429,29 +3304,28 @@ vector<int> or_conv(int n, vector<int> a, vector<int> b) { // $|a| = |b| = 2^n$
 vector<int> and_conv(int n, vector<int> a, vector<int> b) { // $|a| = |b| = 2^n$
   for (int i = 1; i < (1 << n); i *= 2) {
     for (int j = 0; j < (1 << n); j += i * 2) {
-      for (int k = 0; k < i; k++) {
+      for (int k = 0; k < i; ++k) {
         a[j + k] = (a[j + k] + a[i + j + k]) % MOD;
         b[j + k] = (b[j + k] + b[i + j + k]) % MOD;
       }
     }
   }
   vector<int> c(1 << n);
-  for (int i = 0; i < (1 << n); i++)
-    c[i] = (a[i] * b[i]) % MOD;
+  for (int i = 0; i < (1 << n); ++i)
+    c[i] = (ll)a[i] * b[i] % MOD;
   for (int i = 1; i < (1 << n); i *= 2) {
     for (int j = 0; j < (1 << n); j += i * 2) {
-      for (int k = 0; k < i; k++) {
+      for (int k = 0; k < i; ++k)
         c[j + k] = (c[j + k] - c[i + j + k] + MOD) % MOD;
-      }
     }
   }
   return c;
 }
 
-const int inv2 = (MOD + 1) / 2;
+const ll inv2 = (MOD + 1) / 2;
 vector<int> xor_conv(int n, vector<int> a, vector<int> b) { // $|a| = |b| = 2^n$
   for (int i = 1; i < (1 << n); i *= 2) {
-    for (int j = 0; j < (1 << n); j++) {
+    for (int j = 0; j < (1 << n); ++j) {
       if ((j & i) == 0) {
         int x = a[j], y = a[j | i];
         a[j] = (x + y) % MOD, a[j | i] = (x - y + MOD) % MOD;
@@ -3461,13 +3335,13 @@ vector<int> xor_conv(int n, vector<int> a, vector<int> b) { // $|a| = |b| = 2^n$
     }
   }
   vector<int> c(1 << n);
-  for (int i = 0; i < (1 << n); i++)
-    c[i] = (a[i] * b[i]) % MOD;
+  for (int i = 0; i < (1 << n); ++i)
+    c[i] = (ll)a[i] * b[i] % MOD;
   for (int i = 1; i < (1 << n); i *= 2) {
-    for (int j = 0; j < (1 << n); j++) {
+    for (int j = 0; j < (1 << n); ++j) {
       if ((j & i) == 0) {
         int x = c[j], y = c[j | i];
-        c[j] = (inv2 * (x + y)) % MOD, c[j | i] = (inv2 * (x - y + MOD)) % MOD;
+        c[j] = inv2*(x+y)%MOD, c[j | i] = inv2*(x-y+MOD)%MOD;
       }
     }
   }
@@ -3478,28 +3352,28 @@ vector<int> xor_conv(int n, vector<int> a, vector<int> b) { // $|a| = |b| = 2^n$
 \subsection{convMod}
 \begin{lstlisting}[language=C++]
 // a[i] in [0, MOD), MOD <~ 1e9, n + m <= 2^20 (precision)
-vector<ll> convMod(const vector<ll> &a, const vector<ll> &b) {
+vector<ll> conv_mod(const vector<ll> &a, const vector<ll> &b) {
   if (a.empty() || b.empty()) return {};
-  vector <ll> res((int) a.size() + (int) b.size() - 1);
+  vector<ll> res(a.size() + b.size() - 1);
   int lg = 32 - __builtin_clz(max<int>(1, res.size() - 1));
   int n = 1 << lg, cut = (int) (sqrt(MOD));
-  vector <comp> L(n), R(n), outs(n), outl(n);
+  vector<comp> L(n), R(n), outs(n), outl(n);
   // x = h * cut + l, |h|, |l| <~ cut / 2: 4x less fft error
   auto sp = [&](ll x) {
     if (x > MOD / 2) x -= MOD;
     ll h = rint((double)x / cut);
     return comp(h, x - h * cut);
   };
-  for (int i = 0; i < a.size(); i++) L[i] = sp(a[i]);
-  for (int i = 0; i < b.size(); i++) R[i] = sp(b[i]);
+  for (int i = 0; i < a.size(); ++i) L[i] = sp(a[i]);
+  for (int i = 0; i < b.size(); ++i) R[i] = sp(b[i]);
   fft(L, lg), fft(R, lg);
-  for (int i = 0; i < n; i++) {
+  for (int i = 0; i < n; ++i) {
     int j = -i & (n - 1);
     outl[j] = (L[i] + L[j].conj()) * R[i] / (2.0 * n);
     outs[j] = (L[i] - L[j].conj()) * R[i] / (2.0 * n) * comp(0, 1) * -1;
   }
   fft(outl, lg), fft(outs, lg);
-  for (int i = 0; i < res.size(); i++) {
+  for (int i = 0; i < res.size(); ++i) {
     ll av = rint(outl[i].x), cv = rint(outs[i].y);
     ll bv = rint(outl[i].y) + rint(outs[i].x);
     res[i] = ((av % MOD * cut + bv) % MOD * cut + cv) % MOD;
@@ -3539,7 +3413,6 @@ ll sqrt(ll a, ll p) {
     b = b * g % p;
   }
 }
-
 \end{lstlisting}
 
 \subsection{Гаусс}
@@ -3547,16 +3420,14 @@ ll sqrt(ll a, ll p) {
 // for modular: dbl -> ll, EPS=0
 char sign(dbl x) { return (x>EPS) - (x<-EPS); }
 
-// for double: ll -> dbl, no % mod, inv(x) = 1/x
+// for double: ll -> dbl, no %mod, inv(x) = 1/x
 vector<vector<ll>> gauss(vector<vector<ll>> &a) {
-  int n = a.size();
-  int m = a[0].size();
+  int n = a.size(), m = a[0].size();
 //  ll det = 1;
   for (int col = 0, row = 0; col < m && row < n; ++col) {
     int sel = row; // max |a| is for dbl precision
-    for (int i = row; i < n; ++i) {
+    for (int i = row; i < n; ++i)
       if (abs(a[i][col]) > abs(a[sel][col])) sel = i;
-    }
     if (!sign(a[sel][col])) continue;
     swap(a[sel], a[row]);
 //    if (sel != row) det *= -1;
@@ -3579,30 +3450,24 @@ vector<vector<ll>> gauss(vector<vector<ll>> &a) {
 }
 
 pair<int,vector<ll>> sle(vector<vector<ll>> a, vector<ll> b) {
-  int n = a.size();
-  int m = a[0].size();
+  int n = a.size(), m = a[0].size();
   assert(n == b.size());
-  for (int i = 0; i < n; ++i) {
-    a[i].push_back(b[i]);
-  }
+  for (int i = 0; i < n; ++i) a[i].pb(b[i]);
   a = gauss(a);
   vector<ll> x(m, 0);
   for (int i = n - 1; i >= 0; --i) {
     int leftmost = m;
-    for (int j = 0; j < m; ++j) {
+    for (int j = 0; j < m; ++j)
       if (sign(a[i][j])) {
         leftmost = j;
         break;
       }
-    }
     if (leftmost == m && sign(a[i].back())) return {-1, {}};
     if (leftmost == m) continue;
     ll val = a[i].back();
-    for (int j = m - 1; j > leftmost; --j) {
-      val -= a[i][j] * x[j];
-      val %= mod;
-    }
-    x[leftmost] = (val * inv(a[i][leftmost]) % mod + mod) % mod;
+    for (int j = m - 1; j > leftmost; --j)
+      val -= a[i][j] * x[j], val %= mod;
+    x[leftmost] = (val*inv(a[i][leftmost]) % mod + mod) % mod;
   }
   return {1, x};
 }
@@ -3610,12 +3475,11 @@ pair<int,vector<ll>> sle(vector<vector<ll>> a, vector<ll> b) {
 vector<bitset<N>> gauss_bit(vector<bitset<N>> a, int m) {
   int n = a.size();
   for (int col = 0, row = 0; col < m && row < n; ++col) {
-    for (int i = row; i < n; ++i) {
+    for (int i = row; i < n; ++i)
       if (a[i][col]) {
         swap(a[i], a[row]);
         break;
       }
-    }
     if (!a[row][col]) continue;
     for (int i = 0; i < n; ++i)
       if (i != row && a[i][col]) a[i] ^= a[row];
@@ -3642,19 +3506,18 @@ pair<int, int> ext_gcd(int a, int b) {
 
 // solve $ax+by=c$ with minimum $x \geq 0$
 bool cool_ext_gcd(int a, int b, int c, int &x, int &y) {
-    if (b == 0) {
-        y = 0;
-        if (a == 0)
-            return x = 0, c == 0;
-        return x = c / a, c % a == 0 && x >= 0;
-    }
-    auto [x0, y0] = ext_gcd(a, b);
-    int g = (ll)x0 * a + (ll)y0 * b;
-    if (c % g != 0) return false;
-    x = (ll)x0 * (c / g) % (b / g);
-    if (x < 0) x += abs(b / g);
-    y = (c - (ll)a * x) / b;
-    return true;
+  if (b == 0) {
+    y = 0;
+    if (a == 0) return x = 0, c == 0;
+    return x = c / a, c % a == 0 && x >= 0;
+  }
+  auto [x0, y0] = ext_gcd(a, b);
+  int g = (ll)x0 * a + (ll)y0 * b;
+  if (c % g != 0) return false;
+  x = (ll)x0 * (c / g) % (b / g);
+  if (x < 0) x += abs(b / g);
+  y = (c - (ll)a * x) / b;
+  return true;
 }
 \end{lstlisting}
 
@@ -3686,9 +3549,8 @@ pair<ll, ll> generalized_crt(const vector<pair<int, int>> &equations) {
 
 \subsection{Код Грея}
 \begin{lstlisting}[language=C++]
-for (int i = 0; i < (1 << n); i++) {
+for (int i = 0; i < (1 << n); ++i)
   gray[i] = i ^ (i >> 1);
-}
 \end{lstlisting}
 
 \subsection{Линейное решето}
@@ -3697,11 +3559,8 @@ const int N = 10000000;
 int lp[N + 1];
 vector<int> pr;
 for (int i = 2; i <= N; ++i) {
-  if (lp[i] == 0) {
-    lp[i] = i;
-    pr.push_back(i);
-  }
-  for (int j = 0; j < (int) pr.size() && pr[j] <= lp[i] && i * pr[j] <= N; ++j)
+  if (lp[i] == 0) lp[i] = i, pr.pb(i);
+  for (int j = 0; j < pr.size() && pr[j] <= lp[i] && i * pr[j] <= N; ++j)
     lp[i * pr[j]] = pr[j];
 }
 \end{lstlisting}
@@ -3712,25 +3571,19 @@ for (int i = 2; i <= N; ++i) {
 const ll MAGIC[7] = {2, 325, 9375, 28178, 450775, 9780504, 1795265022};
 
 bool is_prime(ll n) {
-  if (n <= 1) return false;
-  if (n <= 3) return true;
+  if (n <= 3) return n > 1;
   if (n % 2 == 0 || n % 3 == 0) return false;
   ll s = __builtin_ctzll(n - 1), d = n >> s; // $n-1 = 2^s \cdot d$
   for (auto a : MAGIC) {
-    if (a % n == 0) {
-      continue;
-    }
+    if (a % n == 0) continue;
     ll x = binpow(a, d, n); // a -> __int128 in binpow
-    for (int _ = 0; _ < s; _++) {
+    for (int _ = 0; _ < s; ++_) {
       ll y = binpow(x, 2, n);  // x -> __int128 in binpow
-      if (y == 1 && x != 1 && x != n - 1) {
+      if (y == 1 && x != 1 && x != n - 1)
         return false;
-      }
       x = y;
     }
-    if (x != 1) {
-      return false;
-    }
+    if (x != 1) return false;
   }
   return true;
 }
@@ -3749,12 +3602,8 @@ int count_walks_1(int b1, int b2, int p, int q) {
   ar(2) F = {p, q}, S = {p, q};
   int cf = mod - 1;
   while (true) {
-    F[1] -= b1;
-    swap(F[0], F[1]);
-    F[1] += b1;
-    S[1] -= b2;
-    swap(S[0], S[1]);
-    S[1] += b2;
+    F[1] -= b1, swap(F[0], F[1]), F[1] += b1;
+    S[1] -= b2, swap(S[0], S[1]), S[1] += b2;
     swap(F, S);
     int wf = C(F[0], F[0] + F[1]);
     int ws = C(S[0], S[0] + S[1]);
@@ -3762,8 +3611,7 @@ int count_walks_1(int b1, int b2, int p, int q) {
     if (wf == 0 && ws == 0) break;
     cf = mod - cf;
   }
-  ans %= mod;
-  return (int) ans;
+  return ans % mod;
 }
 
 int count_walks_2(int b1, int b2, int p, int q) {
@@ -3773,8 +3621,7 @@ int count_walks_2(int b1, int b2, int p, int q) {
   // b1 < 0 < b2 must hold
   // O(p / (b2 - b1))
   if (abs(p) % 2 != abs(q) % 2) return 0;
-  int p0 = (p - q) / 2, q0 = (p + q) / 2;
-  return count_walks_1(b1, b2, p0, q0);
+  return count_walks_1(b1, b2, (p - q) / 2, (p + q) / 2);
 }
 \end{lstlisting}
 
@@ -3782,18 +3629,11 @@ int count_walks_2(int b1, int b2, int p, int q) {
 \begin{lstlisting}[language=C++]
 typedef long long ll;
 
-ll mult(ll a, ll b, ll mod) {
-  return (__int128)a * b % mod;
-}
-
-ll f(ll x, ll c, ll mod) {
-  return (mult(x, x, mod) + c) % mod;
-}
+ll mult(ll a, ll b, ll mod) { return (__int128)a * b % mod; }
+ll f(ll x, ll c, ll mod) { return (mult(x, x, mod) + c)%mod; }
 
 ll rho(ll n, ll x0=2, ll c=1) {
-  ll x = x0;
-  ll y = x0;
-  ll g = 1;
+  ll x = x0, y = x0, g = 1;
   while (g == 1) {
     x = f(x, c, n);
     y = f(y, c, n);
@@ -3804,23 +3644,104 @@ ll rho(ll n, ll x0=2, ll c=1) {
 }
 
 mt19937_64 rnd(time(nullptr));
-
-void factor(int n, vector<int> &pr) {
+void factor(ll n, vector<ll> &pr) {
   if (n == 4) {
     factor(2, pr);
     factor(2, pr);
     return;
   }
-  if (n == 1) {
-    return;
-  }
-  if (is_prime(n)) {
-    pr.push_back(n);
-    return;
-  }
-  int d = rho(n, rnd() % (n - 2) + 2, rnd() % 3 + 1);
+  if (n == 1) return;
+  if (is_prime(n)) { pr.pb(n); return; }
+  ll d = rho(n, rnd() % (n - 2) + 2, rnd() % 3 + 1);
   factor(n / d, pr);
   factor(d, pr);
+}
+\end{lstlisting}
+
+\subsection{Симплекс}
+\begin{lstlisting}[language=C++]
+// $\max c^Tx: Ax \leq b, x \geq 0, A \in \mathbb{R}^{m \times n}$ ($x$ is output only)
+// Returns -inf if infeasible, +inf if unbounded ($x$ is any feasible then).
+// Phase 1 (finds a feasible $x$) is skipped automatically if $b\geq 0$, since then $x = 0$ is feasible. Faster.
+// $O(nm)$ per pivot; usually $\approx n+m$ pivots, $2^n$ worst case.
+// eps is absolute: fine for $|A|, |c| \leq 10^6$
+// dbl = double is ~7x faster than long double
+dbl simplex(vector<vector<dbl>> A, vector<dbl> b,
+            vector<dbl> c, vector<dbl> &x) {
+  const dbl eps = 1e-8, inf = 1 / .0;
+  int m = b.size(), n = c.size();
+  vector<int> B(m), N(n+1);
+  iota(all(B), n), iota(all(N), 0), N[n] = -1, x.assign(n, 0);
+  A.pb(c), b.pb(0);
+  vector D(m+2, vector<dbl>(n+2));
+  for (int i = 0; i <= m; ++i)
+    copy(all(A[i]), D[i].begin()), D[i][n+1] = b[i];
+  auto pivot = [&](int r, int s) {
+    dbl *a = D[r].data(), t = 1 / exchange(a[s], 1);
+    for (int j = 0; j <= n+1; ++j) a[j] *= t;
+    for (int i = 0; i < m+2; ++i)
+      if (dbl k = D[i][s]; i != r && abs(k) > eps) {
+        D[i][s] = 0;
+        for (int j = 0; j <= n+1; ++j) D[i][j] -= a[j] * k;
+      }
+    swap(B[r], N[s]);
+  };
+  auto run = [&](int x) {
+    int deg = 0, r, s;
+    auto p = [&](int j) {
+      return pair(deg > n+m ? D[x][j] > eps : D[x][j], -N[j]);
+    };
+    auto q = [&](int i) {
+      return pair(D[i][n+1] / D[i][s], B[i]);
+    };
+    while (1) {
+      r = -1, s = 0;
+      for (int j = 1; j <= n; ++j)
+        if (p(j) > p(s)) s = j;
+      if (D[x][s] <= eps) return 1;
+      for (int i = 0; i < m; ++i)
+        if (D[i][s] > eps && (r < 0 || q(i) < q(r))) r = i;
+      if (r < 0) return 0;
+      deg = D[r][n+1] < eps ? deg + 1 : 0;
+      pivot(r, s);
+    }
+  };
+  int r = min_element(all(b)) - b.begin();
+  if (D[r][n+1] < -eps) { // can remove this block if $b\geq 0$
+    for (auto &d : D) d[n] = -1;
+    pivot(r, n), run(m+1);
+    if (D[m+1][n+1] > eps) return -inf;
+    for (int i = 0, s = 0; i < m; ++i)
+      if (B[i] < 0) {
+        for (int j = 1; j <= n; ++j)
+          if (abs(D[i][j]) > abs(D[i][s])) s = j;
+        pivot(i, s);
+      }
+    for (auto &d : D) d[find(all(N), -1) - N.begin()] = 0;
+  }
+  bool ok = run(m);
+  for (int i = 0; i < m; ++i)
+    if (B[i] < n) x[B[i]] = D[i][n+1];
+  return ok ? -D[m][n+1] : inf;
+}
+
+// same, but x[j] < 0 is allowed if neg[j]:
+// x[j] = y[j] - y[n] for them, all y >= 0
+dbl simplex_neg(vector<vector<dbl>> A, vector<dbl> b,
+    vector<dbl> c, vector<char> neg, vector<dbl> &x) {
+  int n = c.size();
+  A.pb(c);
+  for (auto &r : A) {
+    r.pb(0);
+    for (int j = 0; j < n; ++j)
+      if (neg[j]) r[n] -= r[j];
+  }
+  c = A.back(), A.pop_back();
+  dbl res = simplex(A, b, c, x);
+  for (int j = 0; j < n; ++j)
+    if (neg[j]) x[j] -= x[n];
+  x.pop_back();
+  return res;
 }
 \end{lstlisting}
 
@@ -4083,6 +4004,20 @@ $\sum_{i=1}^n d_i\equiv0\pmod2$ и
 \item $998696969$, $998575757$, $997676767$, $996179179$, $991676767$
 \end{itemize}
 
+\item Highly composite numbers
+% #1 left-aligned in the width of the widest bound, so d(...) line up
+\newcommand{\hcn}[2]{$\rlap{$\leq #1\ \ $}\phantom{\leq 2 \cdot 10^6\ \ }\; #2$}
+\begin{itemize}
+    \item \hcn{10^3}{d(840)=32}
+    \item \hcn{10^4}{d(7560)=64}
+    \item \hcn{2 \cdot 10^4}{d(15120)=80}
+    \item \hcn{10^5}{d(83160)=128}
+    \item \hcn{2 \cdot 10^5}{d(166320)=160}
+    \item \hcn{10^6}{d(720720)=240}
+    \item \hcn{2 \cdot 10^6}{d(1441440)=288}
+    \item \hcn{10^9}{d(735134400)=1344}
+\end{itemize}
+
 \end{enumerate}
 
 \endgroup
@@ -4099,11 +4034,10 @@ $\sum_{i=1}^n d_i\equiv0\pmod2$ и
 \subsection{Z, префикс, Манакер, min rotation}
 \begin{lstlisting}[language=C++]
 vector<int> z_func(const string &s) {
-  int n = s.size();
+  int n = s.size(), l = 0, r = 0;
   vector<int> z(n, 0);
   if (n) z[0] = n;
-  int l = 0, r = 0;
-  for (int i = 1; i < n; i++) {
+  for (int i = 1; i < n; ++i) {
     if (i < r) z[i] = min(z[i-l], r-i);
     while (i+z[i] < n && s[z[i]] == s[i+z[i]]) z[i]++;
     if (i+z[i] > r) l = i, r = i+z[i];
@@ -4114,7 +4048,7 @@ vector<int> z_func(const string &s) {
 vector<int> prefix_func(const string &s) {
   int n = s.size(), a = 0;
   vector<int> pref(n, 0);
-  for (int i = 1; i < n; i++) {
+  for (int i = 1; i < n; ++i) {
     while (a > 0 && s[a] != s[i]) a = pref[a-1];
     pref[i] = a += s[i] == s[a];
   }
@@ -4155,19 +4089,15 @@ int min_rotation(const string &s) {
 
 \subsection{eertree}
 \begin{lstlisting}[language=C++]
-int len[MAXN], suf[MAXN];
-int go[MAXN][ALPH];
+int len[MAXN], suf[MAXN], go[MAXN][ALPH];
 char s[MAXN];
-
 int n, last, sz;
 
 void init() {
-  for (int v = 0; v < sz; v++) fill(go[v], go[v] + ALPH, 0);
-  n = 0, last = 0;
-  s[n++] = -1;
+  for (int v = 0; v < sz; ++v) fill(go[v], go[v] + ALPH, 0);
+  n = 0, last = 0, s[n++] = -1;
   suf[0] = 1; // root of suflink tree = 1
-  len[1] = -1;
-  sz = 2;
+  len[1] = -1, sz = 2;
 }
 
 int get_link(int v) {
@@ -4177,8 +4107,7 @@ int get_link(int v) {
 }
 
 void add_char(char c) {
-  c -= 'a';
-  s[n++] = c;
+  c -= 'a', s[n++] = c;
   last = get_link(last);
   if (!go[last][c]) {
     len[sz] = len[last] + 2;
@@ -4208,8 +4137,7 @@ struct AhoCorasick {
     for (char el : s) {
       if (go[v][el - 'a'] == 0) {
         go[v][el - 'a'] = cntv;
-        par[cntv] = v;
-        par_c[cntv] = el;
+        par[cntv] = v, par_c[cntv] = el;
         cntv++;
       }
       v = go[v][el - 'a'];
@@ -4223,7 +4151,7 @@ struct AhoCorasick {
     for (int l = 0, r = 1; l < r; ++l) {
       int v = q[l];
       if (v > 0) g[suf[v]].pb(v);
-      for (int c = 0; c < SIGMA; c++) {
+      for (int c = 0; c < SIGMA; ++c) {
         int &u = go[v][c];
         if (u == 0) u = go[suf[v]][c];
         else suf[u] = v ? go[suf[v]][c] : 0, q[r++] = u;
@@ -4238,11 +4166,11 @@ struct AhoCorasick {
 template<class T> // string (<= 127 distinct chars) or vector
 vector<int> build_suff_arr(T s) {
   { // values compression. comment if already 0 < s[i] < ~1e6
-    vector<int> id(size(s));
+    vector<int> id(s.size());
     iota(all(id), 0);
     sort(all(id), [&](int i, int j) { return s[i]<s[j]; });
     auto v = s;
-    for (int i=0, r=0; i < ssize(s); i++)
+    for (int i=0, r=0; i < s.size(); ++i)
       v[id[i]] = r += !i || s[id[i]] != s[id[i-1]];
     s = v;
   }
@@ -4251,8 +4179,8 @@ vector<int> build_suff_arr(T s) {
   vector<int> sa(n), rk(n), t(n), c(max(n,m));
   for (auto x : s) c[x+1]++;
   partial_sum(all(c), begin(c));
-  for (int i=0; i<n; i++) rk[i] = c[s[i]];
-  for (int i=0; i<n; i++) sa[c[s[i]]++] = i;
+  for (int i=0; i<n; ++i) rk[i] = c[s[i]];
+  for (int i=0; i<n; ++i) sa[c[s[i]]++] = i;
   // rk[i] = start of i's class in sa
   for (int k=1, g=0; k<n && g<n; k*=2) {
     iota(all(c), 0);
@@ -4261,7 +4189,7 @@ vector<int> build_suff_arr(T s) {
       t[c[rk[j]]++] = j;
     }
     swap(sa,t), g=0;
-    for (int i=0, pr=-1, pq=-1, st=0; i<n; i++) {
+    for (int i=0, pr=-1, pq=-1, st=0; i<n; ++i) {
       int b=sa[i], j = b+k<n ? b+k : b+k-n;
       int r=rk[b], q=rk[j];
       if (r!=pr || q!=pq) st=i, g++;
@@ -4278,7 +4206,7 @@ template<class T>
 vector<int> kasai(const T &s, const vector<int> &sa) {
   int n = s.size(), k=0;
   vector<int> rk(n), lcp(n-!!n);
-  for (int i=0; i<n; i++) rk[sa[i]] = i;
+  for (int i=0; i<n; ++i) rk[sa[i]] = i;
   for (int i=0; i<n; i++, k-=k>0) {
     if (rk[i] == n-1) continue;
     int j = sa[rk[i]+1];
@@ -4293,7 +4221,7 @@ vector<int> kasai(const T &s, const vector<int> &sa) {
 \begin{lstlisting}[language=C++]
 // (Обобщённый) суфавтомат для кол-ва различных подстрок
 const int SIGMA = 26;
-long long ans = 0;
+ll ans = 0;
 
 struct Map{ //если большой алфавит, просто заменить $ar$ на $Map$
   map<int, int> mp;
@@ -4301,19 +4229,15 @@ struct Map{ //если большой алфавит, просто замени�
 };
 struct Node {
   ar(SIGMA) go;
-  int s, p, len, firstpos;
-  Node() {
-    go.fill(-1); // remove if Map
-    s=-1, p=-1, len=0, firstpos=-1;
-  }
+  int s=-1, p=-1, len=0, firstpos=-1;
+  Node() { go.fill(-1); } // remove if Map
 };
 
 int add(int A, int ch, vector<Node> &sa) {
   auto clone = [&](int A, int C) {
     int D = sa.size();
     sa.pb(sa[C]);
-    sa[D].p = A;
-    sa[D].len = sa[A].len + 1;
+    sa[D].p = A, sa[D].len = sa[A].len + 1;
     sa[C].s = D;
     for (; A != -1 && sa[A].go[ch] == C; A = sa[A].s)
       sa[A].go[ch] = D;
@@ -4324,8 +4248,7 @@ int add(int A, int ch, vector<Node> &sa) {
     return sa[C].p == A ? C : clone(A, C);
   int B = sa.size();
   sa.emplace_back();
-  sa[B].p = A;
-  sa[B].len = sa[A].len + 1;
+  sa[B].p = A, sa[B].len = sa[A].len + 1;
   sa[B].firstpos = sa[B].len - 1; // no sense when generalized SAM
   for (; A != -1; A = sa[A].s) {
     if (sa[A].go[ch] == -1) {
@@ -4346,8 +4269,7 @@ signed main() {
   cin >> s;
   vector<Node> sa(1);
   int A = 0;
-  for (char c : s)
-    A = add(A, c - 'a', sa);
+  for (char c : s) A = add(A, c - 'a', sa);
   cout << ans;
 }
 \end{lstlisting}
@@ -4386,7 +4308,6 @@ int get(int l, int r) {
   int i = floorlog2[l ^ r];
   return min(tree[i][l], tree[i][r]);
 }
-
 \end{lstlisting}
 
 \subsection{Segment Tree Beats}
@@ -4412,6 +4333,7 @@ struct ST {
 
   ST(vector<int> &a) {
     int n = a.size();
+    assert(n>0);
     st.resize(n * 4), mx.resize(n * 4);
     mx_cnt.resize(n * 4, 0), sec_mx.resize(n * 4, 0);
     build(0, 0, n, a);
@@ -4422,23 +4344,20 @@ struct ST {
     mx[v] = max(mx[v * 2 + 1], mx[v * 2 + 2]);
     mx_cnt[v] = 0;
     sec_mx[v] = max(sec_mx[v * 2 + 1], sec_mx[v * 2 + 2]);
-    if (mx[v * 2 + 1] == mx[v]) {
+    if (mx[v * 2 + 1] == mx[v])
       mx_cnt[v] += mx_cnt[v * 2 + 1];
-    } else {
+    else
       sec_mx[v] = max(sec_mx[v], mx[v * 2 + 1]);
-    }
-    if (mx[v * 2 + 2] == mx[v]) {
+    if (mx[v * 2 + 2] == mx[v])
       mx_cnt[v] += mx_cnt[v * 2 + 2];
-    } else {
+    else
       sec_mx[v] = max(sec_mx[v], mx[v * 2 + 2]);
-    }
   }
 
   void build(int i, int l, int r, vector<int> &a) {
     if (l + 1 == r) {
       st[i] = mx[i] = a[l];
-      mx_cnt[i] = 1;
-      sec_mx[i] = -INF;
+      mx_cnt[i] = 1, sec_mx[i] = -INF;
       return;
     }
     int m = (r + l) / 2;
@@ -4479,7 +4398,7 @@ struct ST {
     push(i, l, r);
     if (ql <= l && r <= qr) return st[i];
     int m = (l + r) / 2;
-    return sum(i * 2 + 1, l, m, ql, qr) + sum(i * 2 + 2, m, r, ql, qr);
+    return sum(i*2+1,l,m,ql,qr) + sum(i*2+2,m,r,ql,qr);
   }
 };
 \end{lstlisting}
@@ -4495,22 +4414,18 @@ pair<int, int> split(int t, int k) {
   int szl = size(nds[t].l);
   if (k <= szl) {
     auto [l, r] = split(nds[t].l, k);
-    nds[t].l = r;
-    pull(t);
+    nds[t].l = r, pull(t);
     return {l, t};
   } else {
     auto [l, r] = split(nds[t].r, k - szl - 1);
-    nds[t].r = l;
-    pull(t);
+    nds[t].r = l, pull(t);
     return {t, r};
   }
 }
 
 // всё остальное ровно как в обычном ДД
-// не забыть обновлять sz в pull 
+// не забыть обновлять sz в pull
 // инициализация sz=0 в Node() и sz=1 в Node(...)
-
-
 \end{lstlisting}
 
 \subsection{ДД}
@@ -4522,9 +4437,7 @@ struct Node {
   int val, mx, mod;
 
   // value of empty set
-  Node() : val(-INF), mx(-INF) {
-    l = r = 0, mod = 0;
-  }
+  Node() : val(-INF), mx(-INF) { l = r = 0, mod = 0; }
   Node(int x, int val) : x(x), val(val), mx(val) {
     l = r = 0, mod = 0, y = rnd();
   }
@@ -4542,10 +4455,8 @@ void push(int t) {
   nds[t].mod = 0;
 }
 
-int getmx(int t) {
-  push(t); // delete if sure (faster)
-  return nds[t].mx;
-}
+// delete push(t) if sure (faster)
+int getmx(int t) { push(t); return nds[t].mx; }
 
 void pull(int t) {
   if (!t) return;
@@ -4558,13 +4469,11 @@ pair<int, int> split(int t, int x) {
   push(t);
   if (x <= nds[t].x) {
     auto [l, r] = split(nds[t].l, x);
-    nds[t].l = r;
-    pull(t);
+    nds[t].l = r, pull(t);
     return {l, t};
   } else {
     auto [l, r] = split(nds[t].r, x);
-    nds[t].r = l;
-    pull(t);
+    nds[t].r = l, pull(t);
     return {t, r};
   }
 }
@@ -4574,12 +4483,10 @@ int merge(int l, int r) {
   if (!l) return r;
   if (!r) return l;
   if (nds[l].y < nds[r].y) {
-    nds[l].r = merge(nds[l].r, r);
-    pull(l);
+    nds[l].r = merge(nds[l].r, r), pull(l);
     return l;
   } else {
-    nds[r].l = merge(l, nds[r].l);
-    pull(r);
+    nds[r].l = merge(l, nds[r].l), pull(r);
     return r;
   }
 }
@@ -4613,19 +4520,14 @@ void update(int &root, int ql, int qr, int qx) {
   if (m) nds[m].mod += qx;
   root = merge(merge(l, m), r);
 }
-
 \end{lstlisting}
 
 \subsection{Персистентное ДД по неявному}
 \begin{lstlisting}[language=C++]
-struct Node;
-int size(int);
-int sum(int);
+int size(int), sum(int);
 
 struct Node {
-  int l, r;
-  int val, sz, sm;
-    
+  int l, r, val, sz, sm;
   Node() : l(0), r(0), val(0), sz(0), sm(0) {}
   Node(int val, int l, int r) : val(val), l(l), r(r) {
     sz = 1 + size(l) + size(r);
@@ -4649,12 +4551,10 @@ pair<int, int> split(int t, int x) {
   int szl = size(nds[t].l);
   if (szl >= x) {
     auto [l, r] = split(nds[t].l, x);
-    int v = newNode(nds[t].val, r, nds[t].r);
-    return {l, v};
+    return {l, newNode(nds[t].val, r, nds[t].r)};
   } else {
     auto [l, r] = split(nds[t].r, x - szl - 1);
-    int v = newNode(nds[t].val, nds[t].l, l);
-    return {v, r};
+    return {newNode(nds[t].val, nds[t].l, l), r};
   }
 }
 
@@ -4666,13 +4566,11 @@ int merge(int l, int r) {
   if (!l) return r;
   if (!r) return l;
   if (chooseleft(nds[l].sz, nds[r].sz)) {
-    int rr = merge(nds[l].r, r);
-    int v = newNode(nds[l].val, nds[l].l, rr);
-    return v;
+    int nr = merge(nds[l].r, r);
+    return newNode(nds[l].val, nds[l].l, nr);
   } else {
-    int ll = merge(l, nds[r].l);
-    int v = newNode(nds[r].val, ll, nds[r].r);
-    return v;
+    int nl = merge(l, nds[r].l);
+    return newNode(nds[r].val, nl, nds[r].r);
   }
 }
 
@@ -4702,8 +4600,7 @@ int get(int t, int ql, int qr) {
 \subsection{Персистентное ДО}
 \begin{lstlisting}[language=C++]
 Node nds[MAX];
-int ndsz = 1;
-// nds[0] is default (empty) value
+int ndsz = 1; // nds[0] is default (empty) value
 
 int sum(int v) { return nds[v].sm; }
 
@@ -4714,8 +4611,7 @@ int update(int v, int l, int r, int qi, int qx) {
     nds[ndsz++] = Node(qx);
     return ndsz - 1;
   }
-  int m = (l + r) / 2;
-  int u = ndsz++;
+  int m = (l + r) / 2, u = ndsz++;
   nds[u].l = update(nds[v].l, l, m, qi, qx);
   nds[u].r = update(nds[v].r, m, r, qi, qx);
   nds[u].sm = sum(nds[u].l) + sum(nds[u].r);
@@ -4730,7 +4626,6 @@ int get(int v, int l, int r, int ql, int qr) {
   auto b = get(nds[v].r, m, r, ql, qr);
   return a + b;
 }
-
 \end{lstlisting}
 
 \subsection{Спарсы}
@@ -4755,7 +4650,6 @@ int get(int l, int r) {
   int i = floorlog2[r - l];
   return min(tree[i][l], tree[i][r - (1 << i)]);
 }
-
 \end{lstlisting}
 
 \subsection{Фенвик}
@@ -4767,7 +4661,7 @@ struct Fenwick {
   Fenwick(int n) : n(n), f(n+1) {}
 
   void build(const vector<int> &a) { // O(n)
-    n=size(a), f.assign(n+1, 0);
+    n=a.size(), f.assign(n+1, 0);
     for (int i = 1; i <= n; ++i) {
       f[i] += a[i-1];
       int j = i + (i & -i);
@@ -4817,9 +4711,7 @@ void update(int l, int r, int x) {
   T2.add(r, x * r);
 }
 // sum a[0..i)
-int get(int i) {
-  return T1.get(i) * i + T2.get(i);
-}
+int get(int i) { return T1.get(i) * i + T2.get(i); }
 \end{lstlisting}
 
 
