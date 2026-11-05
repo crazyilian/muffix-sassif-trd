@@ -159,8 +159,8 @@
 %% Extended C++ highlighting, inserted into template_header.tex by `sh gen.sh --new-colors`:
 %% keywords blue, types hltype, functions hlfn, numbers hlnum
 \definecolor{hltype}{rgb}{0.000,0.502,0.502}
-\definecolor{hlfn}{rgb}{0.545,0.271,0.075}
-\definecolor{hlnum}{rgb}{0.878,0.063,0.063}
+\definecolor{hlfn}{rgb}{0.420,0.208,0.039}
+\definecolor{hlnum}{rgb}{0.690,0.000,0.000}
 \makeatletter
 % function: identifier followed by '(' (peek next char before flushing the identifier)
 \let\lst@lparen=(
@@ -168,16 +168,55 @@
 \def\lst@AppendOther{%
   \lst@ifletter\expandafter\lst@AppendOtherId\else\expandafter\lst@AppendOtherNoId\fi}
 \def\lst@AppendOtherId{\futurelet\lst@nextother\lst@AppendOtherIdA}
-\def\lst@AppendOtherIdA{\lst@Output\lst@letterfalse\let\lst@nextother\relax
+% inside a number: '.' and exponent sign after e/E continue it (2.5, 1e-9, 1e+9)
+\let\lst@lastletter\relax \let\lst@dot=. \let\lst@plus=+
+\expandafter\let\expandafter\lst@che\string e
+\expandafter\let\expandafter\lst@chE\string E
+\def\lst@ProcessLetter{\lst@whitespacefalse\futurelet\lst@lastletter\lst@AppendLetter}
+\def\lst@expsign{\ifx\lst@nextother\lst@umminus\gdef\lst@numcont{1}\fi
+  \ifx\lst@nextother\lst@plus\gdef\lst@numcont{1}\fi}
+\def\lst@AppendOtherIdA{\gdef\lst@numcont{0}%
+  \ifnum\lst@isnum=1
+    \ifx\lst@nextother\lst@dot\gdef\lst@numcont{1}\fi
+    \ifx\lst@lastletter\lst@che\lst@expsign\fi
+    \ifx\lst@lastletter\lst@chE\lst@expsign\fi
+  \fi
+  \ifnum\lst@numcont=1 \let\lst@nextother\relax\expandafter\lst@Append
+  \else\expandafter\lst@AppendOtherIdB\fi}
+\def\lst@AppendOtherIdB{\lst@Output\lst@letterfalse\let\lst@nextother\relax
   \lst@AppendOtherNoId}
-\def\lst@AppendOtherNoId{\futurelet\lst@lastother\lst@Append}
+\def\lst@AppendOtherNoId{\futurelet\lst@lastother\lst@AppendOtherB}
+% unary minus: '-' with no operand (identifier, number, ')', ']') before it;
+% remember the token without it, in case a digit follows (x=-1, f(-1), return -1)
+\expandafter\let\expandafter\lst@umminus\csname lst@um-\endcsname
+\let\lst@rparen=) \let\lst@rbrack=]
+\gdef\lst@operand{0}\gdef\lst@unary{0}
+\newtoks\lst@mtoken \newcount\lst@mlength
+\def\lst@AppendOtherB{%
+  \ifx\lst@lastother\lst@umminus
+    \xdef\lst@unary{\ifnum\lst@operand=0 1\else 0\fi}\gdef\lst@operand{0}%
+    \lst@mtoken=\lst@token \lst@mlength=\lst@length
+  \else\ifx\lst@lastother\lst@outputspace
+  \else\ifx\lst@lastother\lst@rparen \gdef\lst@operand{1}%
+  \else\ifx\lst@lastother\lst@rbrack \gdef\lst@operand{1}%
+  \else \gdef\lst@operand{0}%
+  \fi\fi\fi\fi
+  \lst@Append}
 % number: a digit not inside an identifier starts a token (with suffixes: 1ll, 1e9, 0x3f)
 \gdef\lst@isnum{0}\gdef\lst@curisnum{0}
-\def\lst@ProcessDigit{\lst@whitespacefalse
+\def\lst@ProcessDigit{\lst@whitespacefalse\futurelet\lst@lastletter\lst@ProcessDigitA}
+\def\lst@ProcessDigitA{%
   \lst@ifletter\expandafter\lst@AppendLetter\else\expandafter\lst@AppendNum\fi}
-\def\lst@AppendNum{\gdef\lst@isnum{1}\lst@AppendLetter}
-\lst@AddToHook{Output}{\xdef\lst@curisnum{\lst@isnum}\gdef\lst@isnum{0}}
-\newcommand\lstidstyle{%
+\def\lst@AppendNum{\gdef\lst@isnum{1}%
+  \ifnum\lst@mode=\lst@Pmode\relax\ifx\lst@lastother\lst@umminus\ifnum\lst@unary=1
+    \lst@token=\lst@mtoken \lst@length=\lst@mlength \lst@OutputOther
+    \lst@lettertrue \expandafter\lst@Append\csname lst@um-\endcsname
+  \fi\fi\fi
+  \lst@AppendLetter}
+\lst@AddToHook{Output}{\xdef\lst@curisnum{\lst@isnum}\gdef\lst@isnum{0}%
+  \gdef\lst@operand{0}}
+% non-keyword identifier or number; it is an operand for the next '-'
+\newcommand\lstidstyle{\gdef\lst@operand{1}%
   \ifnum\lst@curisnum=1 \color{hlnum}%
   \else\ifx\lst@nextother\lst@lparen\color{hlfn}\fi\fi}
 \makeatother
@@ -3668,7 +3707,7 @@ void factor(ll n, vector<ll> &pr) {
 // dbl = double is ~7x faster than long double
 dbl simplex(vector<vector<dbl>> A, vector<dbl> b,
             vector<dbl> c, vector<dbl> &x) {
-  const dbl eps = 1e-8, inf = 1 / .0;
+  const dbl eps = 1e-8, inf = 1 / 0.0;
   int m = b.size(), n = c.size();
   vector<int> B(m), N(n+1);
   iota(all(B), n), iota(all(N), 0), N[n] = -1, x.assign(n, 0);
