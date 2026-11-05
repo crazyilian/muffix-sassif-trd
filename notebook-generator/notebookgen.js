@@ -122,8 +122,11 @@ module.exports = function (_path, options) {
     options.image = ''
   }
 
+  const newColors = options.newColors ? fs.readFileSync(path.join(__dirname, 'new_colors.tex')).toString() : ''
+
   let template = fs.readFileSync(path.join(__dirname, 'template_header.tex')).toString()
   template = template
+    .replaceAll(templateParameter('newColors'), newColors)
     .replaceAll(templateParameter('author'), options.author)
     .replaceAll(templateParameter('initials'), options.initials)
     .replaceAll(templateParameter('fontSize'), options.size)

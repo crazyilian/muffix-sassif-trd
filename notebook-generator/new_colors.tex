@@ -1,0 +1,46 @@
+%% Extended C++ highlighting, inserted into template_header.tex by `sh gen.sh --new-colors`:
+%% keywords blue, types hltype, functions hlfn, numbers hlnum
+\definecolor{hltype}{rgb}{0.000,0.502,0.502}
+\definecolor{hlfn}{rgb}{0.545,0.271,0.075}
+\definecolor{hlnum}{rgb}{0.878,0.063,0.063}
+\makeatletter
+% function: identifier followed by '(' (peek next char before flushing the identifier)
+\let\lst@lparen=(
+\let\lst@nextother\relax
+\def\lst@AppendOther{%
+  \lst@ifletter\expandafter\lst@AppendOtherId\else\expandafter\lst@AppendOtherNoId\fi}
+\def\lst@AppendOtherId{\futurelet\lst@nextother\lst@AppendOtherIdA}
+\def\lst@AppendOtherIdA{\lst@Output\lst@letterfalse\let\lst@nextother\relax
+  \lst@AppendOtherNoId}
+\def\lst@AppendOtherNoId{\futurelet\lst@lastother\lst@Append}
+% number: a digit not inside an identifier starts a token (with suffixes: 1ll, 1e9, 0x3f)
+\gdef\lst@isnum{0}\gdef\lst@curisnum{0}
+\def\lst@ProcessDigit{\lst@whitespacefalse
+  \lst@ifletter\expandafter\lst@AppendLetter\else\expandafter\lst@AppendNum\fi}
+\def\lst@AppendNum{\gdef\lst@isnum{1}\lst@AppendLetter}
+\lst@AddToHook{Output}{\xdef\lst@curisnum{\lst@isnum}\gdef\lst@isnum{0}}
+\newcommand\lstidstyle{%
+  \ifnum\lst@curisnum=1 \color{hlnum}%
+  \else\ifx\lst@nextother\lst@lparen\color{hlfn}\fi\fi}
+\makeatother
+
+\lstdefinelanguage[TRD]{C++}[ISO]{C++}{
+  deletekeywords={int,long,short,char,bool,void,auto,unsigned,signed,float,%
+    double,dbl,ll,ull,size_t,__int128,string,vector,pair,array,set,map,multiset,%
+    unordered_map,unordered_set,queue,deque,priority_queue,stack,bitset,complex,%
+    tuple,function,mt19937,mt19937_64,uint32_t,uint64_t,int64_t,uint8_t,uint16_t},
+  morekeywords=[1]{nullptr,constexpr,typename,template,using,namespace,operator,%
+    inline,static,const,struct,class,true,false,this,new,delete,sizeof,typedef,%
+    mutable,public,private},
+  morekeywords=[2]{int,long,short,char,bool,void,auto,unsigned,signed,float,%
+    double,dbl,ll,ull,size_t,__int128,string,vector,pair,array,set,map,multiset,%
+    unordered_map,unordered_set,queue,deque,priority_queue,stack,bitset,complex,%
+    tuple,function,mt19937,mt19937_64,uint32_t,uint64_t,int64_t,uint8_t,uint16_t},
+  moredirectives={pragma},
+}
+\lstset{
+  defaultdialect=[TRD]C++,
+  identifierstyle=\lstidstyle,
+  keywordstyle=[1]{\color{blue}},
+  keywordstyle=[2]{\color{hltype}},
+}

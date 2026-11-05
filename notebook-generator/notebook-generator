@@ -16,6 +16,7 @@ options
   .option('-p --paper <size>', 'paper size is allowed letterpaper, a4paper, a5paper.', /^(letterpaper|a4paper|a5paper)$/i, 'a4paper')
   .option('-I --image <source>', 'cover image to be added in the notebook.')
   .option('--assets <source>', 'assets directory.')
+  .option('--new-colors', 'extended C++ highlighting: types, functions, numbers (new_colors.tex)')
 
 options.parse(process.argv)
 
