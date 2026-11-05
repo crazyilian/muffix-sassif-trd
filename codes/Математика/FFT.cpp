@@ -1,4 +1,4 @@
-const double PI = acos(-1);
+const double PI = acosl(-1);
 const int LOG = 20, MAXN = 1 << LOG;
 
 //using comp = complex<double>;
@@ -49,7 +49,7 @@ void fft(vector<comp> &A, int lg) {
       }
 }
 
-// optional, can be skipped
+// optional: x1.7 vs 2 fft; bad precision if |A| >> |B|
 void fft2(vector<comp> &A, vector<comp> &B, int lg) {
   int n = A.size();
   vector<comp> C(n);
@@ -58,10 +58,10 @@ void fft2(vector<comp> &A, vector<comp> &B, int lg) {
     C[i].y = B[i].x;
   }
   fft(C, lg);
-  C.pb(C[0]);
   for (int i = 0; i < n; ++i) {
-    A[i] = (C[i] + C[n - i].conj()) / 2;
-    B[i] = (C[i] - C[n - i].conj()) / 2 * comp(0, -1);
+    int j = -i & (n - 1);
+    A[i] = (C[i] + C[j].conj()) / 2;
+    B[i] = (C[i] - C[j].conj()) / 2 * comp(0, -1);
   }
 }
 
@@ -81,9 +81,7 @@ vector<int> mul(vector<int> &a, vector<int> &b) {
     A[i] = a[i];
   for (int i = 0; i < b.size(); ++i)
     B[i] = b[i];
-  // fft2(A, B, lg);
-  fft(A, lg);
-  fft(B, lg);
+  fft(A, lg), fft(B, lg); // fft2(A, B, lg);
   for (int i = 0; i < n; ++i)
     A[i] = A[i] * B[i];
   invfft(A, lg);

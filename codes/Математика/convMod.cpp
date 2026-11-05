@@ -12,13 +12,13 @@ vector<ll> conv_mod(const vector<ll> &a, const vector<ll> &b) {
   };
   for (int i = 0; i < a.size(); ++i) L[i] = sp(a[i]);
   for (int i = 0; i < b.size(); ++i) R[i] = sp(b[i]);
-  fft(L, lg), fft(R, lg);
+  fft(L, lg), fft(R, lg); // NOT fft2
   for (int i = 0; i < n; ++i) {
     int j = -i & (n - 1);
     outl[j] = (L[i] + L[j].conj()) * R[i] / (2.0 * n);
     outs[j] = (L[i] - L[j].conj()) * R[i] / (2.0 * n) * comp(0, 1) * -1;
   }
-  fft(outl, lg), fft(outs, lg);
+  fft(outl, lg), fft(outs, lg); // NOT fft2
   for (int i = 0; i < res.size(); ++i) {
     ll av = rint(outl[i].x), cv = rint(outs[i].y);
     ll bv = rint(outl[i].y) + rint(outs[i].x);
