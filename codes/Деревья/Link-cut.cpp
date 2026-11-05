@@ -48,10 +48,8 @@ void splay(Node *v) {
   push(v);
   while (!isroot(v)) {
     if (!isroot(v->p)) {
-      if (chnum(v) == chnum(v->p))
-        rotate(v->p);
-      else
-        rotate(v);
+      if (chnum(v) == chnum(v->p)) rotate(v->p);
+      else rotate(v);
     }
     rotate(v);
   }
