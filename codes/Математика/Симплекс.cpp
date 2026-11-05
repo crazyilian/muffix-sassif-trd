@@ -6,7 +6,7 @@
 // dbl = double is ~7x faster than long double
 dbl simplex(vector<vector<dbl>> A, vector<dbl> b,
             vector<dbl> c, vector<dbl> &x) {
-  const dbl eps = 1e-8, inf = 1 / .0;
+  const dbl eps = 1e-8, inf = 1 / 0.0;
   int m = b.size(), n = c.size();
   vector<int> B(m), N(n+1);
   iota(all(B), n), iota(all(N), 0), N[n] = -1, x.assign(n, 0);
