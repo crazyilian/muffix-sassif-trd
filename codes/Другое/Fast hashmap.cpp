@@ -1,3 +1,4 @@
+// if using kk[SZ] and vv[SZ], SZ should be small (~1.5e4) or Hashmap should be global. Otherwise stack overflow.
 struct Hashmap {
   using K = int; using V = int; using cK = const K;
   static constexpr K EMP = INT_MIN; // forbidden key
@@ -8,15 +9,17 @@ struct Hashmap {
 
   Hashmap(int n) { // max size
     lg = 32 - __builtin_clz(n) + 2; // <8n, mem-perf tradeoff
-    m = (1<<lg)-1;
-    kk.assign(m+1, EMP); vv.resize(m+1); // fill(kk,kk+s,EMP);
+    m = (1<<lg)-1; // SZ >= 8n
+    kk.assign(m+1,EMP); vv.resize(m+1); //fill(kk,kk+m+1,EMP);
     k=kk.data(), v=vv.data(); // k=kk,v=vv;
   }
   // must have if copying hashmap (because of pointers k,v):
   Hashmap(const Hashmap &o) { *this=o; }
   Hashmap &operator=(const Hashmap &o) {
     lg=o.lg, m=o.m; kk=o.kk, vv=o.vv;
-    k=kk.data(), v=vv.data(); return *this;
+    // copy(o.kk,o.kk+m+1,kk), copy(o.vv,o.vv+m+1,vv);
+    k=kk.data(), v=vv.data(); // k=kk,v=vv;
+    return *this;
   }
   int h(cK &x) const { return unsigned(x)*RND>>(32-lg); }
   int pos(cK &x) const {
