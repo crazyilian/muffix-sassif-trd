@@ -6,9 +6,8 @@ const cost_t INFw = 1e18;
 const flow_t INFf = 2e9;
 
 struct MinCost {
-  struct Edge { int v, u; flow_t f, c; cost_t w; };
-  vector<Edge> edg; // edg[i ^ 1] is reverse of edg[i]
-  vector<vector<int>> g;
+  struct Edge { int u, r; flow_t f, c; cost_t w; };
+  vector<vector<Edge>> g; // g[e.u][e.r] is reverse of e
   vector<cost_t> dist, pot;
   vector<int> pre;
   vector<char> inQ;
@@ -19,19 +18,17 @@ struct MinCost {
     int v = T;
     if (pre[v] == -1) return 0;
     flow_t f = INFf;
-    do {
-      int ei = pre[v];
-      Edge &e = edg[ei];
+    do { // g[v][pre[v]]: reverse of the path edge into v
+      Edge &r = g[v][pre[v]], &e = g[r.u][r.r];
       f = min(f, e.c - e.f);
       if (f == 0) return 0;
-      v = e.v;
+      v = r.u;
     } while (v != S);
     v = T;
     do {
-      int ei = pre[v];
-      edg[ei].f += f;
-      edg[ei ^ 1].f -= f;
-      v = edg[ei].v;
+      Edge &r = g[v][pre[v]], &e = g[r.u][r.r];
+      e.f += f, r.f -= f;
+      v = r.u;
     } while (v != S);
     return f;
   }
@@ -46,12 +43,11 @@ struct MinCost {
       int v = Q.front();
       Q.pop_front(), inQ[v] = false;
       cost_t d = dist[v];
-      for (int ei : g[v]) {
-        Edge &e = edg[ei];
+      for (Edge &e : g[v]) {
         if (e.f == e.c) continue;
         cost_t w = e.w + pot[v] - pot[e.u];
         if (dist[e.u] <= d + w) continue;
-        pre[e.u] = ei, dist[e.u] = d + w;
+        pre[e.u] = e.r, dist[e.u] = d + w;
         if (!inQ[e.u])
           inQ[e.u] = true, Q.pb(e.u);
       }
@@ -71,22 +67,20 @@ struct MinCost {
       flow_t ff = get_flow();
       if (ff == 0) break;
       flow += ff;
-      spfa(); // or dijkstra
+      spfa(); // or dijkstra - x1.5 speed when big costs
     }
     cost_t cost = 0;
-    for (int i = 0; i < edg.size(); i += 2)
-      cost += edg[i].f * edg[i].w;
+    for (auto &es : g)
+      for (auto &e : es)
+        if (e.f > 0) cost += e.f * e.w;
     return {flow, cost};
   }
 
-  // returns id: flow on the edge = edg[id].f
+  // returns id: flow on the edge = g[v][id].f
   int addedge(int v, int u, flow_t c, cost_t w) {
-    // reserve edg to m*2 before adding
-    int i = edg.size();
-    edg.pb({v, u, 0, c, w});
-    edg.pb({u, v, 0, 0, -w});
-    g[v].pb(i);
-    g[u].pb(i + 1);
+    int i = g[v].size();
+    g[v].pb({u, (int)g[u].size(), 0, c, w});
+    g[u].pb({v, i, 0, 0, -w});
     return i;
   }
 };
