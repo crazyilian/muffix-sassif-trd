@@ -2365,7 +2365,7 @@ struct Hashmap {
 
 \subsection{Fast mod}
 \begin{lstlisting}[language=C++]
-// Быстрое взятие по НЕ константному модулю (в 2-4 раза быстрее)
+// Быстрое взятие по НЕ константному модулю (x2-4 speed)
 struct FastMod {
   ull b, m;
   FastMod(ull b) : b(b), m(-1ULL / b) {}
