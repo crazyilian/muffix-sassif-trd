@@ -1,7 +1,7 @@
 // A, B convex (CCW or CW, independently), no 3 collinear,
 // no common points.                      O(log n log m).
-// Returns (looking from A[i] to B[j]):
-// {left, left}, {left, right}, {right, left}, {right, right}
+// Returns {i,j}: tangent A[i]->B[j] is .. relative to {A,B}:
+// {right, right}, {right, left}, {left, right}, {left, left}
 vector<pair<int, int>> tangents_polys(vector<vctr> &A,
                                       vector<vctr> &B) {
   int n = A.size(), logn = 31 - __builtin_clz(n);
