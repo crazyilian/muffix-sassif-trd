@@ -32,8 +32,6 @@ void attach(Node *v, Node *p, int num) {
 
 void rotate(Node *v) {
   Node *p = v->p;
-  push(p);
-  push(v);
   int num = chnum(v);
   Node *u = v->ch[1 - num];
   if (!isroot(v->p)) attach(v, p->p, chnum(p));
@@ -45,14 +43,15 @@ void rotate(Node *v) {
 }
 
 void splay(Node *v) {
-  push(v);
   while (!isroot(v)) {
-    if (!isroot(v->p)) {
-      if (chnum(v) == chnum(v->p)) rotate(v->p);
-      else rotate(v);
-    }
+    Node *p = v->p;
+    if (!isroot(p)) {
+      push(p->p), push(p), push(v);
+      rotate(chnum(v) == chnum(p) ? p : v);
+    } else push(p), push(v);
     rotate(v);
   }
+  push(v);
 }
 
 void expose(Node *v) {
